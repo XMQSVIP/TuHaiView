@@ -1,11 +1,9 @@
 use anyhow::{Context, Result};
 use std::{env, fs, path::PathBuf};
 
-/// Portable application data directory next to the running executable.
+/// 便携版数据目录：始终位于正在运行的 exe 同级目录。
 ///
-/// Keeping this directory beside the executable means the catalog and
-/// thumbnails stay on the same drive as the portable program instead of
-/// silently consuming space on `%LOCALAPPDATA%` (usually C: on Windows).
+/// 索引和缩略图不会悄悄写入通常位于 C 盘的 `%LOCALAPPDATA%`，便于移动程序和控制磁盘占用。
 pub fn data_dir() -> Result<PathBuf> {
     let executable = env::current_exe().context("无法定位程序所在目录")?;
     let parent = executable.parent().context("无法定位程序所在目录")?;
@@ -30,43 +28,5 @@ pub fn clear_thumbnail_cache() -> Result<()> {
         fs::remove_dir_all(&directory)?;
     }
     fs::create_dir_all(&directory)?;
-    Ok(())
-}
-
-/// Remove data written by versions that used Windows user profile folders.
-/// The targets are fixed application-specific directories and never include
-/// any user images.
-pub fn clear_legacy_storage() -> Result<()> {
-    let executable_parent = env::current_exe()
-        .ok()
-        .and_then(|path| path.parent().map(PathBuf::from));
-    let mut directories = Vec::new();
-    if let Some(local) = env::var_os("LOCALAPPDATA") {
-        directories.push(
-            PathBuf::from(local)
-                .join("Codex")
-                .join("RustImagePreviewer"),
-        );
-    }
-    if let Some(roaming) = env::var_os("APPDATA") {
-        directories.push(
-            PathBuf::from(roaming)
-                .join("Codex")
-                .join("RustImagePreviewer"),
-        );
-    }
-    for directory in directories {
-        // A user may have placed the portable executable in the old storage
-        // directory. Never attempt to remove the directory containing the
-        // running program itself.
-        if executable_parent.as_ref() == Some(&directory) {
-            continue;
-        }
-        match fs::remove_dir_all(directory) {
-            Ok(()) => {}
-            Err(error) if error.kind() == std::io::ErrorKind::NotFound => {}
-            Err(error) => return Err(error.into()),
-        }
-    }
     Ok(())
 }

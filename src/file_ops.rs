@@ -24,6 +24,8 @@ impl FileOperationService {
             .spawn(move || {
                 #[cfg(windows)]
                 unsafe {
+                    // IFileOperation 依赖 STA COM；所有 Shell 文件操作集中在此线程，
+                    // 既支持回收站语义，也不会阻塞 egui 的 UI 线程。
                     use windows::Win32::System::Com::{
                         COINIT_APARTMENTTHREADED, COINIT_DISABLE_OLE1DDE, CoInitializeEx,
                     };
@@ -71,6 +73,7 @@ pub fn execute(request: FileOperationRequest) -> Result<FileOperationReport> {
 fn permanent_delete(sources: Vec<PathBuf>) -> Result<FileOperationReport> {
     let mut report = FileOperationReport::default();
     for source in sources {
+        // 永久删除不会走 Shell/回收站；调用方必须已完成不可恢复确认。
         let result = if source.is_dir() {
             fs::remove_dir(&source)
         } else {
@@ -103,6 +106,7 @@ fn execute_shell(request: FileOperationRequest) -> Result<FileOperationReport> {
             CoCreateInstance(&FileOperation, None, CLSCTX_INPROC_SERVER)?;
         let mut flags = FOF_NOCONFIRMATION | FOF_NOCONFIRMMKDIR | FOFX_SHOWELEVATIONPROMPT;
         if request.action == FileAction::RecycleDelete {
+            // 同时设置 UNDO 和 RECYCLE 标志，确保普通 Delete 默认进入回收站。
             flags |= FOF_ALLOWUNDO | FOFX_RECYCLEONDELETE | FOFX_ADDUNDORECORD;
         }
         if request.conflict == ConflictPolicy::AutoRename {
@@ -117,6 +121,7 @@ fn execute_shell(request: FileOperationRequest) -> Result<FileOperationReport> {
             .transpose()?;
         let mut planned = Vec::<(PathBuf, Option<PathBuf>)>::new();
         let mut report = FileOperationReport::default();
+        // reserved 防止同一批来源文件在“扁平复制到目标目录”时彼此撞名。
         let mut reserved = HashSet::<String>::new();
 
         for source in request.sources {
@@ -197,6 +202,7 @@ fn execute_shell(request: FileOperationRequest) -> Result<FileOperationReport> {
             }
             return Ok(report);
         }
+        // Shell API 可能只完成一部分，因此逐项通过源/目标的最终状态核验结果。
         report.cancelled = operation.GetAnyOperationsAborted()?.as_bool();
         for (source, target) in planned {
             let success = match request.action {

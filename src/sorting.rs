@@ -66,6 +66,7 @@ impl SortService {
         mode: SortMode,
         records: Vec<ImageRecord>,
     ) {
+        // 覆盖尚未开始的旧请求：只保留最新数据版本和排序方式，避免积压 5 万条排序任务。
         *self.pending.lock() = Some(SortRequest {
             generation,
             revision,

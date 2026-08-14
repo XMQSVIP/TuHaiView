@@ -53,6 +53,7 @@ impl EmptyFolderService {
     }
 
     pub fn scan(&mut self, root: PathBuf) -> u64 {
+        // 空目录扫描是独立的低优先级任务，不需要等待图片扫描或缩略图加载完成。
         self.cancel_token();
         self.generation = self.generation.wrapping_add(1);
         let generation = self.generation;
@@ -130,6 +131,7 @@ fn scan_worker(
             }
         };
 
+        // 任意条目（含隐藏/系统文件）都算内容；不能只按图片或可见文件判断。
         let mut has_content = false;
         for entry in entries {
             if cancel.load(Ordering::Acquire) {
@@ -174,9 +176,7 @@ fn scan_worker(
             last_progress = Instant::now();
         }
 
-        // Empty-folder discovery is an auxiliary operation. Yield regularly
-        // so image enumeration and thumbnail decoding keep making progress on
-        // slower disks while both scans are active.
+        // 空目录扫描属于辅助操作；慢盘上定期让出时间片，避免与图片扫描、解码互相抢占。
         if visited_directories.is_multiple_of(64) {
             thread::sleep(Duration::from_millis(1));
         }

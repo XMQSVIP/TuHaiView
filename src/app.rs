@@ -144,6 +144,7 @@ impl PreviewerApp {
     }
 
     fn open_root(&mut self, path: PathBuf) {
+        // 切换根目录时重置仅属于旧目录的 UI 状态；后台服务用 generation 过滤迟到事件。
         self.empty_folder_generation = self.empty_folder_service.cancel();
         self.empty_folder_scanning = false;
         self.show_empty = false;
@@ -263,6 +264,7 @@ impl PreviewerApp {
                     self.status = format!("扫描失败：{message}");
                 }
                 CatalogEvent::Changed { generation } if generation == self.generation => {
+                    // 文件监控可能在一次复制/移动中产生很多事件，合并后再做一次增量校验。
                     self.rescan_due = Some(Instant::now() + Duration::from_millis(700));
                 }
                 _ => {}
@@ -740,6 +742,7 @@ impl PreviewerApp {
             scroll_area = scroll_area.vertical_scroll_offset(offset);
         }
 
+        // show_rows 只创建可见行的控件，是数万张图片仍能顺畅滚动的关键。
         let output = scroll_area.show_rows(ui, row_height, rows, |ui, visible| {
             let visible_count = visible.len().max(1);
             for row in visible.clone() {
@@ -755,6 +758,7 @@ impl PreviewerApp {
                     }
                 }
             }
+            // 预取范围保持在视口上下各一屏；范围变化时让旧预取任务失效。
             let prefetch_start = visible.start.saturating_sub(visible_count);
             let prefetch_end = (visible.end + visible_count).min(rows);
             let prefetch_rows = (prefetch_start, prefetch_end);
@@ -817,6 +821,8 @@ impl PreviewerApp {
                                                     self.thumb_size as f32,
                                                     self.thumb_size as f32,
                                                 );
+                                                // 为所有图片保留同尺寸槽位：小图只居中绘制，
+                                                // 因而同一行的复选框和文件名始终对齐。
                                                 let (thumbnail_rect, response) = ui
                                                     .allocate_exact_size(
                                                         thumbnail_size,
@@ -930,6 +936,7 @@ impl PreviewerApp {
 
     fn open_preview(&mut self, index: usize) {
         if self.preview.is_none() {
+            // 记住网格实际滚动偏移，关闭大图预览后回到用户打开的那一行。
             self.preview_origin = Some(index);
             self.preview_return_offset = self.grid_scroll_offset;
         }
@@ -1424,9 +1431,8 @@ impl PreviewerApp {
                 if confirmed {
                     let database = self.catalog.clear_database();
                     let thumbnails = self.thumbnails.clear_disk_cache();
-                    let legacy = crate::storage::clear_legacy_storage();
-                    match (database, thumbnails, legacy) {
-                        (Ok(()), Ok(()), Ok(())) => {
+                    match (database, thumbnails) {
+                        (Ok(()), Ok(())) => {
                             self.records.clear();
                             self.record_positions.clear();
                             self.data_revision = self.data_revision.wrapping_add(1);
@@ -1440,16 +1446,13 @@ impl PreviewerApp {
                             self.status = "缓存和数据库已清理，正在重新扫描…".into();
                             self.refresh();
                         }
-                        (database, thumbnails, legacy) => {
+                        (database, thumbnails) => {
                             let mut errors = Vec::new();
                             if let Err(error) = database {
                                 errors.push(format!("数据库：{error}"));
                             }
                             if let Err(error) = thumbnails {
                                 errors.push(format!("缓存：{error}"));
-                            }
-                            if let Err(error) = legacy {
-                                errors.push(format!("旧版 C 盘数据：{error}"));
                             }
                             self.status = format!("清理失败：{}", errors.join("；"));
                         }

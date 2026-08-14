@@ -19,6 +19,7 @@ use std::{
 use walkdir::WalkDir;
 
 const SCHEMA_VERSION: i64 = 2;
+// 以事务批量写入，避免上万张图片逐条提交导致 SQLite fsync 成为瓶颈。
 const BATCH_SIZE: usize = 512;
 const SUPPORTED: &[&str] = &[
     "jpg", "jpeg", "png", "webp", "gif", "bmp", "tif", "tiff", "ico",
@@ -115,9 +116,7 @@ impl CatalogService {
             wakeup,
         };
         if let Err(error) = service.init_db() {
-            // The index is generated data. If a previous version left a
-            // partial migration, rebuild only the database and preserve the
-            // original images and thumbnail cache.
+            // 索引属于可再生数据。迁移中断时仅重建数据库，不能触碰原图和缩略图缓存。
             for suffix in ["", "-wal", "-shm"] {
                 let path = if suffix.is_empty() {
                     service.db_path.clone()
@@ -264,6 +263,7 @@ impl Drop for CatalogService {
 fn open_connection(path: &Path) -> Result<Connection> {
     let conn = Connection::open(path)?;
     conn.busy_timeout(Duration::from_secs(5))?;
+    // WAL 让扫描写入与界面读取可以并行；NORMAL 在索引这种可重建数据上换取更高吞吐。
     conn.execute_batch(
         "PRAGMA journal_mode=WAL; PRAGMA synchronous=NORMAL; PRAGMA temp_store=MEMORY;",
     )?;
@@ -370,6 +370,7 @@ fn scan_worker(
     });
     wakeup();
 
+    // 旧快照已经先送往 UI；现在才开始后台磁盘校验，打开大目录无需等待全量遍历。
     let mut seen = HashSet::<PathBuf>::with_capacity(cached.len());
     let mut pending = Vec::with_capacity(BATCH_SIZE);
     let mut stats = ScanStats::default();
@@ -417,6 +418,7 @@ fn scan_worker(
             && existing.modified_ns == modified_ns
             && existing.format == format
         {
+            // 大小、修改时间和格式均未变时复用索引，不读取原图，也不重写数据库。
             stats.reused += 1;
             continue;
         }
@@ -473,6 +475,8 @@ fn scan_worker(
         db_write_time += upsert_batch(&mut conn, root, &mut pending, generation, tx, &wakeup)?;
     }
 
+    // 只有完整扫描没有遍历错误或取消时，才可将“未见到”的旧记录认定为已删除。
+    // 否则保留旧记录，防止无权限目录或临时 I/O 错误误删索引。
     let removed_ids = if stats.traversal_errors == 0 {
         cached
             .values()
@@ -595,6 +599,7 @@ fn metadata_worker(
             }
         };
         pending.push(first);
+        // 缩略图结果会逐张补齐尺寸；最多等待 100ms 或攒够 128 条后统一持久化。
         let deadline = Instant::now() + Duration::from_millis(100);
         let mut disconnected = false;
         while pending.len() < 128 {

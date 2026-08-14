@@ -28,8 +28,11 @@ pub enum ImageKind {
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
 pub enum ThumbnailPriority {
+    // 沉浸预览必须抢占缩略图解码，保证切图时的响应感。
     Preview,
+    // 视口内卡片。
     Visible,
+    // 视口上下各一屏的预取，可随滚动丢弃。
     Prefetch,
 }
 
@@ -125,6 +128,8 @@ impl CacheState {
         {
             return;
         }
+        // 清理在后台执行，并由原子标记保证任意时刻至多一个清理任务，
+        // 写入路径只维护字节计数，不会反复遍历整个缓存目录。
         let state = self.clone();
         let _ = thread::Builder::new()
             .name("thumbnail-cache-cleaner".into())
@@ -193,6 +198,7 @@ impl ThumbnailService {
         let prefetch_epoch = Arc::new(AtomicU64::new(0));
         let cache_epoch = Arc::new(AtomicU64::new(0));
         let cache = CacheState::new().ok();
+        // 留出一个核心给 UI 和系统；限制上限避免高核机器同时解码过多大图。
         let workers = std::thread::available_parallelism()
             .map(|count| count.get().saturating_sub(1))
             .unwrap_or(2)
@@ -212,6 +218,7 @@ impl ThumbnailService {
             thread::Builder::new()
                 .name(format!("image-decoder-{index}"))
                 .spawn(move || loop {
+                    // 固定优先级：预览 > 当前可见项 > 预取。
                     let request = crossbeam_channel::select_biased! {
                         recv(preview_rx) -> request => match request { Ok(request) => request, Err(_) => break },
                         recv(visible_rx) -> request => match request { Ok(request) => request, Err(_) => break },
@@ -229,6 +236,7 @@ impl ThumbnailService {
                     let stale_prefetch = request.priority == ThumbnailPriority::Prefetch
                         && request.prefetch_epoch
                             != prefetch_epoch_state.load(Ordering::Acquire);
+                    // 目录切换或快速滚动后，旧任务不解码、不回传，避免占用 CPU 和显存。
                     if stale_generation || stale_prefetch {
                         pending.lock().remove(&pending_key);
                         continue;
@@ -302,12 +310,14 @@ impl ThumbnailService {
     }
 
     pub fn set_generation(&mut self, generation: u64) {
+        // generation 是根目录会话号；清空 pending 仅为去重集合，工作线程仍会自行检查旧请求。
         self.generation.store(generation, Ordering::Release);
         self.prefetch_epoch.fetch_add(1, Ordering::AcqRel);
         self.pending.lock().clear();
     }
 
     pub fn advance_prefetch_epoch(&self) {
+        // 仅使旧预取失效，不影响已在视口中的缩略图任务。
         self.prefetch_epoch.fetch_add(1, Ordering::AcqRel);
     }
 
@@ -326,6 +336,7 @@ impl ThumbnailService {
     }
 
     pub fn clear_disk_cache(&self) -> Result<()> {
+        // 先递增 epoch，防止正在解码的旧任务在清理完成后又把缓存写回来。
         self.cache_epoch.fetch_add(1, Ordering::AcqRel);
         if let Some(cache) = &self.cache {
             cache.clear()
@@ -488,6 +499,7 @@ fn write_cache(
     bytes.extend_from_slice(&(image.width as u32).to_le_bytes());
     bytes.extend_from_slice(&(image.height as u32).to_le_bytes());
     bytes.extend_from_slice(&image.pixels);
+    // 清缓存时持有写锁；普通写入持读锁，使“清空”和“临时文件原子替换”不会交错。
     let _io_guard = cache.io_gate.read();
     if is_stale() {
         return Ok(());
