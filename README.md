@@ -2,6 +2,8 @@
 
 Windows 10/11 x64 上运行的高性能图片浏览与整理工具，面向包含上万张图片的文件夹。
 
+![图海速览界面截图](assets/tuhai-view-screenshot.png)
+
 - 作者：大都督
 - 微信：xmqsvip
 - 版本号：20260814
