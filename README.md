@@ -30,3 +30,7 @@ cargo run --release
 ```
 
 发布文件位于 `target\release\TuHaiView.exe`。程序不需要管理员权限。
+
+## 开发文档
+
+项目结构、性能设计、缓存位置、版本更新和发布流程参见 [DEVELOPMENT.md](DEVELOPMENT.md)。
