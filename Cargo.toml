@@ -1,0 +1,48 @@
+[package]
+name = "tuhai-view"
+version = "0.1.0"
+edition = "2024"
+description = "图海速览：面向大型文件夹的高性能 Windows 图片浏览与整理工具"
+license = "MIT"
+
+[[bin]]
+name = "TuHaiView"
+path = "src/main.rs"
+
+[dependencies]
+anyhow = "1"
+crossbeam-channel = "0.5"
+eframe = { version = "0.31", default-features = false, features = ["accesskit", "default_fonts", "persistence", "wgpu"] }
+egui_extras = { version = "0.31", features = ["image"] }
+image = { version = "0.25", default-features = false, features = ["jpeg", "png", "webp", "gif", "bmp", "tiff", "ico"] }
+notify = "8"
+natord = "1"
+rusqlite = { version = "0.37", features = ["bundled"] }
+sha2 = "0.10"
+rfd = "0.15"
+walkdir = "2"
+open = "5"
+parking_lot = "0.12"
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+tracing = "0.1"
+tracing-subscriber = { version = "0.3", features = ["env-filter"] }
+windows = { version = "0.62", features = [
+    "Win32_Foundation",
+    "Win32_Storage_FileSystem",
+    "Win32_System_Com",
+    "Win32_UI_Shell",
+    "Win32_UI_Shell_Common",
+    "Win32_UI_WindowsAndMessaging"
+] }
+# eframe disables wgpu's native defaults; enable DX12 explicitly on Windows so
+# the application never falls back to the crashing Intel OpenGL driver.
+wgpu = { version = "24", default-features = false, features = ["dx12"] }
+
+[profile.release]
+lto = "thin"
+codegen-units = 1
+strip = true
+
+[build-dependencies]
+winres = "0.1"
