@@ -18,6 +18,8 @@ use std::{
     time::{Duration, Instant},
 };
 
+const WECHAT_DONATION_CODE: &[u8] = include_bytes!("../assets/wechat-donation-code.jpg");
+
 enum PendingDialog {
     Delete { permanent: bool },
     Transfer(TransferDialog),
@@ -70,6 +72,7 @@ pub struct PreviewerApp {
     rotation_quarters: u8,
     fit_preview: bool,
     show_about: bool,
+    donation_texture: Option<TextureHandle>,
     show_empty: bool,
     empty_folders: Vec<EmptyFolderCandidate>,
     empty_folder_generation: u64,
@@ -124,6 +127,7 @@ impl PreviewerApp {
             rotation_quarters: 0,
             fit_preview: true,
             show_about: false,
+            donation_texture: None,
             show_empty: false,
             empty_folders: Vec::new(),
             empty_folder_generation: 0,
@@ -141,6 +145,21 @@ impl PreviewerApp {
         if let Some(path) = rfd::FileDialog::new().pick_folder() {
             self.open_root(path);
         }
+    }
+
+    fn donation_texture(&mut self, ctx: &egui::Context) -> Option<TextureHandle> {
+        if self.donation_texture.is_none() {
+            let decoded = image::load_from_memory(WECHAT_DONATION_CODE).ok()?;
+            let rgba = decoded.to_rgba8();
+            let size = [rgba.width() as usize, rgba.height() as usize];
+            let color_image = ColorImage::from_rgba_unmultiplied(size, rgba.as_raw());
+            self.donation_texture = Some(ctx.load_texture(
+                "wechat-donation-code",
+                color_image,
+                egui::TextureOptions::LINEAR,
+            ));
+        }
+        self.donation_texture.clone()
     }
 
     fn open_root(&mut self, path: PathBuf) {
@@ -1112,6 +1131,7 @@ impl PreviewerApp {
         if self.show_about {
             let mut open = true;
             let mut close_clicked = false;
+            let donation_texture = self.donation_texture(ctx);
             egui::Window::new("关于图海速览")
                 .open(&mut open)
                 .collapsible(false)
@@ -1133,6 +1153,18 @@ impl PreviewerApp {
                             ui.label(crate::APP_VERSION);
                             ui.end_row();
                         });
+                    ui.add_space(10.0);
+                    ui.separator();
+                    ui.add_space(6.0);
+                    ui.vertical_centered(|ui| {
+                        ui.strong("微信赞赏码");
+                        ui.add_space(6.0);
+                        if let Some(texture) = &donation_texture {
+                            ui.add(egui::Image::new((texture.id(), egui::vec2(360.0, 360.0))));
+                        } else {
+                            ui.label("赞赏码加载失败");
+                        }
+                    });
                     ui.add_space(10.0);
                     ui.horizontal(|ui| {
                         if ui.button("关闭").clicked() {
@@ -1413,7 +1445,8 @@ impl PreviewerApp {
                     .resizable(false)
                     .show(ctx, |ui| {
                         ui.colored_label(
-                            egui::Color32::YELLOW,
+                            // 亮黄色在浅色窗口背景上对比度太低，使用深橙红色确保警告清晰可读。
+                            egui::Color32::from_rgb(190, 70, 20),
                             "将删除缩略图缓存和图片索引数据库。",
                         );
                         ui.label("不会删除任何原始图片或文件夹。下次扫描会重新建立索引和缩略图。");
