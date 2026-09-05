@@ -1,0 +1,38 @@
+Microsoft (R) COFF/PE Dumper Version 14.42.34433.0
+Copyright (C) Microsoft Corporation.  All rights reserved.
+
+
+Dump of file target\release\TuHaiView.exe
+
+File Type: EXECUTABLE IMAGE
+
+  Image has the following dependencies:
+
+    kernel32.dll
+    api-ms-win-core-synch-l1-2-0.dll
+    psapi.dll
+    ole32.dll
+    shell32.dll
+    oleaut32.dll
+    user32.dll
+    advapi32.dll
+    combase.dll
+    ntdll.dll
+    shlwapi.dll
+    bcryptprimitives.dll
+    uiautomationcore.dll
+    gdi32.dll
+    imm32.dll
+    opengl32.dll
+    d3dcompiler_47.dll
+    dwmapi.dll
+    uxtheme.dll
+
+  Summary
+
+        C000 .data
+       5A000 .pdata
+      411000 .rdata
+        A000 .reloc
+       5C000 .rsrc
+      B95000 .text
