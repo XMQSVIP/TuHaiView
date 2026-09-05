@@ -57,4 +57,8 @@
 - 微信公众号：大王没有玉玺
 - 当前版本：20260905
 
+| 微信公众号：大王没有玉玺 | 微信赞赏码 |
+|:---:|:---:|
+| <img src="assets/wechat-public-account.jpg" alt="微信公众号：大王没有玉玺" width="240"> | <img src="assets/wechat-donation-code.jpg" alt="微信赞赏码" width="240"> |
+
 欢迎反馈使用场景和改进建议。希望图海速览能成为你整理图片时，那个打开就能立刻派上用场的小工具。

@@ -7,6 +7,12 @@ Windows 10/11 x64 上运行的高性能图片浏览与整理工具，面向包�
 - 微信公众号：大王没有玉玺
 - 版本号：20260905
 
+## 关注与赞赏
+
+| 微信公众号：大王没有玉玺 | 微信赞赏码 |
+|:---:|:---:|
+| <img src="assets/wechat-public-account.jpg" alt="微信公众号：大王没有玉玺" width="240"> | <img src="assets/wechat-donation-code.jpg" alt="微信赞赏码" width="240"> |
+
 ## 当前功能
 
 - 递归扫描 JPG/JPEG、PNG、WebP、GIF、BMP、TIFF、ICO；跳过符号链接。
