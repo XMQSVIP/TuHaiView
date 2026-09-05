@@ -165,3 +165,9 @@ git diff --check
 - `examples/dx12_memory_probe.rs` 是单独的最小渲染复现程序，不进入产品 EXE。它只绘制固定英文控件、记录进程内存和 wgpu 分配，不读图库。构建：`cargo build --release --locked --example dx12_memory_probe`；设置 `TUHAI_PROBE_LOG` 指定日志，`TUHAI_PROBE_SECONDS=180` 指定时间。可用 `TUHAI_PROBE_EXTRA_POLL=1` 对照应用的额外 poll、`TUHAI_PROBE_REPAINT_MS=16` 对照节流、`TUHAI_PROBE_FIFO=1` 对照 FIFO。不得与正式 UI 性能运行同时构建或运行。
 - 最小渲染探针通过 `scripts/run_renderer_probe.ps1` 串行运行；默认增加 30 秒结束空闲期。`-NoWidgets` 只提交空白画面，`-Warp` 仅在此诊断程序使用软件 DX12 适配器。构建加 `--features wgpu/counters` 才会启用原生对象计数；未启用时的零值不能解释为没有原生对象。脚本与汇总均标为诊断，不作为产品验收。
 - 逐轮元数据保存期望记录数、是否要求完整扫描与请求时长；即时检查和五轮汇总共用相同约束。内存验收要求至少 1800 秒、稳态每分钟至少 50 个内存样本；无效轮次不进入跨轮性能统计。
+- egui-wgpu 0.31.1 使用本地固定补丁复用原生网格上传缓冲，来源、许可证及单独 GPU 回归命令见 `vendor/egui-wgpu/TUHAI-PATCH.md`。修改后同时运行产品分片图片上传回归和该网格逐像素回归。StagingBelt 块尺寸不是原生缓冲池总预算，不能将图片纹理租约当作进程上限。
+- 正式图形采集脚本拒绝与已运行的产品或最小渲染探针重叠；长内存场景也要求出现完整 50,000 条记录，防止只有空目录或部分索引的循环获得通过。
+- 人工输入诊断中，同步原生文件夹对话框的等待时间可能落在 `input_frame_processing_ms` 和 `ui_update_ms` 的墙钟区间内。保留原始数据并单独标注模态区间；不能把它解释为 CPU 处理时间，也不能混入无干预的基准矩阵。实际输入到显示缺样仍标为未验证。
+- 新增 `native_dialog_open`／`native_dialog_wait_ms` 标记该模态区间，`input_frame_wall_ms` 保留包含等待的原始时间，随后构建的 `input_frame_processing_ms` 扣除同一帧内等待。旧日志不会自动获得修正值。自动基准出现原生模态区间直接判无效；这些仍是墙钟区间，不是线程 CPU 采样。
+- `display_paths.py` 只读查询当前活动显示路径和目标信号频率；`vblank_probe.py` 在独立进程中测量 DXGI 垂直空白等待，不创建渲染窗口，不改配置。后者必须在正式图形测试之外运行，也不等价于物理输入到光子的仪器测量。
+- `run_permission_regression.ps1` 只在新建 UUID 测试目录操作合成 JPEG 副本，短暂添加仅该目录的读取拒绝规则，并在 `finally` 恢复原 DACL；OS 未实际拒绝访问时不得判通过。先索引、拒绝访问仍保留索引、恢复后更新版本分别由 `verify_permission_stage.py` 验证。它不使用原图片目录进行文件或权限修改。

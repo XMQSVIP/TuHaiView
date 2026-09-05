@@ -1,0 +1,38 @@
+{
+  "active_paths": [
+    {
+      "source_name": "\\\\.\\DISPLAY1",
+      "source_name_error": 0,
+      "target_name": "",
+      "target_name_error": 0,
+      "target_name_flags": 2,
+      "target_available": true,
+      "output_technology": 5,
+      "target_status_flags": 1,
+      "path_flags": 1,
+      "refresh": {
+        "n": 311827000,
+        "d": 5197120,
+        "hz": 59.99996151714796
+      },
+      "signal": {
+        "pixel_rate": 311827000,
+        "v_sync": {
+          "n": 311827000,
+          "d": 5197120,
+          "hz": 59.99996151714796
+        },
+        "active": [
+          2560,
+          1440
+        ],
+        "total": [
+          3488,
+          1490
+        ]
+      }
+    }
+  ],
+  "read_only": true,
+  "api": "QueryDisplayConfig(QDC_ONLY_ACTIVE_PATHS)"
+}

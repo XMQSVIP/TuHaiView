@@ -49,7 +49,7 @@ if ($Group -eq 'short') {
         $drive=$case.root.Substring(0,1)
         $alternate="$drive`:\tuhai-fixtures-20260905\special"
         $output=Join-Path $OutputDirectory ($case.name+'-'+$Group)
-        & $runner -Executable $case.exe -Root $case.root -Manifest $case.manifest -AlternateRoot $alternate -Scenario soak -Seconds $seconds -Runs $Runs -OutputDirectory $output
+        & $runner -Executable $case.exe -Root $case.root -Manifest $case.manifest -AlternateRoot $alternate -ExpectedRecords 50000 -Scenario soak -Seconds $seconds -Runs $Runs -OutputDirectory $output
         python (Join-Path $PSScriptRoot 'summarize_runs.py') $output
     }
 }

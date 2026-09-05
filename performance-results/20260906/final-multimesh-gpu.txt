@@ -1,0 +1,9 @@
+   Compiling egui-wgpu v0.31.1 (G:\codex_chat\临时测试\rust-image-previewer\vendor\egui-wgpu)
+    Finished `release` profile [optimized] target(s) in 24.47s
+     Running unittests src\lib.rs (G:\tuhai-perf-build\release\deps\egui_wgpu-60c3a537bf676ed6.exe)
+
+running 1 test
+test renderer::tuhai_tests::native_mesh_reuse_matches_queue_upload_after_abandoned_frames ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 2 filtered out; finished in 0.34s
+

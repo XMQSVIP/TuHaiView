@@ -1,0 +1,12 @@
+{
+  "started": "2026-09-06T05:39:05.7637282+08:00",
+  "candidate_tests": "G:\\tuhai-perf-build\\release\\deps\\TuHaiView-71cbb3450e76f2f5.exe",
+  "baseline_tests": "F:\\tuhai-validation\\baseline-tests.exe",
+  "candidate_test_sha256": "29B82C8539D6AD01B7B143F0456701D279D208F3A4FF687235EB1065A759B5EB",
+  "baseline_test_sha256": "70E709145419DC40E5B8AB16FC5A854E5263086B7B96DBACD940CA0D6F7457E8",
+  "product_executable": "F:\\tuhai-validation\\mesh-reuse-v3\\TuHaiView.exe",
+  "product_source_revision": "79e3515",
+  "product_sha256": "FAE039A3724BCBFFD752CD630B170AB77D303A43F2C6A9A30CD5722A4B0F00D6",
+  "system_file_cache": "unknown",
+  "completed": true
+}

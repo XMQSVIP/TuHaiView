@@ -1095,10 +1095,35 @@ mod tuhai_tests {
                 ),
                 epaint::Color32::from_rgba_premultiplied(32 + (frame * 3) as u8, 16, 8, 128),
             );
-            let jobs = [epaint::ClippedPrimitive {
+            let mut jobs = vec![epaint::ClippedPrimitive {
                 clip_rect: rect,
                 primitive: Primitive::Mesh(mesh),
             }];
+            // Alternate small/large multi-mesh frames to exercise staging chunk
+            // growth, resized destination buffers, slice offsets and reuse.
+            if frame % 3 == 1 {
+                for batch in 0..3 {
+                    let mut mesh = epaint::Mesh::with_texture(epaint::TextureId::Managed(0));
+                    for tile in 0..4096 {
+                        let origin = epaint::emath::pos2((tile % 64) as f32, (tile / 64) as f32);
+                        mesh.add_rect_with_uv(
+                            epaint::emath::Rect::from_min_size(
+                                origin,
+                                epaint::emath::vec2(1.0, 1.0),
+                            ),
+                            epaint::emath::Rect::from_min_max(
+                                epaint::emath::Pos2::ZERO,
+                                epaint::emath::pos2(1.0, 1.0),
+                            ),
+                            epaint::Color32::from_rgba_premultiplied(8 + batch * 8, 4, 2, 32),
+                        );
+                    }
+                    jobs.push(epaint::ClippedPrimitive {
+                        clip_rect: rect,
+                        primitive: Primitive::Mesh(mesh),
+                    });
+                }
+            }
             if frame % 4 == 0 {
                 let mut abandoned = device.create_command_encoder(&Default::default());
                 pooled.begin_native_mesh_uploads();

@@ -17,6 +17,9 @@ param(
     [switch]$SkipPresentMon
 )
 $ErrorActionPreference='Stop'
+if (Get-Process -Name TuHaiView,dx12_memory_probe -ErrorAction SilentlyContinue) {
+    throw 'Wait for the running application or renderer probe before collecting a graphics benchmark'
+}
 # A visible window does not stop Windows' display idle timer. Reset it only while
 # this explicit benchmark runs; no persistent power-plan setting is changed.
 if (-not ('TuHaiBenchmarkPower' -as [type])) {

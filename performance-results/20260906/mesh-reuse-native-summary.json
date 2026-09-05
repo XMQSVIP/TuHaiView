@@ -1,0 +1,255 @@
+{
+  "provenance": {
+    "started": "2026-09-06T05:39:05.7637282+08:00",
+    "candidate_tests": "G:\\tuhai-perf-build\\release\\deps\\TuHaiView-71cbb3450e76f2f5.exe",
+    "baseline_tests": "F:\\tuhai-validation\\baseline-tests.exe",
+    "candidate_test_sha256": "29B82C8539D6AD01B7B143F0456701D279D208F3A4FF687235EB1065A759B5EB",
+    "baseline_test_sha256": "70E709145419DC40E5B8AB16FC5A854E5263086B7B96DBACD940CA0D6F7457E8",
+    "product_executable": "F:\\tuhai-validation\\mesh-reuse-v3\\TuHaiView.exe",
+    "product_source_revision": "79e3515",
+    "product_sha256": "FAE039A3724BCBFFD752CD630B170AB77D303A43F2C6A9A30CD5722A4B0F00D6",
+    "system_file_cache": "unknown",
+    "completed": true
+  },
+  "db_baseline": {
+    "runs_ms": [
+      3470.0,
+      4670.0,
+      3390.0,
+      3140.0,
+      3900.0
+    ],
+    "summary": {
+      "n": 5,
+      "median": 3470.0,
+      "p95": 4670.0,
+      "p99": 4670.0,
+      "maximum": 4670.0
+    }
+  },
+  "db_candidate": {
+    "runs_ms": [
+      3110.0,
+      3120.0,
+      3050.0,
+      3300.0,
+      3200.0
+    ],
+    "summary": {
+      "n": 5,
+      "median": 3120.0,
+      "p95": 3300.0,
+      "p99": 3300.0,
+      "maximum": 3300.0
+    }
+  },
+  "db_regression_fraction": -0.10086455331412103,
+  "db_passed": true,
+  "jpeg": {
+    "baseline-6000x4000.jpg": {
+      "False": {
+        "runs_ms": [
+          285.2713,
+          279.9518,
+          266.4191,
+          265.4086,
+          264.82509999999996
+        ],
+        "summary": {
+          "n": 5,
+          "median": 266.4191,
+          "p95": 285.2713,
+          "p99": 285.2713,
+          "maximum": 285.2713
+        }
+      },
+      "True": {
+        "runs_ms": [
+          61.185900000000004,
+          60.243199999999995,
+          61.481,
+          60.6297,
+          59.6773
+        ],
+        "summary": {
+          "n": 5,
+          "median": 60.6297,
+          "p95": 61.481,
+          "p99": 61.481,
+          "maximum": 61.481
+        }
+      },
+      "reduction": 0.7724273522431387,
+      "passed": true
+    },
+    "baseline-8000x6000.jpg": {
+      "False": {
+        "runs_ms": [
+          544.7330000000001,
+          566.2312000000001,
+          546.0834,
+          542.8819,
+          583.2157
+        ],
+        "summary": {
+          "n": 5,
+          "median": 546.0834,
+          "p95": 583.2157,
+          "p99": 583.2157,
+          "maximum": 583.2157
+        }
+      },
+      "True": {
+        "runs_ms": [
+          118.8086,
+          126.3949,
+          116.1577,
+          114.4263,
+          114.4999
+        ],
+        "summary": {
+          "n": 5,
+          "median": 116.1577,
+          "p95": 126.3949,
+          "p99": 126.3949,
+          "maximum": 126.3949
+        }
+      },
+      "reduction": 0.7872894506590019,
+      "passed": true
+    }
+  },
+  "native_peak_0": {
+    "runs": [
+      {
+        "fast": false,
+        "final_private": 2490368,
+        "initial_peak_working_set": 7106560,
+        "initial_private": 1785856,
+        "peak_working_set": 176201728
+      },
+      {
+        "fast": false,
+        "final_private": 2494464,
+        "initial_peak_working_set": 7106560,
+        "initial_private": 1781760,
+        "peak_working_set": 176197632
+      },
+      {
+        "fast": false,
+        "final_private": 2494464,
+        "initial_peak_working_set": 7110656,
+        "initial_private": 1789952,
+        "peak_working_set": 176197632
+      },
+      {
+        "fast": false,
+        "final_private": 2502656,
+        "initial_peak_working_set": 7110656,
+        "initial_private": 1785856,
+        "peak_working_set": 176205824
+      },
+      {
+        "fast": false,
+        "final_private": 2502656,
+        "initial_peak_working_set": 7122944,
+        "initial_private": 1802240,
+        "peak_working_set": 176214016
+      }
+    ],
+    "working_set_bytes": {
+      "n": 5,
+      "median": 176201728,
+      "p95": 176214016,
+      "p99": 176214016,
+      "maximum": 176214016
+    }
+  },
+  "native_peak_1": {
+    "runs": [
+      {
+        "fast": true,
+        "final_private": 1998848,
+        "initial_peak_working_set": 7094272,
+        "initial_private": 1769472,
+        "peak_working_set": 27246592
+      },
+      {
+        "fast": true,
+        "final_private": 2007040,
+        "initial_peak_working_set": 7102464,
+        "initial_private": 1777664,
+        "peak_working_set": 27254784
+      },
+      {
+        "fast": true,
+        "final_private": 2019328,
+        "initial_peak_working_set": 7114752,
+        "initial_private": 1789952,
+        "peak_working_set": 27267072
+      },
+      {
+        "fast": true,
+        "final_private": 2015232,
+        "initial_peak_working_set": 7110656,
+        "initial_private": 1785856,
+        "peak_working_set": 27262976
+      },
+      {
+        "fast": true,
+        "final_private": 2023424,
+        "initial_peak_working_set": 7114752,
+        "initial_private": 1794048,
+        "peak_working_set": 27267072
+      }
+    ],
+    "working_set_bytes": {
+      "n": 5,
+      "median": 27262976,
+      "p95": 27267072,
+      "p99": 27267072,
+      "maximum": 27267072
+    }
+  },
+  "real_cache": {
+    "container_bytes": 15328052,
+    "count": 1000,
+    "reduction": 0.9363893910878519,
+    "rgba_bytes": 240966912,
+    "passed": true
+  },
+  "watcher": {
+    "runs": [
+      {
+        "ms": 744.629,
+        "visited": 1
+      },
+      {
+        "ms": 752.68,
+        "visited": 1
+      },
+      {
+        "ms": 751.46,
+        "visited": 1
+      },
+      {
+        "ms": 748.998,
+        "visited": 1
+      },
+      {
+        "ms": 739.535,
+        "visited": 1
+      }
+    ],
+    "summary": {
+      "n": 5,
+      "median": 748.998,
+      "p95": 752.68,
+      "p99": 752.68,
+      "maximum": 752.68
+    },
+    "passed": true,
+    "boundary": "native event to catalog publication, not display latency"
+  },
+  "gpu_readback_passed": true
+}

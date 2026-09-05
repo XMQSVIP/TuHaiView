@@ -37,11 +37,15 @@ def analyze(log, presentmon=None, refresh_hz=60):
                 reasons.append('invalid_flush_certificate')
         except (OSError,ValueError): reasons.append('missing_flush_certificate')
     if max(d['window_minimized'],default=0)>0: reasons.append('window_was_minimized')
+    if d['native_dialog_open'] and header and header.get('scenario_name') in ('open','scroll','soak','trajectory'):
+        reasons.append('native_modal_interrupted_automated_run')
     if header and header.get('schema',0)>=3:
         for key in ['window_minimized','window_width','window_height','pixels_per_point']:
             if not d[key]: reasons.append('missing_'+key)
     out=dict(log=str(log),header=header,metrics={k:summary(v) for k,v in d.items() if v},frame_intervals_by_phase={str(k):summary(v) for k,v in phases.items()},invalid_reasons=reasons)
     out['metrics_by_phase']={str(p):{k:summary(v) for k,v in metrics.items()} for p,metrics in per_phase.items()}
+    out['native_dialog'] = dict(count=len(d['native_dialog_open']), wait_ms=summary(d['native_dialog_wait_ms']),
+        interpretation='User/modal wait is preserved separately; input processing excludes this wait only when input_frame_wall_ms is present.')
     budgets={'decode_budget_bytes':512,'ready_budget_bytes':96,'cache_queue_bytes':32,'gpu_allocated_bytes':256}
     out['managed_budgets']={k:dict(limit_bytes=mib*1024**2,peak_bytes=max(d[k],default=None),passed=bool(d[k]) and max(d[k])<=mib*1024**2) for k,mib in budgets.items()}
     if memory:

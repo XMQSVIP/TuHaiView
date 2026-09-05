@@ -254,7 +254,9 @@ impl PreviewerApp {
     }
 
     fn choose_root(&mut self) {
-        if let Some(path) = rfd::FileDialog::new().pick_folder() {
+        if let Some(path) =
+            crate::performance::native_dialog(|| rfd::FileDialog::new().pick_folder())
+        {
             self.open_root(path);
         }
     }
@@ -1285,7 +1287,9 @@ impl PreviewerApp {
     }
 
     fn prepare_transfer(&mut self, action: FileAction) {
-        let Some(destination) = rfd::FileDialog::new().pick_folder() else {
+        let Some(destination) =
+            crate::performance::native_dialog(|| rfd::FileDialog::new().pick_folder())
+        else {
             return;
         };
         let selected = self.selected_records();
@@ -2839,6 +2843,7 @@ impl eframe::App for PreviewerApp {
         self.wakeup_pending
             .store(false, std::sync::atomic::Ordering::Release);
         let frame_start = Instant::now();
+        let dialog_time_before = crate::performance::native_dialog_time();
         let actual_input = ctx.input(|i| {
             i.events.iter().any(|e| {
                 matches!(
@@ -3002,7 +3007,14 @@ impl eframe::App for PreviewerApp {
         }
         if actual_input {
             // egui events do not carry OS input timestamps: this excludes event-queue wait.
-            crate::performance::elapsed("input_frame_processing_ms", frame_start);
+            let wall = frame_start.elapsed();
+            let dialog_wait =
+                crate::performance::native_dialog_time().saturating_sub(dialog_time_before);
+            crate::performance::sample("input_frame_wall_ms", wall.as_secs_f64() * 1000.0);
+            crate::performance::sample(
+                "input_frame_processing_ms",
+                wall.saturating_sub(dialog_wait).as_secs_f64() * 1000.0,
+            );
         }
         if let Some(start) = self.input_started.take() {
             crate::performance::elapsed("action_ui_feedback_ms", start);

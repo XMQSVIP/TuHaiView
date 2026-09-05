@@ -9,6 +9,41 @@ from summarize_runs import collect
 from validate_ui_run import validate, validate_result
 
 class ReportTests(unittest.TestCase):
+    def test_native_modal_disqualifies_an_automated_performance_run(self):
+        with tempfile.TemporaryDirectory() as root:
+            path=Path(root)/'samples.jsonl'
+            samples=[dict(kind='run_header',schema=2,scenario_name='open')]
+            for name,value in [('native_dialog_open',1),('native_dialog_wait_ms',126000),
+                ('input_frame_wall_ms',126005),('input_frame_processing_ms',5),
+                ('soak_completed_seconds',180),('log_flush',1),('log_dropped',0)]:
+                samples.append(dict(name=name,value=value,time_ms=0))
+            path.write_text(''.join(json.dumps(s)+'\n' for s in samples))
+            report=analyze(path)
+            self.assertIn('native_modal_interrupted_automated_run',report['invalid_reasons'])
+            self.assertEqual(report['native_dialog']['count'],1)
+            self.assertEqual(report['native_dialog']['wait_ms']['maximum'],126000)
+            self.assertEqual(report['metrics']['input_frame_processing_ms']['maximum'],5)
+
+    def test_displayed_time_uses_previous_frame_duration_and_excludes_boundaries(self):
+        with tempfile.TemporaryDirectory() as root:
+            path=Path(root)/'samples.jsonl'; capture=Path(root)/'display.csv'
+            samples=[dict(kind='run_header',scenario_name='open')]
+            for qpc,phase in [(100,0),(200,1),(400,7)]:
+                samples.append(dict(name='frame_interval_ms',value=1,qpc=qpc,scenario=phase,time_ms=0))
+            for name in ['soak_completed_seconds','log_flush','log_dropped']:
+                samples.append(dict(name=name,value=0,time_ms=2))
+            path.write_text(''.join(json.dumps(s)+'\n' for s in samples))
+            # DisplayedTime belongs to its row's frame, while legacy
+            # MsBetweenDisplayChange belongs to the preceding displayed frame.
+            # Keep only complete intervals inside phase 1; discard phase edges
+            # and skip a frame which never reached the display.
+            capture.write_text('CPUStartQPC,DisplayedTime\n110,900\n210,16\n220,NA\n230,20\n410,800\n')
+            result=analyze(path,capture)
+            self.assertEqual(result['presentmon']['displayed_by_phase']['1']['n'],1)
+            self.assertEqual(result['presentmon']['displayed_by_phase']['1']['maximum'],16)
+            self.assertEqual(result['presentmon']['excluded_phase_transitions'],2)
+            self.assertEqual(result['presentmon']['not_displayed'],1)
+
     def test_one_run_copied_five_times_is_not_five_repeats(self):
         with tempfile.TemporaryDirectory() as root:
             root=Path(root);log=root/'log.jsonl';capture=root/'display.csv'

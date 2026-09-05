@@ -156,6 +156,27 @@ pub fn enabled() -> bool {
     *ENABLED.get_or_init(|| std::env::var("TUHAI_PERF").ok().as_deref() == Some("1"))
 }
 thread_local! { static GAUGES: RefCell<HashMap<&'static str, (Instant, f64)>> = RefCell::new(HashMap::new()); }
+thread_local! { static NATIVE_DIALOG_TIME: Cell<std::time::Duration> = const { Cell::new(std::time::Duration::ZERO) }; }
+
+/// Keep time spent waiting for native modal input distinct from UI processing.
+/// Disabled in normal use; the dialog and its result are otherwise untouched.
+pub fn native_dialog<T>(open: impl FnOnce() -> T) -> T {
+    if !enabled() {
+        return open();
+    }
+    let started = Instant::now();
+    sample("native_dialog_open", 1.0);
+    let result = open();
+    let waited = started.elapsed();
+    NATIVE_DIALOG_TIME.set(NATIVE_DIALOG_TIME.get().saturating_add(waited));
+    sample("native_dialog_wait_ms", waited.as_secs_f64() * 1000.0);
+    result
+}
+
+pub fn native_dialog_time() -> std::time::Duration {
+    NATIVE_DIALOG_TIME.get()
+}
+
 /// Resource/config gauges need neither a record nor a scheduler lock every frame.
 pub fn gauge(name: &'static str, value: f64) {
     if !enabled() {

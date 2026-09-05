@@ -20,8 +20,9 @@ outside the application's image-texture budget; measure process private bytes
 and allocator/object counts as well. Never report the image budget as a limit
 on these buffers or driver memory.
 
-The manual regression compares 32 GPU readbacks against the original path and
-abandons an unsubmitted encoder every fourth frame:
+The manual regression compares 32 GPU readbacks against the original path,
+alternates small and multi-mesh frames exceeding one staging chunk, and abandons
+an unsubmitted encoder every fourth frame:
 
 ```powershell
 cargo test --release --locked -p egui-wgpu --features wgpu/dx12 native_mesh_reuse_matches_queue_upload_after_abandoned_frames -- --ignored --nocapture --test-threads=1
