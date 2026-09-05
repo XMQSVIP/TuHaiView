@@ -5,6 +5,11 @@ edition = "2024"
 description = "图海速览：面向大型文件夹的高性能 Windows 图片浏览与整理工具"
 license = "MIT"
 
+[workspace]
+members = ["vendor/egui-wgpu"]
+default-members = ["."]
+resolver = "3"
+
 [[bin]]
 name = "TuHaiView"
 path = "src/main.rs"
@@ -53,6 +58,10 @@ mimalloc = { version = "=0.1.52", optional = true }
 lto = "thin"
 codegen-units = 1
 strip = true
+
+[patch.crates-io]
+# Pinned native mesh-upload reuse; source/provenance and exact changes are in vendor.
+egui-wgpu = { path = "vendor/egui-wgpu" }
 
 [build-dependencies]
 winres = "0.1"

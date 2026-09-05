@@ -1,0 +1,61 @@
+   Compiling egui-wgpu v0.31.1 (G:\codex_chat\临时测试\rust-image-previewer\vendor\egui-wgpu)
+   Compiling eframe v0.31.1
+   Compiling tuhai-view v0.1.0 (G:\codex_chat\临时测试\rust-image-previewer)
+    Finished `release` profile [optimized] target(s) in 1m 24s
+     Running unittests src\main.rs (G:\tuhai-perf-build\release\deps\TuHaiView-71cbb3450e76f2f5.exe)
+
+running 45 tests
+test app::tests::changing_keeper_changes_representative_without_changing_count ... ok
+test app::tests::deduplicated_display_keeps_unique_images_and_one_per_group ... ok
+test app::tests::display_index_handles_fifty_thousand_records ... ok
+test app::tests::enabling_filter_drops_hidden_selection_only ... ok
+test app::tests::grid_layout_distributes_the_full_row_width ... ok
+test app::tests::grid_layout_keeps_one_column_in_a_narrow_view ... ok
+test budget::tests::reserve_and_cancel_do_not_leak_bytes ... ok
+test catalog::runtime::tests::actor_reuses_snapshot_and_applies_only_changed_paths ... ok
+test catalog::runtime::tests::change_set_coalesces_subtrees_and_detects_overflow ... ok
+test catalog::runtime::tests::native_watcher_delivers_small_changes_without_manual_queueing ... ok
+test catalog::tests::batch_upsert_50k_completes_within_budget ... ignored, manual release-mode performance benchmark
+test catalog::tests::cancelled_scan_stops_without_finished_event ... ok
+test catalog::tests::natural_sort_places_2_before_10 ... ok
+test catalog::tests::old_schema_migrates_and_allows_same_path_under_two_roots ... ok
+test catalog::tests::supported_extensions_are_case_insensitive ... ok
+test catalog::tests::unchanged_incremental_scan_reuses_records_and_removes_missing_files ... ok
+test catalog::tests::v2_schema_migrates_and_preserves_records ... ok
+test decoding::tests::every_exif_orientation_has_correct_dimensions ... ok
+test decoding::tests::malformed_jpeg_header_is_bounded ... ok
+test decoding::tests::thumbnail_does_not_upscale_and_preserves_alpha ... ok
+test duplicates::tests::cancelled_scan_never_finishes ... ok
+test duplicates::tests::default_keeper_prefers_shallow_clean_name ... ok
+test duplicates::tests::delete_validation_rejects_changed_file ... ok
+test duplicates::tests::deletion_modes_can_keep_one_or_target_every_member ... ok
+test duplicates::tests::identical_content_groups_and_unique_sizes_are_not_read ... ok
+test duplicates::tests::progress_event_types_are_sendable ... ok
+test empty_folders::tests::finds_only_directly_empty_subdirectories ... ok
+test file_ops::tests::duplicate_delete_validates_before_mutating_and_reports_paths ... ok
+test file_ops::tests::same_windows_path_is_case_insensitive ... ok
+test gpu_images::tests::gpu_sliced_upload_readback_and_cancel ... ignored, requires a DX12 adapter
+test icon_pixels::tests::icon_has_expected_size_and_transparent_corners ... ok
+test perf_tests::jpeg_scaled_comparison_and_special_formats ... ignored, requires TUHAI_FIXTURES, run in Release
+test perf_tests::real_jpeg_cache_compression ... ignored, requires TUHAI_REAL_FIXTURES; local samples only
+test perf_tests::single_jpeg_process_peak ... ignored, single-task native process peak; set TUHAI_PEAK_FAST and TUHAI_FIXTURES
+test retirement::tests::final_drop_occurs_on_reclaimer_thread ... ok
+test sorting::tests::sorts_indices_preserving_records_and_filtering_hidden_ids ... ok
+test thumbnail_cache::tests::cleanup_finishes_to_eighty_percent_across_batches ... ok
+test thumbnail_cache::tests::compressed_cache_roundtrip_alpha_and_source_dimensions ... ok
+test thumbnail_cache::tests::jpeg_cache_is_small_and_v2_is_readable ... ok
+test thumbnail_cache::tests::owner_migrates_legacy_and_clear_rejects_late_old_writes ... ok
+test thumbnail_cache::tests::stale_writes_and_storage_errors_do_not_publish_entries ... ok
+test thumbnails::tests::batch_deduplicates_and_shares_records ... ok
+test thumbnails::tests::finishing_old_preview_keeps_disk_priority_for_the_new_request ... ok
+test thumbnails::tests::saturated_result_channel_can_be_cancelled_and_releases_lease ... ok
+test thumbnails::tests::viewport_and_preview_cancel_old_work ... ok
+
+test result: ok. 40 passed; 0 failed; 5 ignored; 0 measured; 0 filtered out; finished in 6.86s
+
+     Running unittests examples\dx12_memory_probe.rs (G:\tuhai-perf-build\release\examples\dx12_memory_probe-71e9cca98ef88a3e.exe)
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+

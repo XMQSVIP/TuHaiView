@@ -1,0 +1,160 @@
+[
+  {
+    "name": "widgets",
+    "run_metadata": {
+      "diagnostic_only": true,
+      "executable": "G:\\tuhai-perf-build\\release\\examples\\dx12_memory_probe.exe",
+      "sha256": "AFDB146D0FB8ECD03888191CE3F7DB72F493F889CC6B5F916891EC997AB53FC0",
+      "started": "2026-09-06T04:58:00.6574685+08:00",
+      "seconds": 180,
+      "idle_seconds": 30,
+      "repaint_ms": 0,
+      "extra_poll": false,
+      "fifo": false,
+      "no_widgets": false,
+      "warp": false,
+      "exit_code": 0,
+      "abort_reason": null,
+      "log": "F:\\tuhai-validation\\renderer-probe\\widgets\\20260906-045800-probe.jsonl",
+      "dwm": {
+        "hresult": "0x0",
+        "size": 292,
+        "refresh_n": 60,
+        "refresh_d": 1,
+        "compose_n": 60,
+        "compose_d": 1,
+        "refresh_period_ms": 16.6666,
+        "remote_session": false
+      }
+    },
+    "run_metadata_sha256": "FBD301B4D0A7BAF31F829013C2925E0009B3E89F7D0B1C4515230B71F52549DC",
+    "log_sha256": "DFE43EB5C693ED067DF811610E0A89FB3E55B627A351F72D0BB10F53B7CBA900"
+  },
+  {
+    "name": "blank",
+    "run_metadata": {
+      "diagnostic_only": true,
+      "executable": "G:\\tuhai-perf-build\\release\\examples\\dx12_memory_probe.exe",
+      "sha256": "AFDB146D0FB8ECD03888191CE3F7DB72F493F889CC6B5F916891EC997AB53FC0",
+      "started": "2026-09-06T05:01:41.9672565+08:00",
+      "seconds": 180,
+      "idle_seconds": 30,
+      "repaint_ms": 0,
+      "extra_poll": false,
+      "fifo": false,
+      "no_widgets": true,
+      "warp": false,
+      "exit_code": 0,
+      "abort_reason": null,
+      "log": "F:\\tuhai-validation\\renderer-probe\\blank\\20260906-050141-probe.jsonl",
+      "dwm": {
+        "hresult": "0x0",
+        "size": 292,
+        "refresh_n": 60,
+        "refresh_d": 1,
+        "compose_n": 60,
+        "compose_d": 1,
+        "refresh_period_ms": 16.6666,
+        "remote_session": false
+      }
+    },
+    "run_metadata_sha256": "133090D5387EA52569389C05AE400B713EFA38B161BEF6815093E96422344A60",
+    "log_sha256": "0B3154393704CC21B3ED08B2F6EA9AB00E168D9748DB3633158428DA4DEE1146"
+  },
+  {
+    "name": "queue-upload",
+    "run_metadata": {
+      "diagnostic_only": true,
+      "executable": "G:\\tuhai-perf-build\\release\\examples\\dx12_memory_probe.exe",
+      "sha256": "BCF2E9BE7ABD1A2E444B249CB9F89A1DCAB4187337859BCB1731861A4DF6E8B2",
+      "started": "2026-09-06T05:06:00.5828058+08:00",
+      "seconds": 180,
+      "idle_seconds": 30,
+      "repaint_ms": 0,
+      "extra_poll": false,
+      "fifo": false,
+      "no_widgets": true,
+      "warp": false,
+      "buffer_mode": "queue",
+      "exit_code": 0,
+      "abort_reason": null,
+      "log": "F:\\tuhai-validation\\renderer-probe\\queue-upload\\20260906-050600-probe.jsonl",
+      "dwm": {
+        "hresult": "0x0",
+        "size": 292,
+        "refresh_n": 60,
+        "refresh_d": 1,
+        "compose_n": 60,
+        "compose_d": 1,
+        "refresh_period_ms": 16.6666,
+        "remote_session": false
+      }
+    },
+    "run_metadata_sha256": "84EB75BC831F362E5B828285EDB646369BED08C97C125E2CC6FF11C5B81E5BF8",
+    "log_sha256": "714C36B00FDE658A145F5EF070E4558000254D97A2CBCA193AE8BBB2E8B3E0AA"
+  },
+  {
+    "name": "belt-upload",
+    "run_metadata": {
+      "diagnostic_only": true,
+      "executable": "G:\\tuhai-perf-build\\release\\examples\\dx12_memory_probe.exe",
+      "sha256": "BCF2E9BE7ABD1A2E444B249CB9F89A1DCAB4187337859BCB1731861A4DF6E8B2",
+      "started": "2026-09-06T05:09:41.0639854+08:00",
+      "seconds": 180,
+      "idle_seconds": 30,
+      "repaint_ms": 0,
+      "extra_poll": false,
+      "fifo": false,
+      "no_widgets": true,
+      "warp": false,
+      "buffer_mode": "belt",
+      "exit_code": 0,
+      "abort_reason": null,
+      "log": "F:\\tuhai-validation\\renderer-probe\\belt-upload\\20260906-050940-probe.jsonl",
+      "dwm": {
+        "hresult": "0x0",
+        "size": 292,
+        "refresh_n": 60,
+        "refresh_d": 1,
+        "compose_n": 60,
+        "compose_d": 1,
+        "refresh_period_ms": 16.6666,
+        "remote_session": false
+      }
+    },
+    "run_metadata_sha256": "F6E725E11F0F1C453ACDEDF5B0BD3A3DE51CBE70766EDD35794FB67E99E42A5A",
+    "log_sha256": "B54EB23A6E1BF05A8BF8C90EC5117BF950C173A2AD2009EBE890F7139FF971CD"
+  },
+  {
+    "name": "widgets-patched",
+    "run_metadata": {
+      "diagnostic_only": true,
+      "executable": "G:\\tuhai-perf-build\\release\\examples\\dx12_memory_probe.exe",
+      "sha256": "3E62120C8B9261A182D50F36D58158D430ACBEA1A2A156C3FB3270D2BD0AEC38",
+      "started": "2026-09-06T05:15:55.7630232+08:00",
+      "seconds": 180,
+      "idle_seconds": 30,
+      "repaint_ms": 0,
+      "extra_poll": false,
+      "fifo": false,
+      "no_widgets": false,
+      "warp": false,
+      "buffer_mode": "none",
+      "exit_code": 0,
+      "abort_reason": null,
+      "log": "F:\\tuhai-validation\\renderer-probe\\widgets-patched\\20260906-051555-probe.jsonl",
+      "dwm": {
+        "hresult": "0x0",
+        "size": 292,
+        "refresh_n": 60,
+        "refresh_d": 1,
+        "compose_n": 60,
+        "compose_d": 1,
+        "refresh_period_ms": 16.6666,
+        "remote_session": false
+      }
+    },
+    "run_metadata_sha256": "3122951408131D770E0B43B02015DF0C3A2B624BCF15BFE4952DA71EADD4B5D9",
+    "log_sha256": "B7244C91D65BCF612720FF170E1C584219CB429728D0A2E2598F77D77E77C088"
+  }
+]

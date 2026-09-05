@@ -162,3 +162,6 @@ git diff --check
 - `validate_ui_run.py` 在每次采集后验证日志、目标进程显示样本以及可选的记录数量/全扫描完成条件。矩阵先完成索引，再预热路线，防止 90 秒中止在 2.7 万条的扫描被当作已缓存 5 万张基线。`open` 场景还检查滚动偏移始终为零。
 - `first_records_ms` 等指标从打开目录开始；`startup_first_records_ms` 等指标从 `main` 初始化单调时钟开始，包含窗口和 GPU 初始化。它仍不包括进入 `main` 前的系统加载耗时，真实输入到显示另行采集。
 - 新增真实后台缓存回归覆盖旧 v2 迁移、清理中写入、完成清理后旧任务延迟回写、清理后新写入、缓存配置从 2 GiB 调回 1 GiB。使用独立临时目录。
+- `examples/dx12_memory_probe.rs` 是单独的最小渲染复现程序，不进入产品 EXE。它只绘制固定英文控件、记录进程内存和 wgpu 分配，不读图库。构建：`cargo build --release --locked --example dx12_memory_probe`；设置 `TUHAI_PROBE_LOG` 指定日志，`TUHAI_PROBE_SECONDS=180` 指定时间。可用 `TUHAI_PROBE_EXTRA_POLL=1` 对照应用的额外 poll、`TUHAI_PROBE_REPAINT_MS=16` 对照节流、`TUHAI_PROBE_FIFO=1` 对照 FIFO。不得与正式 UI 性能运行同时构建或运行。
+- 最小渲染探针通过 `scripts/run_renderer_probe.ps1` 串行运行；默认增加 30 秒结束空闲期。`-NoWidgets` 只提交空白画面，`-Warp` 仅在此诊断程序使用软件 DX12 适配器。构建加 `--features wgpu/counters` 才会启用原生对象计数；未启用时的零值不能解释为没有原生对象。脚本与汇总均标为诊断，不作为产品验收。
+- 逐轮元数据保存期望记录数、是否要求完整扫描与请求时长；即时检查和五轮汇总共用相同约束。内存验收要求至少 1800 秒、稳态每分钟至少 50 个内存样本；无效轮次不进入跨轮性能统计。
