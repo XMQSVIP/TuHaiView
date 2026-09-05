@@ -54,7 +54,10 @@ def analyze(log, presentmon=None, refresh_hz=60):
             xs,ys=zip(*stable); xm=statistics.mean(xs); ym=statistics.mean(ys)
             slope=sum((x-xm)*(y-ym) for x,y in stable)/sum((x-xm)**2 for x in xs)
             growth=statistics.median(ys[-3:])-statistics.median(ys[:3])
-            out["memory_stability"]=dict(slope_mib_per_min=slope,growth_mib=growth,threshold_passed=slope<=1 and growth<=32,passed=False)
+            coverage=all(len(minutes.get(m,[]))>=50 for m in range(5,29))
+            full_duration=max(d['soak_completed_seconds'],default=0)>=1800
+            out["memory_stability"]=dict(slope_mib_per_min=slope,growth_mib=growth,threshold_passed=slope<=1 and growth<=32,
+                full_30_minutes=full_duration,steady_window_sample_coverage=coverage,passed=False)
     if presentmon:
         import bisect
         gpu=[]; latency=[]; input_latency=[]; present_wait=[]; gpu_wait=[]; displayed=collections.defaultdict(list); all_shown=[]; dropped=0; previous={}; transitions=0; present_modes=collections.Counter(); tearing=0
@@ -104,7 +107,7 @@ def analyze(log, presentmon=None, refresh_hz=60):
         reclaim_keys=['image_queued_count','image_inflight_count','image_ready_count','decode_budget_bytes','ready_budget_bytes','cache_queue_bytes','gpu_retired_bytes','cpu_retired_count','deferred_pixel_bytes']
         idle_last={k:idle[k][-1] if idle.get(k) else None for k in reclaim_keys}
         out['idle_reclamation']=dict(last=idle_last,passed=all(v==0 for v in idle_last.values()))
-        out['memory_stability']['passed']=out['memory_stability']['threshold_passed'] and out['idle_reclamation']['passed'] and all(v['passed'] for v in out['managed_budgets'].values()) and presentmon is not None and not reasons
+        out['memory_stability']['passed']=out['memory_stability']['full_30_minutes'] and out['memory_stability']['steady_window_sample_coverage'] and out['memory_stability']['threshold_passed'] and out['idle_reclamation']['passed'] and all(v['passed'] for v in out['managed_budgets'].values()) and presentmon is not None and not reasons
     return out
 
 if __name__ == "__main__":

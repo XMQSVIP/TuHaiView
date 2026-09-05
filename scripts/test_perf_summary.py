@@ -3,11 +3,64 @@ import json
 import tempfile
 import unittest
 from pathlib import Path
+from unittest.mock import patch
 from summarize_perf import analyze
 from summarize_runs import collect
-from validate_ui_run import validate
+from validate_ui_run import validate, validate_result
 
 class ReportTests(unittest.TestCase):
+    def test_one_run_copied_five_times_is_not_five_repeats(self):
+        with tempfile.TemporaryDirectory() as root:
+            root=Path(root);log=root/'log.jsonl';capture=root/'display.csv'
+            log.write_text('');capture.write_text('')
+            metadata=dict(sha256='binary',exit_code=0,presentmon_exit=0,
+                logs=[str(log)],presentmon=str(capture),dataset_manifest={'sha256':'data'},
+                dwm=dict(hresult='0x0',refresh_n=60,refresh_d=1))
+            for n in range(5): (root/f'{n}-run.json').write_text(json.dumps(metadata))
+            result=dict(header=dict(run_id=7),invalid_reasons=[],metrics={},scroll_acceptance={'passed':True})
+            with patch('summarize_runs.analyze',return_value=result):
+                report=collect(root)
+            self.assertFalse(report['unique_runs'])
+            self.assertFalse(report['valid_five_runs'])
+            self.assertFalse(report['scroll_passed_all_five'])
+
+    def test_metadata_cannot_refer_to_another_process_or_scenario(self):
+        result=dict(invalid_reasons=[],metrics={},header=dict(pid=100,scenario_name='scroll'))
+        errors=validate_result(dict(pid=101,scenario='open'),result)
+        self.assertIn('metadata_log_pid_mismatch',errors)
+        self.assertIn('metadata_log_scenario_mismatch',errors)
+
+    def test_saved_run_contract_is_used_during_later_aggregation(self):
+        result=dict(invalid_reasons=[],metrics={
+            'catalog_displayed_records':dict(maximum=27000),
+            'soak_completed_seconds':dict(maximum=60),
+            'grid_scroll_offset':dict(maximum=0),
+        })
+        errors=validate_result(dict(scenario='open',expected_records=50000,
+            requested_seconds=90,require_scan_completion=True),result)
+        self.assertIn('catalog_count_27000_expected_50000',errors)
+        self.assertIn('full_scan_did_not_finish',errors)
+        self.assertIn('first_screen_did_not_finish',errors)
+        self.assertIn('scenario_ended_before_requested_duration',errors)
+
+    def test_short_or_sparse_memory_run_never_passes_full_duration(self):
+        with tempfile.TemporaryDirectory() as root:
+            path=Path(root)/'samples.jsonl'
+            samples=[dict(kind='run_header',schema=2,scenario_name='soak')]
+            # Stable values with 24 minute bins are insufficient when there is
+            # only one sample in each minute or the process stopped before 30m.
+            for minute in range(29):
+                samples.append(dict(name='process_private_bytes',value=100000,
+                    monotonic_us=minute*60000000))
+            for name,value in [('soak_completed_seconds',1740),('log_flush',1),('log_dropped',0)]:
+                samples.append(dict(name=name,value=value))
+            path.write_text(''.join(json.dumps(s)+'\n' for s in samples))
+            result=analyze(path)['memory_stability']
+            self.assertTrue(result['threshold_passed'])
+            self.assertFalse(result['full_30_minutes'])
+            self.assertFalse(result['steady_window_sample_coverage'])
+            self.assertFalse(result['passed'])
+
     def test_partial_catalog_cannot_be_used_as_completed_warmup(self):
         with tempfile.TemporaryDirectory() as root:
             root=Path(root); log=root/'samples.jsonl'; capture=root/'display.csv'; metadata=root/'run.json'

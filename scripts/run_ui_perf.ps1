@@ -109,6 +109,9 @@ for ($run=1; $run -le $Runs; $run++) {
     }
     $report=[ordered]@{run=$run;pid=$process.Id;started=$started.ToString('o');exit_code=$process.ExitCode;seconds=((Get-Date)-$started).TotalSeconds;timed_out=$timedOut;executable=$resolvedExecutable;sha256=$exeHash;root=$resolvedRoot;scenario=$Scenario;present=$Present;repaint_ms=$RepaintMs;display=$display;dwm=$dwm;system_cache='unknown';application_cache='preserved; GPU empty at process start';logs=$savedLogs;presentmon=$csv;presentmon_sha256=$toolHash;presentmon_exit=if ($capture -and $capture.HasExited) { $capture.ExitCode } else { $null }}
     $report['dataset_manifest']=$manifestInfo
+    $report['expected_records']=$ExpectedRecords
+    $report['require_scan_completion']=[bool]$RequireScanCompletion
+    $report['requested_seconds']=$Seconds
     $report['source_disk']=$rootDisk
     $report['log_output_directory']=$OutputDirectory
     $report['allocator_diagnostics']=[bool]$AllocatorDiagnostics
