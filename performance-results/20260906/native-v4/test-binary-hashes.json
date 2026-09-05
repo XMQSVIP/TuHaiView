@@ -1,0 +1,12 @@
+[
+  {
+    "Algorithm": "SHA256",
+    "Hash": "B28FDC1D0A6527DA6F1FCD98DDA6701B408C73265FE7D65BD3EEF1FB13E311E7",
+    "Path": "G:\\tuhai-perf-build\\release\\deps\\TuHaiView-71cbb3450e76f2f5.exe"
+  },
+  {
+    "Algorithm": "SHA256",
+    "Hash": "70E709145419DC40E5B8AB16FC5A854E5263086B7B96DBACD940CA0D6F7457E8",
+    "Path": "F:\\tuhai-validation\\baseline-tests.exe"
+  }
+]

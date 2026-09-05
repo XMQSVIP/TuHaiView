@@ -1,0 +1,255 @@
+{
+  "provenance": {
+    "started": "2026-09-06T06:53:04.9748831+08:00",
+    "candidate_tests": "G:\\tuhai-perf-build\\release\\deps\\TuHaiView-71cbb3450e76f2f5.exe",
+    "baseline_tests": "F:\\tuhai-validation\\baseline-tests.exe",
+    "candidate_test_sha256": "B28FDC1D0A6527DA6F1FCD98DDA6701B408C73265FE7D65BD3EEF1FB13E311E7",
+    "baseline_test_sha256": "70E709145419DC40E5B8AB16FC5A854E5263086B7B96DBACD940CA0D6F7457E8",
+    "product_executable": "F:\\tuhai-validation\\validation-v4\\TuHaiView.exe",
+    "product_source_revision": "a504605",
+    "product_sha256": "4507D93F1BD9C484065FA3710E1C89C59B7E7E45A7631ED4526A44597C1225EA",
+    "system_file_cache": "unknown",
+    "completed": true
+  },
+  "db_baseline": {
+    "runs_ms": [
+      3070.0,
+      2920.0,
+      3560.0,
+      3140.0,
+      2960.0
+    ],
+    "summary": {
+      "n": 5,
+      "median": 3070.0,
+      "p95": 3560.0,
+      "p99": 3560.0,
+      "maximum": 3560.0
+    }
+  },
+  "db_candidate": {
+    "runs_ms": [
+      2820.0,
+      3070.0,
+      2830.0,
+      3080.0,
+      2970.0
+    ],
+    "summary": {
+      "n": 5,
+      "median": 2970.0,
+      "p95": 3080.0,
+      "p99": 3080.0,
+      "maximum": 3080.0
+    }
+  },
+  "db_regression_fraction": -0.032573289902280145,
+  "db_passed": true,
+  "jpeg": {
+    "baseline-6000x4000.jpg": {
+      "False": {
+        "runs_ms": [
+          364.3542,
+          263.9857,
+          264.0112,
+          262.3781,
+          264.3843
+        ],
+        "summary": {
+          "n": 5,
+          "median": 264.0112,
+          "p95": 364.3542,
+          "p99": 364.3542,
+          "maximum": 364.3542
+        }
+      },
+      "True": {
+        "runs_ms": [
+          64.5233,
+          59.6665,
+          59.6085,
+          58.8679,
+          65.4744
+        ],
+        "summary": {
+          "n": 5,
+          "median": 59.6665,
+          "p95": 65.4744,
+          "p99": 65.4744,
+          "maximum": 65.4744
+        }
+      },
+      "reduction": 0.7740001181768046,
+      "passed": true
+    },
+    "baseline-8000x6000.jpg": {
+      "False": {
+        "runs_ms": [
+          549.8205,
+          553.2789,
+          570.8247,
+          640.2544999999999,
+          555.5523999999999
+        ],
+        "summary": {
+          "n": 5,
+          "median": 555.5523999999999,
+          "p95": 640.2544999999999,
+          "p99": 640.2544999999999,
+          "maximum": 640.2544999999999
+        }
+      },
+      "True": {
+        "runs_ms": [
+          114.7431,
+          115.85860000000001,
+          118.04589999999999,
+          128.0768,
+          117.50919999999999
+        ],
+        "summary": {
+          "n": 5,
+          "median": 117.50919999999999,
+          "p95": 128.0768,
+          "p99": 128.0768,
+          "maximum": 128.0768
+        }
+      },
+      "reduction": 0.7884822385791151,
+      "passed": true
+    }
+  },
+  "native_peak_0": {
+    "runs": [
+      {
+        "fast": false,
+        "final_private": 2490368,
+        "initial_peak_working_set": 7102464,
+        "initial_private": 1777664,
+        "peak_working_set": 176193536
+      },
+      {
+        "fast": false,
+        "final_private": 2490368,
+        "initial_peak_working_set": 7106560,
+        "initial_private": 1781760,
+        "peak_working_set": 176197632
+      },
+      {
+        "fast": false,
+        "final_private": 2486272,
+        "initial_peak_working_set": 7102464,
+        "initial_private": 1781760,
+        "peak_working_set": 176193536
+      },
+      {
+        "fast": false,
+        "final_private": 2494464,
+        "initial_peak_working_set": 7106560,
+        "initial_private": 1785856,
+        "peak_working_set": 176197632
+      },
+      {
+        "fast": false,
+        "final_private": 2490368,
+        "initial_peak_working_set": 7106560,
+        "initial_private": 1785856,
+        "peak_working_set": 176197632
+      }
+    ],
+    "working_set_bytes": {
+      "n": 5,
+      "median": 176197632,
+      "p95": 176197632,
+      "p99": 176197632,
+      "maximum": 176197632
+    }
+  },
+  "native_peak_1": {
+    "runs": [
+      {
+        "fast": true,
+        "final_private": 2015232,
+        "initial_peak_working_set": 7110656,
+        "initial_private": 1785856,
+        "peak_working_set": 27262976
+      },
+      {
+        "fast": true,
+        "final_private": 1998848,
+        "initial_peak_working_set": 7094272,
+        "initial_private": 1769472,
+        "peak_working_set": 27246592
+      },
+      {
+        "fast": true,
+        "final_private": 2015232,
+        "initial_peak_working_set": 7106560,
+        "initial_private": 1785856,
+        "peak_working_set": 27258880
+      },
+      {
+        "fast": true,
+        "final_private": 2015232,
+        "initial_peak_working_set": 7106560,
+        "initial_private": 1785856,
+        "peak_working_set": 27258880
+      },
+      {
+        "fast": true,
+        "final_private": 2011136,
+        "initial_peak_working_set": 7106560,
+        "initial_private": 1781760,
+        "peak_working_set": 27258880
+      }
+    ],
+    "working_set_bytes": {
+      "n": 5,
+      "median": 27258880,
+      "p95": 27262976,
+      "p99": 27262976,
+      "maximum": 27262976
+    }
+  },
+  "real_cache": {
+    "container_bytes": 15328052,
+    "count": 1000,
+    "reduction": 0.9363893910878519,
+    "rgba_bytes": 240966912,
+    "passed": true
+  },
+  "watcher": {
+    "runs": [
+      {
+        "ms": 749.511,
+        "visited": 1
+      },
+      {
+        "ms": 754.32,
+        "visited": 1
+      },
+      {
+        "ms": 745.623,
+        "visited": 1
+      },
+      {
+        "ms": 756.864,
+        "visited": 1
+      },
+      {
+        "ms": 750.72,
+        "visited": 1
+      }
+    ],
+    "summary": {
+      "n": 5,
+      "median": 750.72,
+      "p95": 756.864,
+      "p99": 756.864,
+      "maximum": 756.864
+    },
+    "passed": true,
+    "boundary": "native event to catalog publication, not display latency"
+  },
+  "gpu_readback_passed": true
+}

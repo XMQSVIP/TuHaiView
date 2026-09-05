@@ -1,0 +1,49 @@
+"""Read a bounded tail for progress only; never issue an acceptance verdict.
+
+This intentionally avoids scanning completed multi-GiB logs while a graphics
+benchmark is running. Durable certificates and full reports remain authoritative.
+"""
+import argparse
+import json
+import shutil
+from pathlib import Path
+
+
+def inspect(directory):
+    metadata = sorted(directory.glob('*/*-run.json'))
+    active = sorted(directory.glob('*/performance-*.jsonl'), key=lambda p: p.stat().st_mtime)
+    report = {'completed_process_runs': len(metadata), 'c_free_gib': round(shutil.disk_usage('C:/').free / 1024**3, 3)}
+    if not active:
+        report['active_log'] = None
+        return report
+    path = active[-1]
+    size = path.stat().st_size
+    with path.open('rb') as source:
+        source.seek(max(0, size - 128 * 1024))
+        rows = source.read().splitlines()
+    latest = {}
+    timestamp = None
+    phase = None
+    for line in rows:
+        try:
+            item = json.loads(line)
+        except (ValueError, UnicodeDecodeError):
+            continue
+        timestamp = item.get('monotonic_us', timestamp)
+        phase = item.get('scenario', phase)
+        if 'name' in item and 'value' in item:
+            latest[item['name']] = item['value']
+    wanted = ['process_private_bytes', 'catalog_displayed_records', 'decode_budget_bytes',
+              'ready_budget_bytes', 'cache_queue_bytes', 'gpu_allocated_bytes',
+              'cpu_retired_count', 'image_inflight_count', 'gpu_retired_bytes', 'log_dropped']
+    report.update(active_log=str(path), elapsed_seconds=round(timestamp / 1e6, 1) if timestamp else None,
+                  phase=phase, tail_values={k: latest[k] for k in wanted if k in latest},
+                  limitation='Bounded tail only; not complete peaks, trends, or a pass verdict.')
+    return report
+
+
+if __name__ == '__main__':
+    parser = argparse.ArgumentParser()
+    parser.add_argument('directory', type=Path)
+    args = parser.parse_args()
+    print(json.dumps(inspect(args.directory), ensure_ascii=False))

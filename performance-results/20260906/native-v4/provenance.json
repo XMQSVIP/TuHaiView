@@ -1,0 +1,12 @@
+{
+  "started": "2026-09-06T06:53:04.9748831+08:00",
+  "candidate_tests": "G:\\tuhai-perf-build\\release\\deps\\TuHaiView-71cbb3450e76f2f5.exe",
+  "baseline_tests": "F:\\tuhai-validation\\baseline-tests.exe",
+  "candidate_test_sha256": "B28FDC1D0A6527DA6F1FCD98DDA6701B408C73265FE7D65BD3EEF1FB13E311E7",
+  "baseline_test_sha256": "70E709145419DC40E5B8AB16FC5A854E5263086B7B96DBACD940CA0D6F7457E8",
+  "product_executable": "F:\\tuhai-validation\\validation-v4\\TuHaiView.exe",
+  "product_source_revision": "a504605",
+  "product_sha256": "4507D93F1BD9C484065FA3710E1C89C59B7E7E45A7631ED4526A44597C1225EA",
+  "system_file_cache": "unknown",
+  "completed": true
+}
