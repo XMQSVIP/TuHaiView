@@ -12,7 +12,7 @@ use std::{
     path::PathBuf,
     sync::{
         Arc,
-        atomic::{AtomicBool, AtomicUsize, Ordering},
+        atomic::{AtomicUsize, Ordering},
     },
     thread,
     time::{Duration, Instant},
@@ -84,12 +84,26 @@ struct Scheduler {
     prefetch: bool,
     closed: bool,
 }
+impl Scheduler {
+    fn publish_preview_busy(&self) {
+        performance::PREVIEW_BUSY.store(
+            self.queued
+                .values()
+                .chain(self.inflight.values())
+                .any(|r| r.kind == ImageKind::Preview),
+            Ordering::Release,
+        );
+    }
+    fn finish(&mut self, key: &str) {
+        self.inflight.remove(key);
+        self.publish_preview_busy();
+    }
+}
 struct Shared {
     scheduler: Mutex<Scheduler>,
     changed: Condvar,
     workers: AtomicUsize,
     profile_path: Mutex<Option<PathBuf>>,
-    preview_busy: Arc<AtomicBool>,
 }
 pub struct ThumbnailService {
     shared: Arc<Shared>,
@@ -119,7 +133,6 @@ impl ThumbnailService {
             changed: Condvar::new(),
             workers: AtomicUsize::new(2),
             profile_path: Mutex::new(None),
-            preview_busy: Arc::new(AtomicBool::new(false)),
         });
         let cache = DiskCache::new(wakeup.clone());
         let decode_budget =
@@ -189,26 +202,18 @@ impl ThumbnailService {
                         };
                         performance::begin_request(request.generation, request.serial);
                         let cancelled = || !valid(&shared.scheduler.lock(), &request);
-                        if index == 0 {
-                            shared.preview_busy.store(true, Ordering::Release);
-                            performance::PREVIEW_BUSY.store(true, Ordering::Release);
-                        }
                         let result =
                             load(&request, &cache, &decode_budget, &ready_budget, &cancelled);
-                        if index == 0 {
-                            shared.preview_busy.store(false, Ordering::Release);
-                            performance::PREVIEW_BUSY.store(false, Ordering::Release);
-                        }
                         let key = request.key();
                         if cancelled() {
-                            shared.scheduler.lock().inflight.remove(&key);
+                            shared.scheduler.lock().finish(&key);
                             wakeup();
                             continue;
                         }
                         let output = match result {
                             Ok(output) => output,
                             Err(error) if error.is::<decoding::Cancelled>() => {
-                                shared.scheduler.lock().inflight.remove(&key);
+                                shared.scheduler.lock().finish(&key);
                                 wakeup();
                                 continue;
                             }
@@ -239,7 +244,15 @@ impl ThumbnailService {
                         };
                         {
                             let mut s = shared.scheduler.lock();
-                            s.inflight.remove(&key);
+                            let current = valid(&s, &request);
+                            s.finish(&key);
+                            // Cancellation and completion can race between decode and publication.
+                            if !current {
+                                drop(s);
+                                drop(output);
+                                wakeup();
+                                continue;
+                            }
                             s.ready.insert(key.clone());
                         }
                         let priority = shared
@@ -252,7 +265,14 @@ impl ThumbnailService {
                         let sent = send_result(&result_tx, output, &cancelled, priority, &wakeup);
                         // ready remains until UI acknowledges, so a completed result is never redundantly decoded.
                         if !sent || cancelled() {
-                            shared.scheduler.lock().ready.remove(&key);
+                            let mut s = shared.scheduler.lock();
+                            if s.generation == request.generation
+                                && (request.kind != ImageKind::Preview
+                                    || s.preview_epoch == request.preview_epoch)
+                            {
+                                s.ready.remove(&key);
+                            }
+                            drop(s);
                             wakeup();
                         }
                     }
@@ -276,6 +296,7 @@ impl ThumbnailService {
         s.ready.clear();
         s.desired.clear();
         s.preview_key = None;
+        s.publish_preview_busy();
         drop(s);
         while let Ok(result) = self.rx.try_recv() {
             self.discard(result);
@@ -300,14 +321,11 @@ impl ThumbnailService {
         s.preview_key = key;
         s.queued.retain(|_, r| r.kind != ImageKind::Preview);
         s.ready.retain(|k| !k.contains(":preview:"));
+        s.publish_preview_busy();
         drop(s);
         while let Ok(result) = self.preview_rx.try_recv() {
             self.discard(result);
         }
-        performance::PREVIEW_BUSY.store(
-            self.shared.preview_busy.load(Ordering::Acquire),
-            Ordering::Release,
-        );
         self.shared.changed.notify_all();
     }
     pub fn is_current(&self, r: &ImageResult) -> bool {
@@ -660,6 +678,37 @@ mod tests {
         let task = scheduler.queued.values().next().unwrap();
         assert!(Arc::ptr_eq(&task.record, &r));
         assert_eq!(task.priority, ThumbnailPriority::Visible);
+    }
+
+    #[test]
+    fn finishing_old_preview_keeps_disk_priority_for_the_new_request() {
+        let mut s = Scheduler::default();
+        let request = Request {
+            generation: 1,
+            preview_epoch: 1,
+            cache_epoch: 0,
+            record: Arc::new(record()),
+            max_side: 1024,
+            kind: ImageKind::Preview,
+            priority: ThumbnailPriority::Preview,
+            serial: 1,
+        };
+        s.inflight.insert("old".into(), request.clone());
+        s.queued.insert(
+            "new".into(),
+            Request {
+                preview_epoch: 2,
+                ..request
+            },
+        );
+        s.finish("old");
+        assert!(performance::PREVIEW_BUSY.load(Ordering::Acquire));
+        let newest = s.queued.remove("new").unwrap();
+        s.inflight.insert("new".into(), newest);
+        s.publish_preview_busy();
+        assert!(performance::PREVIEW_BUSY.load(Ordering::Acquire));
+        s.finish("new");
+        assert!(!performance::PREVIEW_BUSY.load(Ordering::Acquire));
     }
 
     #[test]

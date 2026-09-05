@@ -1,0 +1,10 @@
+{
+  "grayscale16.png": {
+    "bytes": 3257,
+    "sha256": "a2f5ff7b61a2c2b7d01f568aba560103ca5c085901eb2e8858b4d2ae0c015e7d"
+  },
+  "grayscale16.tiff": {
+    "bytes": 1572986,
+    "sha256": "6db1854fe5fea1a1c6cedfe1164708ec65ea87dda0d9005dc832ad48e7e07b51"
+  }
+}

@@ -729,11 +729,18 @@ mod tests {
     #[test]
     #[ignore = "manual release-mode performance benchmark"]
     fn batch_upsert_50k_completes_within_budget() {
-        let root = PathBuf::from(env!("CARGO_MANIFEST_DIR"))
-            .join("target")
+        let root = std::env::var_os("TUHAI_DB_BENCH_ROOT")
+            .map(PathBuf::from)
+            .unwrap_or_else(|| PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("target"))
             .join("catalog-perf-50k");
-        let _ = fs::remove_dir_all(&root);
         fs::create_dir_all(&root).unwrap();
+        for name in [
+            "catalog.sqlite3",
+            "catalog.sqlite3-wal",
+            "catalog.sqlite3-shm",
+        ] {
+            let _ = fs::remove_file(root.join(name));
+        }
         let db = root.join("catalog.sqlite3");
         let mut connection = open_connection(&db).unwrap();
         create_schema(&connection).unwrap();
@@ -767,6 +774,13 @@ mod tests {
         eprintln!("50k batched upsert: {:.2}s", elapsed.as_secs_f64());
         assert!(elapsed < Duration::from_secs(15));
         drop(connection);
-        fs::remove_dir_all(root).unwrap();
+        for name in [
+            "catalog.sqlite3",
+            "catalog.sqlite3-wal",
+            "catalog.sqlite3-shm",
+        ] {
+            let _ = fs::remove_file(root.join(name));
+        }
+        fs::remove_dir(root).unwrap();
     }
 }

@@ -232,7 +232,7 @@ impl CatalogService {
         self.pending.lock().progress.take()
     }
     pub fn retire(&self, snapshot: Arc<CatalogSnapshot>) {
-        let bytes = snapshot.records.len() * std::mem::size_of::<Arc<ImageRecord>>();
+        let bytes = snapshot.table_bytes();
         crate::retirement::retire(snapshot, bytes);
     }
     pub fn retire_value<T: Send + 'static>(&self, value: T) {
@@ -832,6 +832,71 @@ mod tests {
         );
         assert!(set.full_rescan);
         assert!(set.paths.is_empty());
+        set.first = Some(Instant::now() - Duration::from_secs(3));
+        set.last = Some(Instant::now());
+        assert!(
+            set.due(),
+            "continuous writes must not postpone validation forever"
+        );
+    }
+
+    #[test]
+    fn native_watcher_delivers_small_changes_without_manual_queueing() {
+        let temp = std::env::temp_dir().join(format!(
+            "tuhai-watch-{}-{}",
+            std::process::id(),
+            SystemTime::now()
+                .duration_since(UNIX_EPOCH)
+                .unwrap()
+                .as_nanos()
+        ));
+        let root = temp.join("pictures");
+        fs::create_dir_all(&root).unwrap();
+        fs::write(root.join("original.jpg"), b"first").unwrap();
+        let mut service =
+            CatalogService::with_database(Some(temp.join("catalog.sqlite3")), Arc::new(|| {}))
+                .unwrap();
+        service.scan(root.clone(), SortMode::Path);
+        let wait = |service: &CatalogService| {
+            let until = Instant::now() + Duration::from_secs(10);
+            loop {
+                assert!(
+                    Instant::now() < until,
+                    "native watcher did not publish changes"
+                );
+                if let Ok(CatalogEvent::Finished { stats, .. }) =
+                    service.rx.recv_timeout(Duration::from_millis(100))
+                {
+                    return stats;
+                }
+            }
+        };
+        wait(&service);
+        service.take_snapshot();
+        let started = Instant::now();
+        fs::write(root.join("added.png"), b"addition").unwrap();
+        let stats = wait(&service);
+        let changed = service.take_snapshot().unwrap();
+        assert!(changed.by_path.contains_key(&root.join("added.png")));
+        assert_eq!(stats.visited_files, 1);
+        eprintln!(
+            "NATIVE_WATCH add_ms={:.3} visited={}",
+            started.elapsed().as_secs_f64() * 1000.0,
+            stats.visited_files
+        );
+        fs::rename(root.join("added.png"), root.join("renamed.png")).unwrap();
+        wait(&service);
+        let renamed = service.take_snapshot().unwrap();
+        assert!(!renamed.by_path.contains_key(&root.join("added.png")));
+        assert!(renamed.by_path.contains_key(&root.join("renamed.png")));
+        drop(service);
+        for _ in 0..100 {
+            if fs::remove_dir_all(&temp).is_ok() {
+                return;
+            }
+            thread::sleep(Duration::from_millis(20));
+        }
+        panic!("watcher handles remained open");
     }
     #[test]
     fn actor_reuses_snapshot_and_applies_only_changed_paths() {

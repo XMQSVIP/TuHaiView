@@ -25,6 +25,11 @@ pub struct SortResult {
     pub indices: Arc<[usize]>,
     pub positions: Arc<HashMap<i64, usize>>,
 }
+pub fn retire_order(indices: Arc<[usize]>, positions: Arc<HashMap<i64, usize>>) {
+    let bytes = indices.len() * std::mem::size_of::<usize>()
+        + positions.len() * std::mem::size_of::<(i64, usize)>();
+    crate::retirement::retire((indices, positions), bytes);
+}
 pub struct SortService {
     pending: Arc<parking_lot::Mutex<Option<SortRequest>>>,
     serial: Arc<std::sync::atomic::AtomicU64>,
@@ -108,7 +113,7 @@ impl SortService {
             .serial
             .fetch_add(1, std::sync::atomic::Ordering::AcqRel)
             .wrapping_add(1);
-        *self.pending.lock() = Some(SortRequest {
+        let old = self.pending.lock().replace(SortRequest {
             generation,
             revision,
             serial,
@@ -116,6 +121,9 @@ impl SortService {
             records,
             groups,
         });
+        if let Some(old) = old {
+            crate::retirement::retire(old, std::mem::size_of::<SortRequest>());
+        }
         let _ = self.notify_tx.try_send(());
     }
     pub fn is_current(&self, result: &SortResult) -> bool {

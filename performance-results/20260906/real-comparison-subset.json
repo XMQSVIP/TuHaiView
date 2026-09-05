@@ -1,0 +1,8 @@
+{
+  "count": 1333,
+  "bytes": 536573718,
+  "ssd": "C:/tuhai-real-subset-20260906",
+  "hdd": "F:/tuhai-real-fixtures-20260906/comparison-512mib",
+  "max_bytes": 536870912,
+  "source_manifest_sha256": "dcd6918441eaf350fbd45f4dfea7187a60e12e3a8cf7ee59df2875130bb7f9d6"
+}

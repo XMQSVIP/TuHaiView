@@ -309,8 +309,9 @@ impl PreviewerApp {
         self.viewport_signature = None;
         self.records = Arc::from([]);
         self.record_positions = Arc::default();
-        self.display_indices = Arc::from([]);
-        self.display_positions = Arc::default();
+        let old_order = std::mem::replace(&mut self.display_indices, Arc::from([]));
+        let old_positions = std::mem::take(&mut self.display_positions);
+        crate::sorting::retire_order(old_order, old_positions);
         self.data_revision = self.data_revision.wrapping_add(1);
         self.sorting = false;
         self.selected.clear();
@@ -342,6 +343,7 @@ impl PreviewerApp {
     }
 
     fn refresh(&mut self) {
+        self.input_started = Some(Instant::now());
         if let Some(root) = self.root.clone() {
             let reopen_duplicates = self.duplicate_rescan_after_catalog;
             self.invalidate_duplicates();
@@ -716,7 +718,7 @@ impl PreviewerApp {
                 let old_order = std::mem::replace(&mut self.display_indices, result.indices);
                 let old_positions =
                     std::mem::replace(&mut self.display_positions, result.positions);
-                self.catalog.retire_value((old_order, old_positions));
+                crate::sorting::retire_order(old_order, old_positions);
                 if self.deduplicated_view {
                     self.selected
                         .retain(|id| self.display_positions.contains_key(id));
@@ -730,6 +732,8 @@ impl PreviewerApp {
                 }
                 self.selection_anchor = None;
                 self.sorting = false;
+            } else {
+                crate::sorting::retire_order(result.indices, result.positions);
             }
         }
 
@@ -921,11 +925,12 @@ impl PreviewerApp {
             && started.elapsed() < Duration::from_millis(crate::performance::UPLOAD_BUDGET_MS)
         {
             if !self.uploads.is_pending() {
-                let received = self.deferred_image.take().map(Ok).unwrap_or_else(|| {
-                    self.thumbnails
-                        .preview_rx
-                        .try_recv()
-                        .or_else(|_| self.thumbnails.rx.try_recv())
+                // A thumbnail waiting for GPU retirement must not hide a new preview.
+                let received = self.thumbnails.preview_rx.try_recv().or_else(|_| {
+                    self.deferred_image
+                        .take()
+                        .map(Ok)
+                        .unwrap_or_else(|| self.thumbnails.rx.try_recv())
                 });
                 let Ok(result) = received else {
                     break;
@@ -977,7 +982,9 @@ impl PreviewerApp {
                     break;
                 }
                 if let Err(result) = self.uploads.queue(result) {
-                    self.deferred_image = Some(result);
+                    if let Some(old) = self.deferred_image.replace(result) {
+                        self.thumbnails.discard(old);
+                    }
                     break;
                 }
             }
@@ -1686,6 +1693,13 @@ impl PreviewerApp {
             ui.ctx().request_repaint_after(self.fast_scroll_until - now);
         }
         self.grid_scroll_offset = output.state.offset.y;
+        crate::performance::sample(
+            "visible_texture_missing",
+            self.pinned_textures
+                .iter()
+                .filter(|k| !self.textures.contains_key(*k))
+                .count() as f64,
+        );
         if !self.viewport_measured
             && !self.pinned_textures.is_empty()
             && self
@@ -2822,6 +2836,22 @@ impl eframe::App for PreviewerApp {
         self.wakeup_pending
             .store(false, std::sync::atomic::Ordering::Release);
         let frame_start = Instant::now();
+        let actual_input = ctx.input(|i| {
+            i.events.iter().any(|e| {
+                matches!(
+                    e,
+                    egui::Event::Key { .. }
+                        | egui::Event::PointerButton { .. }
+                        | egui::Event::MouseWheel { .. }
+                )
+            })
+        });
+        if let Some(run) = self.perf_run.as_mut() {
+            if run.route_started.is_none() && !self.scanning && !self.sorting && self.first_screen {
+                run.route_started = Some(Instant::now());
+                crate::performance::sample("route_ready", 1.0);
+            }
+        }
         crate::performance::begin_frame(self.perf_run.as_ref().map_or(8, |r| r.phase()));
         let interval = frame_start.duration_since(self.last_frame);
         crate::performance::sample("frame_interval_ms", interval.as_secs_f64() * 1000.0);
@@ -2877,7 +2907,11 @@ impl eframe::App for PreviewerApp {
                             self.close_preview();
                         }
                         let speed = if phase == 4 { 2500.0 } else { 600.0 };
-                        let t = elapsed % 20.0;
+                        let t = if run.scenario == "scroll" {
+                            run.route_started.map_or(0.0, |s| s.elapsed().as_secs_f64())
+                        } else {
+                            elapsed
+                        } % 20.0;
                         self.pending_grid_scroll_offset =
                             Some((if t < 10.0 { t } else { 20.0 - t }) as f32 * speed);
                         if phase == 5 && run.last_sort != elapsed as u64 {
@@ -2910,7 +2944,10 @@ impl eframe::App for PreviewerApp {
                         .unwrap_or_default()
                         .parse::<u64>()
                     {
-                        ctx.request_repaint_after(Duration::from_millis(ms));
+                        // egui subtracts predicted_dt from nonzero repaint delays.
+                        let predicted =
+                            ctx.input(|i| Duration::from_secs_f32(i.predicted_dt.max(0.0)));
+                        ctx.request_repaint_after(Duration::from_millis(ms) + predicted);
                     } else {
                         ctx.request_repaint();
                     }
@@ -2960,11 +2997,38 @@ impl eframe::App for PreviewerApp {
         if let Some(due) = self.rescan_due {
             ctx.request_repaint_after(due.saturating_duration_since(Instant::now()));
         }
+        if actual_input {
+            // egui events do not carry OS input timestamps: this excludes event-queue wait.
+            crate::performance::elapsed("input_frame_processing_ms", frame_start);
+        }
         if let Some(start) = self.input_started.take() {
             crate::performance::elapsed("action_ui_feedback_ms", start);
         }
         crate::performance::sample("grid_scroll_offset", self.grid_scroll_offset as f64);
         crate::performance::gauge("pixels_per_point", ctx.pixels_per_point() as f64);
+        crate::performance::gauge("catalog_displayed_records", self.records.len() as f64);
+        crate::performance::gauge(
+            "catalog_displayed_table_estimated_bytes",
+            self.snapshot.table_bytes() as f64,
+        );
+        crate::performance::gauge(
+            "catalog_pending_table_estimated_bytes",
+            self.pending_snapshot
+                .as_ref()
+                .map_or(0, |s| s.table_bytes()) as f64,
+        );
+        crate::performance::gauge(
+            "catalog_pending_records",
+            self.pending_snapshot
+                .as_ref()
+                .map_or(0, |s| s.records.len()) as f64,
+        );
+        crate::performance::gauge("sort_displayed_entries", self.display_indices.len() as f64);
+        crate::performance::gauge("texture_displayed_count", self.textures.len() as f64);
+        crate::performance::gauge(
+            "deferred_pixel_bytes",
+            self.deferred_image.as_ref().map_or(0, |r| r.pixels.len()) as f64,
+        );
         ctx.input(|i| {
             crate::performance::gauge("window_focused", i.focused as u8 as f64);
             crate::performance::sample(

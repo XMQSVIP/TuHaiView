@@ -107,3 +107,87 @@ fn jpeg_scaled_comparison_and_special_formats() {
         );
     }
 }
+
+#[test]
+#[ignore = "requires TUHAI_REAL_FIXTURES; local samples only"]
+fn real_jpeg_cache_compression() {
+    use std::io::BufRead;
+    let root = PathBuf::from(std::env::var_os("TUHAI_REAL_FIXTURES").expect("TUHAI_REAL_FIXTURES"));
+    let manifest =
+        std::io::BufReader::new(std::fs::File::open(root.join("manifest.jsonl")).unwrap());
+    let budget = ByteBudget::new(performance::DECODE_BYTES, performance::PREVIEW_RESERVE);
+    let (mut count, mut raw, mut compressed) = (0u64, 0u64, 0u64);
+    for line in manifest.lines() {
+        let entry: serde_json::Value = serde_json::from_str(&line.unwrap()).unwrap();
+        if entry["format"] != "JPEG" {
+            continue;
+        }
+        let output = decoding::decode(
+            &record(&root.join(entry["fixture"].as_str().unwrap())),
+            256,
+            false,
+            &budget,
+            || false,
+        )
+        .unwrap();
+        let encoded = crate::thumbnail_cache::encode(&output.image, true).unwrap();
+        raw += output.image.pixels.len() as u64;
+        compressed += encoded.len() as u64;
+        count += 1;
+        if count == 1000 {
+            break;
+        }
+    }
+    assert_eq!(count, 1000);
+    eprintln!(
+        "REAL_CACHE {}",
+        serde_json::json!({"count": count, "rgba_bytes": raw, "container_bytes": compressed, "reduction": 1.0-compressed as f64/raw as f64})
+    );
+    assert!(compressed * 5 <= raw);
+}
+
+#[test]
+#[ignore = "single-task native process peak; set TUHAI_PEAK_FAST and TUHAI_FIXTURES"]
+fn single_jpeg_process_peak() {
+    use windows::Win32::System::{
+        ProcessStatus::{
+            GetProcessMemoryInfo, PROCESS_MEMORY_COUNTERS, PROCESS_MEMORY_COUNTERS_EX,
+        },
+        Threading::GetCurrentProcess,
+    };
+    fn memory() -> (usize, usize) {
+        let mut c = PROCESS_MEMORY_COUNTERS_EX::default();
+        c.cb = std::mem::size_of_val(&c) as u32;
+        unsafe {
+            GetProcessMemoryInfo(
+                GetCurrentProcess(),
+                (&mut c as *mut PROCESS_MEMORY_COUNTERS_EX).cast::<PROCESS_MEMORY_COUNTERS>(),
+                c.cb,
+            )
+            .unwrap();
+        }
+        (c.PrivateUsage, c.PeakWorkingSetSize)
+    }
+    let path = PathBuf::from(std::env::var_os("TUHAI_FIXTURES").unwrap())
+        .join("special/baseline-8000x6000.jpg");
+    let fast = std::env::var("TUHAI_PEAK_FAST").as_deref() == Ok("1");
+    let before = memory();
+    let budget = ByteBudget::new(performance::DECODE_BYTES, performance::PREVIEW_RESERVE);
+    if fast {
+        std::hint::black_box(
+            decoding::decode(&record(&path), 256, false, &budget, || false).unwrap(),
+        );
+    } else {
+        std::hint::black_box(
+            image::open(path)
+                .unwrap()
+                .resize(256, 256, image::imageops::FilterType::Triangle)
+                .into_rgba8(),
+        );
+    }
+    let after = memory();
+    eprintln!(
+        "NATIVE_PEAK {}",
+        serde_json::json!({"fast":fast,"initial_private":before.0,"peak_working_set":after.1,"initial_peak_working_set":before.1,"final_private":after.0})
+    );
+}

@@ -1,0 +1,1 @@
+NATIVE_PEAK {"fast":true,"final_private":1998848,"initial_peak_working_set":7106560,"initial_private":1769472,"peak_working_set":27254784}

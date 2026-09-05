@@ -1,0 +1,15 @@
+{
+  "source": "G:\\g_ai\\ai_inspect_person\\img",
+  "destination": "F:\\tuhai-real-fixtures-20260906",
+  "count": 50000,
+  "bytes": 23399709977,
+  "formats": {
+    "JPEG": 49055,
+    "PNG": 945
+  },
+  "header_errors": 0,
+  "complete": true,
+  "manifest_sha256": "dcd6918441eaf350fbd45f4dfea7187a60e12e3a8cf7ee59df2875130bb7f9d6",
+  "seconds": 2302.3429999999935,
+  "sampling": "round-robin top-level categories; stop at count; no full-library inventory"
+}

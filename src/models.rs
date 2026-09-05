@@ -14,6 +14,13 @@ pub struct CatalogSnapshot {
 }
 
 impl CatalogSnapshot {
+    /// Table payload estimate, excluding shared record strings and allocator/hash-table overhead.
+    pub fn table_bytes(&self) -> usize {
+        self.records.len() * std::mem::size_of::<Arc<ImageRecord>>()
+            + self.natural_indices.len() * std::mem::size_of::<usize>()
+            + self.by_path.len() * std::mem::size_of::<(PathBuf, usize)>()
+            + self.by_id.len() * std::mem::size_of::<(i64, usize)>()
+    }
     pub fn new(generation: u64, revision: u64, records: Vec<Arc<ImageRecord>>) -> Self {
         let by_path = records
             .iter()

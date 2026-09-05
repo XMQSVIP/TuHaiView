@@ -7,6 +7,7 @@ use std::sync::{
 
 static QUEUED: AtomicUsize = AtomicUsize::new(0);
 static BYTES: AtomicUsize = AtomicUsize::new(0);
+static RELEASED: AtomicUsize = AtomicUsize::new(0);
 struct Retired {
     value: Box<dyn Send>,
     bytes: usize,
@@ -23,6 +24,7 @@ pub fn retire<T: Send + 'static>(value: T, estimated_bytes: usize) {
                     drop(item.value);
                     BYTES.fetch_sub(item.bytes, Ordering::AcqRel);
                     QUEUED.fetch_sub(1, Ordering::AcqRel);
+                    RELEASED.fetch_add(1, Ordering::AcqRel);
                 }
             })
             .expect("resource reclaimer");
@@ -40,6 +42,10 @@ pub fn retire<T: Send + 'static>(value: T, estimated_bytes: usize) {
 }
 
 pub fn record_metrics() {
+    crate::performance::gauge(
+        "cpu_released_count",
+        RELEASED.load(Ordering::Acquire) as f64,
+    );
     crate::performance::gauge("cpu_retired_count", QUEUED.load(Ordering::Acquire) as f64);
     crate::performance::gauge(
         "cpu_retired_estimated_bytes",

@@ -145,24 +145,35 @@ pub fn sample(name: &'static str, value: f64) {
                     .duration_since(UNIX_EPOCH)
                     .unwrap_or_default()
                     .as_millis();
-                let Ok(file) =
-                    std::fs::File::create(dir.join(format!("performance-{stamp}.jsonl")))
+                let path = dir.join(format!("performance-{stamp}.jsonl"));
+                let Ok(file) = std::fs::File::create(&path)
                 else {
                     return;
                 };
                 let mut file = std::io::BufWriter::new(file);
-                let header = serde_json::json!({"schema": 2, "run_id": stamp, "pid": std::process::id(), "executable": std::env::current_exe().ok(), "scenario_name": std::env::var("TUHAI_PERF_SCENARIO").unwrap_or_else(|_| "trajectory".into()), "system_cache": "unknown", "kind": "run_header"});
+                let header = serde_json::json!({"schema": 3, "run_id": stamp, "pid": std::process::id(), "executable": std::env::current_exe().ok(), "scenario_name": std::env::var("TUHAI_PERF_SCENARIO").unwrap_or_else(|_| "trajectory".into()), "system_cache": "unknown", "kind": "run_header"});
                 let _ = serde_json::to_writer(&mut file, &header);
                 let _ = file.write_all(b"\n");
                 let mut last_flush = Instant::now();
                 loop {
                     match rx.recv_timeout(std::time::Duration::from_secs(1)) {
                         Ok(event) => {
-                            let _ = serde_json::to_writer(&mut file, &event);
-                            let _ = file.write_all(b"\n");
+                            if serde_json::to_writer(&mut file, &event).is_err() || file.write_all(b"\n").is_err() { return; }
                             if let Some(tx) = event.flushed {
-                                let _ = file.flush();
-                                let _ = tx.try_send(());
+                                if file.flush().is_ok() && file.get_ref().sync_data().is_ok() {
+                                    // Publish completion only after the log has reached the filesystem.
+                                    let certify = (|| -> std::io::Result<()> {
+                                        let temporary = path.with_extension("complete.tmp");
+                                        let mut certificate = std::fs::File::create(&temporary)?;
+                                        let data = serde_json::json!({"run_id":stamp,"bytes":file.get_ref().metadata()?.len(),"sync_completed":true});
+                                        certificate.write_all(data.to_string().as_bytes())?;
+                                        certificate.sync_all()?;
+                                        drop(certificate);
+                                        std::fs::rename(temporary, path.with_extension("complete.json"))
+                                    })();
+                                    if certify.is_ok() { let _ = tx.try_send(()); }
+                                }
+                                return;
                             }
                         }
                         Err(crossbeam_channel::RecvTimeoutError::Timeout) => {}
@@ -253,6 +264,7 @@ pub struct UiRun {
     pub scenario: String,
     pub last_root_switch: u64,
     pub alternate_root: Option<std::path::PathBuf>,
+    pub route_started: Option<Instant>,
 }
 impl UiRun {
     pub fn phase(&self) -> u64 {
@@ -266,7 +278,10 @@ impl UiRun {
             return 7;
         }
         if self.scenario == "scroll" {
-            return if self.started.elapsed().as_secs_f64() < 20.0 {
+            return if self
+                .route_started
+                .is_none_or(|s| s.elapsed().as_secs_f64() < 20.0)
+            {
                 0
             } else {
                 1
@@ -294,6 +309,7 @@ impl UiRun {
             captures: 0,
             scenario: std::env::var("TUHAI_PERF_SCENARIO").unwrap_or_else(|_| "trajectory".into()),
             last_root_switch: 0,
+            route_started: None,
             alternate_root: std::env::var_os("TUHAI_PERF_ALTERNATE_ROOT")
                 .map(std::path::PathBuf::from)
                 .filter(|p| p.is_dir()),

@@ -91,6 +91,8 @@ impl DiskCache {
                         // The owner serializes writes and clear; epoch invalidates queued pre-clear work.
                         conn.execute("DELETE FROM entries",[])?;
                         for entry in walkdir::WalkDir::new(&dir).min_depth(1).contents_first(true) {
+                            while performance::PREVIEW_BUSY.load(Ordering::Acquire) && !closed.load(Ordering::Acquire) { thread::sleep(Duration::from_millis(10)); }
+                            if closed.load(Ordering::Acquire) { break; }
                             let entry=entry?; let p=entry.path();
                             if entry.file_type().is_file() && is_payload(p) { fs::remove_file(p)?; }
                             else if entry.file_type().is_dir() { let _=fs::remove_dir(p); }
@@ -229,7 +231,7 @@ fn manifest(dir: &Path) -> Result<Connection> {
     conn.execute_batch("PRAGMA journal_mode=WAL; PRAGMA synchronous=NORMAL; PRAGMA user_version=1; CREATE TABLE IF NOT EXISTS entries(path TEXT PRIMARY KEY,bytes INTEGER NOT NULL,accessed INTEGER NOT NULL); CREATE INDEX IF NOT EXISTS entries_accessed ON entries(accessed);")?;
     Ok(conn)
 }
-fn encode(image: &DecodedImage, jpeg: bool) -> Result<Vec<u8>> {
+pub(crate) fn encode(image: &DecodedImage, jpeg: bool) -> Result<Vec<u8>> {
     let jpeg = jpeg && image.pixels.chunks_exact(4).all(|p| p[3] == 255);
     let mut payload = Vec::new();
     if jpeg {
@@ -346,7 +348,11 @@ fn write_entry(dir: &Path, conn: &mut Connection, write: &Write, epoch: &AtomicU
     let path = dir.join(&rel);
     fs::create_dir_all(path.parent().unwrap())?;
     let tmp = path.with_extension(format!("thm.tmp-{}", std::process::id()));
-    fs::write(&tmp, &bytes)?;
+    if let Err(error) = fs::write(&tmp, &bytes) {
+        // A full disk may leave a partial file after write_all fails.
+        let _ = fs::remove_file(&tmp);
+        return Err(error.into());
+    }
     if epoch.load(Ordering::Acquire) != write.epoch {
         let _ = fs::remove_file(tmp);
         return Ok(());
