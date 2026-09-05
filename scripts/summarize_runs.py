@@ -35,7 +35,7 @@ def collect(directory):
         runs.append(dict(metadata=run,errors=errors,result=result))
     hashes={r['metadata']['sha256'] for r in runs}
     configurations={json.dumps({k:r['metadata'].get(k) for k in
-        ['root','scenario','present','repaint_ms','timer_ms','dataset_manifest','display','dwm','allocator_diagnostics','wgpu_environment']},sort_keys=True) for r in runs}
+        ['root','scenario','present','repaint_ms','timer_ms','dataset_manifest','display','dwm','active_display_paths','allocator_diagnostics','wgpu_environment']},sort_keys=True) for r in runs}
     # Gauge sample counts depend on runtime length; compare the actual values,
     # not those counts or the desktop's maximum resolution.
     viewports={json.dumps({k:{s:r['result']['metrics'].get(k,{}).get(s) for s in ['median','maximum']}

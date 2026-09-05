@@ -57,6 +57,7 @@ $env:TUHAI_PERF_ALLOCATOR=if ($AllocatorDiagnostics) { '1' } else { '' }
 $exeHash=(Get-FileHash -LiteralPath $resolvedExecutable -Algorithm SHA256).Hash
 $toolHash=if (!$SkipPresentMon) { (Get-FileHash -LiteralPath $PresentMon -Algorithm SHA256).Hash } else { $null }
 $dwm=python (Join-Path $PSScriptRoot 'display_timing.py') | ConvertFrom-Json
+$displayPaths=python (Join-Path $PSScriptRoot 'display_paths.py') | ConvertFrom-Json
 $display=Get-CimInstance Win32_VideoController | Select-Object Name,DriverVersion,CurrentRefreshRate,CurrentHorizontalResolution,CurrentVerticalResolution
 for ($run=1; $run -le $Runs; $run++) {
     if ((Get-PSDrive C).Free -lt 3GB) { throw 'Keep 2 GiB free on C plus 1 GiB headroom for this run' }
@@ -116,6 +117,7 @@ for ($run=1; $run -le $Runs; $run++) {
     $report['require_scan_completion']=[bool]$RequireScanCompletion
     $report['requested_seconds']=$Seconds
     $report['source_disk']=$rootDisk
+    $report['active_display_paths']=$displayPaths
     $report['log_output_directory']=$OutputDirectory
     $report['allocator_diagnostics']=[bool]$AllocatorDiagnostics
     $report['timer_ms']=$TimerMs

@@ -7,6 +7,8 @@
       "target_name_error": 0,
       "target_name_flags": 2,
       "target_available": true,
+      "forced_without_detected_monitor": true,
+      "edid_ids_valid": false,
       "output_technology": 5,
       "target_status_flags": 1,
       "path_flags": 1,

@@ -90,6 +90,8 @@ def inspect():
         row = dict(source_name=source.name, source_name_error=source_error,
                    target_name=target.friendly_name, target_name_error=target_error,
                    target_name_flags=target.flags, target_available=bool(path.target.available),
+                   forced_without_detected_monitor=bool(target.flags & 2) if not target_error else None,
+                   edid_ids_valid=bool(target.flags & 4) if not target_error else None,
                    output_technology=path.target.technology, target_status_flags=path.target.status,
                    path_flags=path.flags, refresh=rate(path.target.refresh))
         index = path.target.mode
