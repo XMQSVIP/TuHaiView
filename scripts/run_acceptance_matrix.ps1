@@ -36,9 +36,11 @@ if ($Group -eq 'short') {
         }
     }
 } elseif ($Group -eq 'presentation') {
+    & $runner -Executable $ssd -Root $cases[1].root -Manifest $cases[1].manifest -ExpectedRecords 50000 -RequireScanCompletion -Scenario open -Seconds $IndexWarmupSeconds -Runs 1 -OutputDirectory (Join-Path $OutputDirectory 'presentation-index-warmup')
+    & $runner -Executable $ssd -Root $cases[1].root -Manifest $cases[1].manifest -ExpectedRecords 50000 -Scenario scroll -Seconds 90 -Runs 1 -OutputDirectory (Join-Path $OutputDirectory 'presentation-route-warmup')
     foreach ($configuration in @(@{name='mailbox';present='mailbox';delay=0},@{name='mailbox-paced';present='mailbox';delay=8},@{name='fifo';present='vsync';delay=0})) {
         $output=Join-Path $OutputDirectory $configuration.name
-        & $runner -Executable $ssd -Root $cases[1].root -Manifest $cases[1].manifest -Scenario scroll -Seconds 60 -Runs $Runs -Present $configuration.present -RepaintMs $configuration.delay -OutputDirectory $output
+        & $runner -Executable $ssd -Root $cases[1].root -Manifest $cases[1].manifest -ExpectedRecords 50000 -Scenario scroll -Seconds 60 -Runs $Runs -Present $configuration.present -RepaintMs $configuration.delay -OutputDirectory $output
         python (Join-Path $PSScriptRoot 'summarize_runs.py') $output
     }
 } else {

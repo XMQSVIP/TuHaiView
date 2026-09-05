@@ -5,8 +5,14 @@
 
 | 场景 | 独立运行数 | 五轮有效 | 首批记录中位 / 最大 ms | 首屏就绪中位 / 最大 ms |
 | --- | ---: | --- | ---: | ---: |
+| [real-10k-hdd-open](real-10k-hdd-open.json) | 5 | 是 | 349.92 / 373.87 | 388.12 / 406.98 |
+| [real-10k-hdd-scroll](real-10k-hdd-scroll.json) | 5 | 是 | 371.02 / 411.75 | 402.03 / 446.17 |
 | [real-50k-cached-open](real-50k-cached-open.json) | 5 | 是 | 517.71 / 563.03 | 547.24 / 585.97 |
 | [real-50k-cached-scroll](real-50k-cached-scroll.json) | 5 | 是 | 524.74 / 537.65 | 544.49 / 567.09 |
+| [real-shared-hdd-open](real-shared-hdd-open.json) | 5 | 是 | 350.48 / 356.92 | 388.44 / 399.46 |
+| [real-shared-hdd-scroll](real-shared-hdd-scroll.json) | 5 | 是 | 335.30 / 376.23 | 373.90 / 418.35 |
+| [real-shared-ssd-open](real-shared-ssd-open.json) | 5 | 是 | 381.36 / 447.99 | 435.69 / 493.21 |
+| [real-shared-ssd-scroll](real-shared-ssd-scroll.json) | 5 | 是 | 368.07 / 399.89 | 410.04 / 447.23 |
 | [synthetic-10k-hdd-open](synthetic-10k-hdd-open.json) | 5 | 是 | 354.91 / 437.91 | 391.20 / 461.15 |
 | [synthetic-10k-hdd-scroll](synthetic-10k-hdd-scroll.json) | 5 | 是 | 347.26 / 379.71 | 374.33 / 420.48 |
 | [synthetic-10k-ssd-open](synthetic-10k-ssd-open.json) | 5 | 是 | 345.76 / 363.81 | 386.14 / 409.27 |
@@ -20,11 +26,26 @@
 
 | 场景 / 轮次 | 样本数 | 中位 ms | P95 ms | P99 ms | 最大 ms | >50 / >100 ms 次数 | 判定 |
 | --- | ---: | ---: | ---: | ---: | ---: | ---: | --- |
+| real-10k-hdd-scroll / 1 | 1328 | 31.143 | 32.029 | 32.171 | 32.800 | 0 / 0 | 未通过 |
+| real-10k-hdd-scroll / 2 | 1333 | 31.148 | 32.038 | 32.156 | 32.574 | 0 / 0 | 未通过 |
+| real-10k-hdd-scroll / 3 | 1326 | 31.163 | 32.030 | 32.136 | 32.347 | 0 / 0 | 未通过 |
+| real-10k-hdd-scroll / 4 | 1330 | 31.117 | 32.021 | 32.192 | 32.713 | 0 / 0 | 未通过 |
+| real-10k-hdd-scroll / 5 | 1329 | 31.201 | 32.049 | 32.150 | 32.548 | 0 / 0 | 未通过 |
 | real-50k-cached-scroll / 1 | 1309 | 31.084 | 32.016 | 32.148 | 32.431 | 0 / 0 | 未通过 |
 | real-50k-cached-scroll / 2 | 1290 | 31.181 | 32.052 | 32.167 | 32.638 | 0 / 0 | 未通过 |
 | real-50k-cached-scroll / 3 | 1296 | 31.176 | 32.067 | 32.173 | 32.527 | 0 / 0 | 未通过 |
 | real-50k-cached-scroll / 4 | 1302 | 31.190 | 32.050 | 32.136 | 32.297 | 0 / 0 | 未通过 |
 | real-50k-cached-scroll / 5 | 1293 | 31.138 | 32.048 | 32.156 | 32.483 | 0 / 0 | 未通过 |
+| real-shared-hdd-scroll / 1 | 1340 | 31.188 | 32.056 | 32.134 | 32.589 | 0 / 0 | 未通过 |
+| real-shared-hdd-scroll / 2 | 1330 | 31.173 | 32.034 | 32.132 | 32.586 | 0 / 0 | 未通过 |
+| real-shared-hdd-scroll / 3 | 1328 | 31.167 | 32.043 | 32.144 | 32.662 | 0 / 0 | 未通过 |
+| real-shared-hdd-scroll / 4 | 1343 | 31.119 | 32.018 | 32.128 | 32.650 | 0 / 0 | 未通过 |
+| real-shared-hdd-scroll / 5 | 1336 | 31.182 | 32.050 | 32.155 | 32.499 | 0 / 0 | 未通过 |
+| real-shared-ssd-scroll / 1 | 1334 | 31.229 | 32.072 | 32.172 | 32.301 | 0 / 0 | 未通过 |
+| real-shared-ssd-scroll / 2 | 1333 | 31.179 | 32.043 | 32.165 | 32.616 | 0 / 0 | 未通过 |
+| real-shared-ssd-scroll / 3 | 1333 | 31.131 | 32.046 | 32.149 | 32.558 | 0 / 0 | 未通过 |
+| real-shared-ssd-scroll / 4 | 1336 | 31.164 | 32.043 | 32.154 | 32.353 | 0 / 0 | 未通过 |
+| real-shared-ssd-scroll / 5 | 1330 | 31.166 | 32.035 | 32.176 | 32.714 | 0 / 0 | 未通过 |
 | synthetic-10k-hdd-scroll / 1 | 1322 | 31.143 | 32.026 | 32.156 | 32.655 | 0 / 0 | 未通过 |
 | synthetic-10k-hdd-scroll / 2 | 1330 | 31.073 | 32.013 | 32.130 | 32.421 | 0 / 0 | 未通过 |
 | synthetic-10k-hdd-scroll / 3 | 1314 | 31.055 | 31.898 | 32.152 | 32.698 | 0 / 0 | 未通过 |
