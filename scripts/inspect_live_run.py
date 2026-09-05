@@ -19,7 +19,7 @@ def inspect(directory):
     path = active[-1]
     size = path.stat().st_size
     with path.open('rb') as source:
-        source.seek(max(0, size - 128 * 1024))
+        source.seek(max(0, size - 2 * 1024 * 1024))
         rows = source.read().splitlines()
     latest = {}
     timestamp = None
