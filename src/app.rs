@@ -116,6 +116,7 @@ pub struct PreviewerApp {
     preview_origin: Option<usize>,
     grid_scroll_offset: f32,
     grid_anchor: Option<i64>,
+    pending_sort_anchor: Option<i64>,
     preview_return_offset: f32,
     pending_grid_scroll_offset: Option<f32>,
     pending_grid_focus: Option<usize>,
@@ -202,6 +203,7 @@ impl PreviewerApp {
             preview_origin: None,
             grid_scroll_offset: 0.0,
             grid_anchor: None,
+            pending_sort_anchor: None,
             preview_return_offset: 0.0,
             pending_grid_scroll_offset: None,
             pending_grid_focus: None,
@@ -299,6 +301,7 @@ impl PreviewerApp {
         self.preview_origin = None;
         self.grid_scroll_offset = 0.0;
         self.grid_anchor = None;
+        self.pending_sort_anchor = None;
         self.pending_grid_scroll_offset = Some(0.0);
         self.pending_grid_focus = None;
         self.prefetch_rows = None;
@@ -675,10 +678,11 @@ impl PreviewerApp {
                         .retain(|id| self.display_positions.contains_key(id));
                 }
                 self.restore_preview_by_ids(preview_ids);
-                if self.preview.is_none() {
-                    self.pending_grid_focus = self
-                        .grid_anchor
-                        .and_then(|id| self.display_positions.get(&id).copied());
+                // 仅恢复用户主动排序的锚点；扫描批次排序不能带动滚动位置。
+                if let Some(id) = self.pending_sort_anchor.take() {
+                    if self.preview.is_none() {
+                        self.pending_grid_focus = self.display_positions.get(&id).copied();
+                    }
                 }
                 self.selection_anchor = None;
                 self.sorting = false;
@@ -1138,6 +1142,7 @@ impl PreviewerApp {
             }
         });
         if self.sort != self.previous_sort {
+            self.pending_sort_anchor = self.grid_anchor.filter(|_| self.preview.is_none());
             self.request_sort();
         }
     }
