@@ -1,0 +1,43 @@
+
+running 38 tests
+test app::tests::changing_keeper_changes_representative_without_changing_count ... ok
+test app::tests::deduplicated_display_keeps_unique_images_and_one_per_group ... ok
+test app::tests::display_index_handles_fifty_thousand_records ... ok
+test app::tests::enabling_filter_drops_hidden_selection_only ... ok
+test app::tests::grid_layout_distributes_the_full_row_width ... ok
+test app::tests::grid_layout_keeps_one_column_in_a_narrow_view ... ok
+test budget::tests::reserve_and_cancel_do_not_leak_bytes ... ok
+test catalog::runtime::tests::actor_reuses_snapshot_and_applies_only_changed_paths ... ok
+test catalog::runtime::tests::change_set_coalesces_subtrees_and_detects_overflow ... ok
+test catalog::tests::batch_upsert_50k_completes_within_budget ... ignored, manual release-mode performance benchmark
+test catalog::tests::cancelled_scan_stops_without_finished_event ... ok
+test catalog::tests::natural_sort_places_2_before_10 ... ok
+test catalog::tests::old_schema_migrates_and_allows_same_path_under_two_roots ... ok
+test catalog::tests::supported_extensions_are_case_insensitive ... ok
+test catalog::tests::unchanged_incremental_scan_reuses_records_and_removes_missing_files ... ok
+test catalog::tests::v2_schema_migrates_and_preserves_records ... ok
+test decoding::tests::every_exif_orientation_has_correct_dimensions ... ok
+test decoding::tests::malformed_jpeg_header_is_bounded ... ok
+test decoding::tests::thumbnail_does_not_upscale_and_preserves_alpha ... ok
+test duplicates::tests::cancelled_scan_never_finishes ... ok
+test duplicates::tests::default_keeper_prefers_shallow_clean_name ... ok
+test duplicates::tests::delete_validation_rejects_changed_file ... ok
+test duplicates::tests::deletion_modes_can_keep_one_or_target_every_member ... ok
+test duplicates::tests::identical_content_groups_and_unique_sizes_are_not_read ... ok
+test duplicates::tests::progress_event_types_are_sendable ... ok
+test empty_folders::tests::finds_only_directly_empty_subdirectories ... ok
+test file_ops::tests::duplicate_delete_validates_before_mutating_and_reports_paths ... ok
+test file_ops::tests::same_windows_path_is_case_insensitive ... ok
+test gpu_images::tests::gpu_sliced_upload_readback_and_cancel ... ignored, requires a DX12 adapter
+test icon_pixels::tests::icon_has_expected_size_and_transparent_corners ... ok
+test perf_tests::jpeg_scaled_comparison_and_special_formats ... ignored, requires TUHAI_FIXTURES, run in Release
+test sorting::tests::sorts_indices_preserving_records_and_filtering_hidden_ids ... ok
+test thumbnail_cache::tests::cleanup_finishes_to_eighty_percent_across_batches ... ok
+test thumbnail_cache::tests::compressed_cache_roundtrip_alpha_and_source_dimensions ... ok
+test thumbnail_cache::tests::jpeg_cache_is_small_and_v2_is_readable ... ok
+test thumbnail_cache::tests::stale_writes_and_storage_errors_do_not_publish_entries ... ok
+test thumbnails::tests::saturated_result_channel_can_be_cancelled_and_releases_lease ... ok
+test thumbnails::tests::viewport_and_preview_cancel_old_work ... ok
+
+test result: ok. 35 passed; 0 failed; 3 ignored; 0 measured; 0 filtered out; finished in 3.18s
+

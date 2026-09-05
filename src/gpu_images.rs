@@ -14,6 +14,8 @@ pub struct GpuImage(Arc<ImageInner>);
 struct ImageInner {
     id: egui::TextureId,
     size: [usize; 2],
+    // Ownership keeps the native allocation alive; tests additionally read it back.
+    #[allow(dead_code)]
     texture: wgpu::Texture,
     state: RenderState,
     pub requested_side: u32,

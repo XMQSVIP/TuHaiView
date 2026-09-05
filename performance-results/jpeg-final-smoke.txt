@@ -1,0 +1,26 @@
+
+running 1 test
+PERF {"fast":false,"file":"baseline-6000x4000.jpg","ms":508.71270000000004,"run":0}
+PERF {"fast":true,"file":"baseline-6000x4000.jpg","ms":90.6885,"run":0}
+PERF {"fast":true,"file":"baseline-6000x4000.jpg","ms":70.0179,"run":1}
+PERF {"fast":false,"file":"baseline-6000x4000.jpg","ms":431.3129,"run":1}
+PERF {"fast":false,"file":"baseline-6000x4000.jpg","ms":442.5837,"run":2}
+PERF {"fast":true,"file":"baseline-6000x4000.jpg","ms":80.35849999999999,"run":2}
+PERF {"fast":true,"file":"baseline-6000x4000.jpg","ms":74.0959,"run":3}
+PERF {"fast":false,"file":"baseline-6000x4000.jpg","ms":431.0953,"run":3}
+PERF {"fast":false,"file":"baseline-6000x4000.jpg","ms":360.4877,"run":4}
+PERF {"fast":true,"file":"baseline-6000x4000.jpg","ms":67.0941,"run":4}
+PERF {"fast":false,"file":"baseline-8000x6000.jpg","ms":883.1909999999999,"run":0}
+PERF {"fast":true,"file":"baseline-8000x6000.jpg","ms":144.9841,"run":0}
+PERF {"fast":true,"file":"baseline-8000x6000.jpg","ms":132.6979,"run":1}
+PERF {"fast":false,"file":"baseline-8000x6000.jpg","ms":732.8019,"run":1}
+PERF {"fast":false,"file":"baseline-8000x6000.jpg","ms":858.1388,"run":2}
+PERF {"fast":true,"file":"baseline-8000x6000.jpg","ms":147.9921,"run":2}
+PERF {"fast":true,"file":"baseline-8000x6000.jpg","ms":150.8594,"run":3}
+PERF {"fast":false,"file":"baseline-8000x6000.jpg","ms":842.9399,"run":3}
+PERF {"fast":false,"file":"baseline-8000x6000.jpg","ms":802.4901,"run":4}
+PERF {"fast":true,"file":"baseline-8000x6000.jpg","ms":130.0256,"run":4}
+test perf_tests::jpeg_scaled_comparison_and_special_formats ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 37 filtered out; finished in 9.08s
+
