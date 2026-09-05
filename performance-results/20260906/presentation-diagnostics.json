@@ -1,0 +1,433 @@
+{
+  "display-awake-empty": {
+    "metadata": {
+      "run": 1,
+      "pid": 19380,
+      "started": "2026-09-06T02:58:08.2914451+08:00",
+      "exit_code": 0,
+      "seconds": 210.3387316,
+      "timed_out": false,
+      "executable": "F:\\tuhai-validation\\heap-probe\\TuHaiView.exe",
+      "sha256": "E85EE067105EB0450BFEF718B9637584AE0D768C7FD8C8562B9299ABB0649B3C",
+      "root": "F:\\tuhai-validation\\empty-render-dataset",
+      "scenario": "trajectory",
+      "present": "mailbox",
+      "repaint_ms": 0,
+      "display": [
+        {
+          "Name": "OrayIddDriver Device",
+          "DriverVersion": "17.50.19.949",
+          "CurrentRefreshRate": null,
+          "CurrentHorizontalResolution": null,
+          "CurrentVerticalResolution": null
+        },
+        {
+          "Name": "GameViewer Virtual Display Adapter",
+          "DriverVersion": "15.6.5.199",
+          "CurrentRefreshRate": null,
+          "CurrentHorizontalResolution": null,
+          "CurrentVerticalResolution": null
+        },
+        {
+          "Name": "Todesk Virtual Display Adapter",
+          "DriverVersion": "16.44.2.509",
+          "CurrentRefreshRate": null,
+          "CurrentHorizontalResolution": null,
+          "CurrentVerticalResolution": null
+        },
+        {
+          "Name": "Intel(R) UHD Graphics 630",
+          "DriverVersion": "31.0.101.2140",
+          "CurrentRefreshRate": 59,
+          "CurrentHorizontalResolution": 2560,
+          "CurrentVerticalResolution": 1440
+        }
+      ],
+      "dwm": {
+        "hresult": "0x0",
+        "size": 292,
+        "refresh_n": 60,
+        "refresh_d": 1,
+        "compose_n": 60,
+        "compose_d": 1,
+        "refresh_period_ms": 16.6666,
+        "remote_session": false
+      },
+      "system_cache": "unknown",
+      "application_cache": "preserved; GPU empty at process start",
+      "logs": [
+        "F:\\tuhai-validation\\display-awake-empty\\20260906-025808-1-performance-1788634688611.jsonl"
+      ],
+      "presentmon": "F:\\tuhai-validation\\display-awake-empty\\20260906-025808-1-presentmon.csv",
+      "presentmon_sha256": "9BEC3083069F58F911E6A512F4806DB51A27BD096103087BC1D05EF54C80A191",
+      "presentmon_exit": 0,
+      "dataset_manifest": null,
+      "source_disk": {
+        "Number": 1,
+        "FriendlyName": "WDC WD10EZEX-08WN4A0",
+        "BusType": "SATA"
+      },
+      "log_output_directory": "F:\\tuhai-validation\\display-awake-empty",
+      "allocator_diagnostics": true,
+      "display_awake_request": "ES_DISPLAY_REQUIRED | ES_SYSTEM_REQUIRED; periodic, no persistent power-plan change",
+      "abort_reason": null
+    },
+    "display_ms": {
+      "n": 6051,
+      "median": 31.2017,
+      "p95": 32.0601,
+      "p99": 32.1276,
+      "maximum": 93.2025,
+      "over_50ms": 4,
+      "over_100ms": 0
+    },
+    "gpu_busy_ms": {
+      "n": 98220,
+      "median": 1.2838,
+      "p95": 1.6935,
+      "p99": 1.8033,
+      "maximum": 3.2227,
+      "over_50ms": 0,
+      "over_100ms": 0
+    },
+    "latency_ms": {
+      "n": 6051,
+      "median": 33.907,
+      "p95": 35.1861,
+      "p99": 39.4194,
+      "maximum": 63.4072,
+      "over_50ms": 9,
+      "over_100ms": 0
+    },
+    "status": "diagnostic only; short duration, not five-run acceptance"
+  },
+  "empty-paced-diagnostic": {
+    "metadata": {
+      "run": 1,
+      "pid": 16368,
+      "started": "2026-09-06T03:03:36.3650743+08:00",
+      "exit_code": 0,
+      "seconds": 90.2968427,
+      "timed_out": false,
+      "executable": "F:\\tuhai-validation\\surface-probe\\TuHaiView.exe",
+      "sha256": "18AAF38AF225A7DFE48429D477E994903DFCD48439B482740EE18E107FDD58BC",
+      "root": "F:\\tuhai-validation\\empty-render-dataset",
+      "scenario": "trajectory",
+      "present": "mailbox",
+      "repaint_ms": 8,
+      "display": [
+        {
+          "Name": "OrayIddDriver Device",
+          "DriverVersion": "17.50.19.949",
+          "CurrentRefreshRate": null,
+          "CurrentHorizontalResolution": null,
+          "CurrentVerticalResolution": null
+        },
+        {
+          "Name": "GameViewer Virtual Display Adapter",
+          "DriverVersion": "15.6.5.199",
+          "CurrentRefreshRate": null,
+          "CurrentHorizontalResolution": null,
+          "CurrentVerticalResolution": null
+        },
+        {
+          "Name": "Todesk Virtual Display Adapter",
+          "DriverVersion": "16.44.2.509",
+          "CurrentRefreshRate": null,
+          "CurrentHorizontalResolution": null,
+          "CurrentVerticalResolution": null
+        },
+        {
+          "Name": "Intel(R) UHD Graphics 630",
+          "DriverVersion": "31.0.101.2140",
+          "CurrentRefreshRate": 59,
+          "CurrentHorizontalResolution": 2560,
+          "CurrentVerticalResolution": 1440
+        }
+      ],
+      "dwm": {
+        "hresult": "0x0",
+        "size": 292,
+        "refresh_n": 60,
+        "refresh_d": 1,
+        "compose_n": 60,
+        "compose_d": 1,
+        "refresh_period_ms": 16.6666,
+        "remote_session": false
+      },
+      "system_cache": "unknown",
+      "application_cache": "preserved; GPU empty at process start",
+      "logs": [
+        "F:\\tuhai-validation\\empty-paced-diagnostic\\20260906-030336-1-performance-1788635017116.jsonl"
+      ],
+      "presentmon": "F:\\tuhai-validation\\empty-paced-diagnostic\\20260906-030336-1-presentmon.csv",
+      "presentmon_sha256": "9BEC3083069F58F911E6A512F4806DB51A27BD096103087BC1D05EF54C80A191",
+      "presentmon_exit": 0,
+      "dataset_manifest": null,
+      "source_disk": {
+        "Number": 1,
+        "FriendlyName": "WDC WD10EZEX-08WN4A0",
+        "BusType": "SATA"
+      },
+      "log_output_directory": "F:\\tuhai-validation\\empty-paced-diagnostic",
+      "allocator_diagnostics": true,
+      "display_awake_request": "ES_DISPLAY_REQUIRED | ES_SYSTEM_REQUIRED; periodic, no persistent power-plan change",
+      "abort_reason": null
+    },
+    "display_ms": {
+      "n": 1974,
+      "median": 31.035649999999997,
+      "p95": 31.9281,
+      "p99": 32.2077,
+      "maximum": 94.7429,
+      "over_50ms": 1,
+      "over_100ms": 0
+    },
+    "gpu_busy_ms": {
+      "n": 6797,
+      "median": 3.1886,
+      "p95": 3.384,
+      "p99": 3.4437,
+      "maximum": 3.6541,
+      "over_50ms": 0,
+      "over_100ms": 0
+    },
+    "latency_ms": {
+      "n": 1974,
+      "median": 69.40180000000001,
+      "p95": 73.8742,
+      "p99": 74.8819,
+      "maximum": 94.8223,
+      "over_50ms": 1973,
+      "over_100ms": 0
+    },
+    "status": "diagnostic only; short duration, not five-run acceptance"
+  },
+  "scroll-paced16-probe": {
+    "metadata": {
+      "run": 1,
+      "pid": 8956,
+      "started": "2026-09-06T03:06:01.3651464+08:00",
+      "exit_code": 0,
+      "seconds": 120.2955269,
+      "timed_out": false,
+      "executable": "F:\\tuhai-validation\\surface-probe\\TuHaiView.exe",
+      "sha256": "18AAF38AF225A7DFE48429D477E994903DFCD48439B482740EE18E107FDD58BC",
+      "root": "C:\\tuhai-fixtures-20260905\\catalog",
+      "scenario": "scroll",
+      "present": "mailbox",
+      "repaint_ms": 16,
+      "display": [
+        {
+          "Name": "OrayIddDriver Device",
+          "DriverVersion": "17.50.19.949",
+          "CurrentRefreshRate": null,
+          "CurrentHorizontalResolution": null,
+          "CurrentVerticalResolution": null
+        },
+        {
+          "Name": "GameViewer Virtual Display Adapter",
+          "DriverVersion": "15.6.5.199",
+          "CurrentRefreshRate": null,
+          "CurrentHorizontalResolution": null,
+          "CurrentVerticalResolution": null
+        },
+        {
+          "Name": "Todesk Virtual Display Adapter",
+          "DriverVersion": "16.44.2.509",
+          "CurrentRefreshRate": null,
+          "CurrentHorizontalResolution": null,
+          "CurrentVerticalResolution": null
+        },
+        {
+          "Name": "Intel(R) UHD Graphics 630",
+          "DriverVersion": "31.0.101.2140",
+          "CurrentRefreshRate": 59,
+          "CurrentHorizontalResolution": 2560,
+          "CurrentVerticalResolution": 1440
+        }
+      ],
+      "dwm": {
+        "hresult": "0x0",
+        "size": 292,
+        "refresh_n": 60,
+        "refresh_d": 1,
+        "compose_n": 60,
+        "compose_d": 1,
+        "refresh_period_ms": 16.6666,
+        "remote_session": false
+      },
+      "system_cache": "unknown",
+      "application_cache": "preserved; GPU empty at process start",
+      "logs": [
+        "F:\\tuhai-validation\\scroll-paced16-probe\\20260906-030601-1-performance-1788635161718.jsonl"
+      ],
+      "presentmon": "F:\\tuhai-validation\\scroll-paced16-probe\\20260906-030601-1-presentmon.csv",
+      "presentmon_sha256": "9BEC3083069F58F911E6A512F4806DB51A27BD096103087BC1D05EF54C80A191",
+      "presentmon_exit": 0,
+      "dataset_manifest": {
+        "sha256": "ECF1DFDC5BC6997AC7527E34E57DC6E2BD7931C53B46F21208039408E9DB05C2",
+        "path": "C:\\tuhai-fixtures-20260905\\manifest.json"
+      },
+      "source_disk": {
+        "Number": 0,
+        "FriendlyName": "Colorful CN600 256GB",
+        "BusType": "NVMe"
+      },
+      "log_output_directory": "F:\\tuhai-validation\\scroll-paced16-probe",
+      "allocator_diagnostics": true,
+      "display_awake_request": "ES_DISPLAY_REQUIRED | ES_SYSTEM_REQUIRED; periodic, no persistent power-plan change",
+      "abort_reason": null
+    },
+    "display_ms": {
+      "n": 3003,
+      "median": 31.1071,
+      "p95": 32.0309,
+      "p99": 32.2056,
+      "maximum": 95.0999,
+      "over_50ms": 5,
+      "over_100ms": 0
+    },
+    "gpu_busy_ms": {
+      "n": 12117,
+      "median": 2.8813,
+      "p95": 4.4745,
+      "p99": 4.7638,
+      "maximum": 5.5791,
+      "over_50ms": 0,
+      "over_100ms": 0
+    },
+    "latency_ms": {
+      "n": 3003,
+      "median": 69.9961,
+      "p95": 80.9237,
+      "p99": 82.7436,
+      "maximum": 85.9787,
+      "over_50ms": 2993,
+      "over_100ms": 0
+    },
+    "status": "diagnostic only; short duration, not five-run acceptance"
+  },
+  "timer1-empty-probe": {
+    "metadata": {
+      "run": 1,
+      "pid": 26404,
+      "started": "2026-09-06T03:12:07.3117150+08:00",
+      "exit_code": 0,
+      "seconds": 90.3675381,
+      "timed_out": false,
+      "executable": "F:\\tuhai-validation\\timer-probe\\TuHaiView.exe",
+      "sha256": "64CB815D10E61472CAF77AB340C7D7574A405A1FC9CE234CB6F5927E37FFB57F",
+      "root": "F:\\tuhai-validation\\empty-render-dataset",
+      "scenario": "trajectory",
+      "present": "mailbox",
+      "repaint_ms": 0,
+      "display": [
+        {
+          "Name": "OrayIddDriver Device",
+          "DriverVersion": "17.50.19.949",
+          "CurrentRefreshRate": null,
+          "CurrentHorizontalResolution": null,
+          "CurrentVerticalResolution": null
+        },
+        {
+          "Name": "GameViewer Virtual Display Adapter",
+          "DriverVersion": "15.6.5.199",
+          "CurrentRefreshRate": null,
+          "CurrentHorizontalResolution": null,
+          "CurrentVerticalResolution": null
+        },
+        {
+          "Name": "Todesk Virtual Display Adapter",
+          "DriverVersion": "16.44.2.509",
+          "CurrentRefreshRate": null,
+          "CurrentHorizontalResolution": null,
+          "CurrentVerticalResolution": null
+        },
+        {
+          "Name": "Intel(R) UHD Graphics 630",
+          "DriverVersion": "31.0.101.2140",
+          "CurrentRefreshRate": 59,
+          "CurrentHorizontalResolution": 2560,
+          "CurrentVerticalResolution": 1440
+        }
+      ],
+      "dwm": {
+        "hresult": "0x0",
+        "size": 292,
+        "refresh_n": 60,
+        "refresh_d": 1,
+        "compose_n": 60,
+        "compose_d": 1,
+        "refresh_period_ms": 16.6666,
+        "remote_session": false
+      },
+      "system_cache": "unknown",
+      "application_cache": "preserved; GPU empty at process start",
+      "logs": [
+        "F:\\tuhai-validation\\timer1-empty-probe\\20260906-031207-1-performance-1788635527423.jsonl"
+      ],
+      "presentmon": "F:\\tuhai-validation\\timer1-empty-probe\\20260906-031207-1-presentmon.csv",
+      "presentmon_sha256": "9BEC3083069F58F911E6A512F4806DB51A27BD096103087BC1D05EF54C80A191",
+      "presentmon_exit": 0,
+      "dataset_manifest": null,
+      "source_disk": {
+        "Number": 1,
+        "FriendlyName": "WDC WD10EZEX-08WN4A0",
+        "BusType": "SATA"
+      },
+      "log_output_directory": "F:\\tuhai-validation\\timer1-empty-probe",
+      "allocator_diagnostics": true,
+      "timer_ms": 1,
+      "presentmon_arguments": [
+        "--process_id",
+        "26404",
+        "--output_file",
+        "\"F:\\tuhai-validation\\timer1-empty-probe\\20260906-031207-1-presentmon.csv\"",
+        "--qpc_time",
+        "--timed",
+        "90",
+        "--terminate_after_timed",
+        "--terminate_on_proc_exit",
+        "--no_console_stats",
+        "--session_name",
+        "tuhai-20260906-031207-1"
+      ],
+      "wgpu_environment": {
+        "validation": null,
+        "discard_hal_labels": null,
+        "debug": null
+      },
+      "display_awake_request": "ES_DISPLAY_REQUIRED | ES_SYSTEM_REQUIRED; periodic, no persistent power-plan change",
+      "abort_reason": null
+    },
+    "display_ms": {
+      "n": 2007,
+      "median": 31.1903,
+      "p95": 32.0614,
+      "p99": 32.1403,
+      "maximum": 61.93810000000001,
+      "over_50ms": 1,
+      "over_100ms": 0
+    },
+    "gpu_busy_ms": {
+      "n": 37693,
+      "median": 1.237,
+      "p95": 1.4585,
+      "p99": 1.568,
+      "maximum": 3.3561,
+      "over_50ms": 0,
+      "over_100ms": 0
+    },
+    "latency_ms": {
+      "n": 2007,
+      "median": 64.9489,
+      "p95": 66.4103,
+      "p99": 67.0454,
+      "maximum": 87.1928,
+      "over_50ms": 1867,
+      "over_100ms": 0
+    },
+    "status": "diagnostic only; short duration, not five-run acceptance"
+  }
+}

@@ -10,6 +10,8 @@ param(
     [string]$PresentMon='F:\tuhai-validation\tools\PresentMon-2.5.1-x64.exe',
     [string]$AlternateRoot,
     [string]$Manifest,
+    [int]$ExpectedRecords=0,
+    [switch]$RequireScanCompletion,
     [switch]$AllocatorDiagnostics,
     [string]$OutputDirectory='F:\tuhai-validation\runs',
     [switch]$SkipPresentMon
@@ -122,5 +124,11 @@ for ($run=1; $run -le $Runs; $run++) {
     if ($process.ExitCode -ne 0) { throw "UI run $run failed" }
     if (!$SkipPresentMon -and (!(Test-Path -LiteralPath $csv) -or (Get-Item -LiteralPath $csv).Length -lt 200)) {
         throw 'PresentMon produced no display samples; run saved as invalid. Repair capture before repeating the matrix.'
+    }
+    if (!$SkipPresentMon) {
+        $validation=@((Join-Path $PSScriptRoot 'validate_ui_run.py'),(Join-Path $OutputDirectory "$stamp-run.json"),'--expected-records',"$ExpectedRecords")
+        if ($RequireScanCompletion) { $validation+='--require-scan' }
+        & python @validation
+        if ($LASTEXITCODE -ne 0) { throw 'Incomplete/invalid UI run saved; fix warmup or capture before continuing the matrix' }
     }
 }

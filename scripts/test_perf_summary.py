@@ -5,8 +5,23 @@ import unittest
 from pathlib import Path
 from summarize_perf import analyze
 from summarize_runs import collect
+from validate_ui_run import validate
 
 class ReportTests(unittest.TestCase):
+    def test_partial_catalog_cannot_be_used_as_completed_warmup(self):
+        with tempfile.TemporaryDirectory() as root:
+            root=Path(root); log=root/'samples.jsonl'; capture=root/'display.csv'; metadata=root/'run.json'
+            samples=[dict(kind='run_header',schema=2,pid=123,scenario_name='open')]
+            for name,value in [('soak_completed_seconds',90),('log_flush',1),('log_dropped',0),('catalog_displayed_records',27414),('first_screen_ms',300),('grid_scroll_offset',500)]:
+                samples.append(dict(name=name,value=value,time_ms=0))
+            log.write_text(''.join(json.dumps(s)+'\n' for s in samples))
+            capture.write_text('ProcessID,CPUStartQPC,MsBetweenDisplayChange\n'+''.join(f'123,{q},16\n' for q in range(40)))
+            metadata.write_text(json.dumps(dict(exit_code=0,scenario='open',logs=[str(log)],presentmon=str(capture))))
+            errors=validate(metadata,50000,True)
+            self.assertIn('catalog_count_27414_expected_50000',errors)
+            self.assertIn('full_scan_did_not_finish',errors)
+            self.assertIn('open_scenario_scrolled_automatically',errors)
+
     def test_open_capture_requires_displayed_frames_from_target_process(self):
         with tempfile.TemporaryDirectory() as root:
             path=Path(root)/'samples.jsonl'; capture=Path(root)/'display.csv'

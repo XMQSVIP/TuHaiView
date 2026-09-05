@@ -159,4 +159,6 @@ git diff --check
 - `run_ui_perf.ps1` 将新版本日志存到输出目录；旧 EXE 仍从自身 data 目录收集。只在基准期间调用 `SetThreadExecutionState(ES_DISPLAY_REQUIRED | ES_SYSTEM_REQUIRED)` 重置显示和系统空闲计时，不修改电源方案。没有显示样本的运行无效。
 - `-TimerMs 1` 是进程内计时器分辨率诊断，退出时配对恢复；正常启动不会启用。参考 [Windows API](https://learn.microsoft.com/en-us/windows/win32/api/timeapi/nf-timeapi-timebeginperiod)。
 - `summarize_memory_probe.py` 用流式读取生成分钟汇总和相同四分钟周期差值，排除首轮和末段空闲。它不会把诊断结果转换为完整验收通过。
+- `validate_ui_run.py` 在每次采集后验证日志、目标进程显示样本以及可选的记录数量/全扫描完成条件。矩阵先完成索引，再预热路线，防止 90 秒中止在 2.7 万条的扫描被当作已缓存 5 万张基线。`open` 场景还检查滚动偏移始终为零。
+- `first_records_ms` 等指标从打开目录开始；`startup_first_records_ms` 等指标从 `main` 初始化单调时钟开始，包含窗口和 GPU 初始化。它仍不包括进入 `main` 前的系统加载耗时，真实输入到显示另行采集。
 - 新增真实后台缓存回归覆盖旧 v2 迁移、清理中写入、完成清理后旧任务延迟回写、清理后新写入、缓存配置从 2 GiB 调回 1 GiB。使用独立临时目录。

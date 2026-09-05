@@ -1,0 +1,75 @@
+{
+  "log": "F:\\tuhai-validation\\matrix-v2\\real-50k-index-warmup\\20260906-032552-1-performance-1788636353127.jsonl",
+  "sha256": "86f968d6436995cc8224c6b9354f39ded49fa3c077b2661fa92ee25f987599f1",
+  "header": {
+    "executable": "F:\\tuhai-validation\\validation-v2\\TuHaiView.exe",
+    "kind": "run_header",
+    "pid": 10016,
+    "run_id": 1788636353127,
+    "scenario_name": "open",
+    "schema": 3,
+    "system_cache": "unknown"
+  },
+  "duration_seconds": 300.255523,
+  "completed": true,
+  "durable_log": true,
+  "malformed": 0,
+  "dropped": 0.0,
+  "median_by_minute": {
+    "0": {
+      "gpu_allocated_bytes": 18174976.0,
+      "cpu_retired_count": 0.0,
+      "image_inflight_count": 0.0,
+      "image_ready_count": 0.0,
+      "egui_data_entries": 38.0,
+      "egui_text_layouts": 49.0,
+      "process_private_bytes": 581890048.0,
+      "process_working_set_bytes": 603111424.0
+    },
+    "1": {
+      "cpu_retired_count": 0.0,
+      "egui_text_layouts": 49.0,
+      "gpu_allocated_bytes": 18174976.0,
+      "image_inflight_count": 0.0,
+      "image_ready_count": 0.0,
+      "egui_data_entries": 38.0,
+      "process_private_bytes": 581746688.0,
+      "process_working_set_bytes": 603242496.0
+    },
+    "2": {
+      "egui_data_entries": 38.0,
+      "process_private_bytes": 581693440.0,
+      "process_working_set_bytes": 603226112.0,
+      "cpu_retired_count": 0.0,
+      "egui_text_layouts": 49.0,
+      "gpu_allocated_bytes": 18174976.0,
+      "image_inflight_count": 0.0,
+      "image_ready_count": 0.0
+    },
+    "3": {
+      "process_private_bytes": 581664768.0,
+      "process_working_set_bytes": 603226112.0,
+      "cpu_retired_count": 0.0,
+      "egui_text_layouts": 49.0,
+      "gpu_allocated_bytes": 18174976.0,
+      "image_inflight_count": 0.0,
+      "image_ready_count": 0.0,
+      "egui_data_entries": 38.0
+    },
+    "4": {
+      "cpu_retired_count": 0.0,
+      "egui_text_layouts": 49.0,
+      "gpu_allocated_bytes": 18174976.0,
+      "image_inflight_count": 0.0,
+      "image_ready_count": 0.0,
+      "egui_data_entries": 38.0,
+      "process_private_bytes": 581664768.0,
+      "process_working_set_bytes": 603328512.0
+    },
+    "5": {
+      "egui_data_entries": 38.0
+    }
+  },
+  "comparable_cycle_deltas": [],
+  "acceptance": "diagnostic_only; display and five-run matrix not evaluated"
+}

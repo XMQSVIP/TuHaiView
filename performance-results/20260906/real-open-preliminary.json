@@ -1,0 +1,77 @@
+{
+  "status": "preliminary_only; initial index warmup not verified; fifth run script interrupted",
+  "runs": [
+    {
+      "run": 1,
+      "metrics": {
+        "grid_scroll_offset": 0.0,
+        "catalog_displayed_records": 0.0,
+        "startup_first_records_ms": 516.3261,
+        "startup_first_thumbnail_ms": 519.9461,
+        "startup_first_screen_ms": 540.5308
+      },
+      "maxima": {
+        "grid_scroll_offset": 0,
+        "catalog_displayed_records": 32955.0,
+        "startup_first_records_ms": 516.3261,
+        "startup_first_thumbnail_ms": 519.9461,
+        "startup_first_screen_ms": 540.5308
+      },
+      "sha256": "19199B97FB4E929D4495DDD839ED2D6BAD7C50C44AD9B066AF1C7ED75A845B69"
+    },
+    {
+      "run": 2,
+      "metrics": {
+        "grid_scroll_offset": 0.0,
+        "catalog_displayed_records": 0.0,
+        "startup_first_records_ms": 480.8182,
+        "startup_first_thumbnail_ms": 489.0731,
+        "startup_first_screen_ms": 510.5659
+      },
+      "maxima": {
+        "grid_scroll_offset": 0,
+        "catalog_displayed_records": 39707.0,
+        "startup_first_records_ms": 480.8182,
+        "startup_first_thumbnail_ms": 489.0731,
+        "startup_first_screen_ms": 510.5659
+      },
+      "sha256": "19199B97FB4E929D4495DDD839ED2D6BAD7C50C44AD9B066AF1C7ED75A845B69"
+    },
+    {
+      "run": 3,
+      "metrics": {
+        "grid_scroll_offset": 0.0,
+        "catalog_displayed_records": 0.0,
+        "startup_first_records_ms": 702.1370999999999,
+        "startup_first_thumbnail_ms": 709.2454,
+        "startup_first_screen_ms": 730.9153
+      },
+      "maxima": {
+        "grid_scroll_offset": 0,
+        "catalog_displayed_records": 45559.0,
+        "startup_first_records_ms": 702.1370999999999,
+        "startup_first_thumbnail_ms": 709.2454,
+        "startup_first_screen_ms": 730.9153
+      },
+      "sha256": "19199B97FB4E929D4495DDD839ED2D6BAD7C50C44AD9B066AF1C7ED75A845B69"
+    },
+    {
+      "run": 4,
+      "metrics": {
+        "grid_scroll_offset": 0.0,
+        "catalog_displayed_records": 0.0,
+        "startup_first_records_ms": 826.765,
+        "startup_first_thumbnail_ms": 834.1148000000001,
+        "startup_first_screen_ms": 851.5254
+      },
+      "maxima": {
+        "grid_scroll_offset": 0,
+        "catalog_displayed_records": 50000.0,
+        "startup_first_records_ms": 826.765,
+        "startup_first_thumbnail_ms": 834.1148000000001,
+        "startup_first_screen_ms": 851.5254
+      },
+      "sha256": "19199B97FB4E929D4495DDD839ED2D6BAD7C50C44AD9B066AF1C7ED75A845B69"
+    }
+  ]
+}

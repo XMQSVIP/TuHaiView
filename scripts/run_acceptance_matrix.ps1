@@ -1,12 +1,14 @@
 param(
     [ValidateSet('short','presentation','memory-short','memory-full')][string]$Group='short',
     [string]$OutputDirectory='F:\tuhai-validation\final-matrix',
+    [string]$HddExecutable='F:\tuhai-validation\validation-v2\TuHaiView.exe',
+    [string]$SsdExecutable='C:\tuhai-validation-v2\TuHaiView.exe',
     [int]$Runs=5
 )
 $ErrorActionPreference='Stop'
 $runner=Join-Path $PSScriptRoot 'run_ui_perf.ps1'
-$hdd='F:\tuhai-validation\candidate\TuHaiView.exe'
-$ssd='C:\tuhai-validation-candidate\TuHaiView.exe'
+$hdd=$HddExecutable
+$ssd=$SsdExecutable
 if ((Get-FileHash $hdd).Hash -ne (Get-FileHash $ssd).Hash) { throw 'SSD/HDD binary mismatch' }
 $cases=@(
     @{name='synthetic-10k-ssd';exe=$ssd;root='C:\tuhai-synthetic-10k-20260906';manifest='C:\tuhai-fixtures-20260905\manifest.json'},
@@ -20,11 +22,14 @@ $cases=@(
 )
 if ($Group -eq 'short') {
     foreach ($case in $cases) {
+        $expected=if($case.name -like '*10k*'){10000}elseif($case.name -like '*shared*'){1333}else{50000}
+        # Build/validate the complete bounded index before the fixed route warmup.
+        & $runner -Executable $case.exe -Root $case.root -Manifest $case.manifest -ExpectedRecords $expected -RequireScanCompletion -Scenario open -Seconds 300 -Runs 1 -OutputDirectory (Join-Path $OutputDirectory ($case.name+'-index-warmup'))
         # One explicit index/route warmup is excluded from the five measured repeats.
-        & $runner -Executable $case.exe -Root $case.root -Manifest $case.manifest -Scenario scroll -Seconds 90 -Runs 1 -OutputDirectory (Join-Path $OutputDirectory ($case.name+'-warmup'))
+        & $runner -Executable $case.exe -Root $case.root -Manifest $case.manifest -ExpectedRecords $expected -Scenario scroll -Seconds 90 -Runs 1 -OutputDirectory (Join-Path $OutputDirectory ($case.name+'-warmup'))
         foreach ($scenario in @('open','scroll')) {
             $output=Join-Path $OutputDirectory ($case.name+'-'+$scenario)
-            & $runner -Executable $case.exe -Root $case.root -Manifest $case.manifest -Scenario $scenario -Seconds $(if ($scenario -eq 'open') {20} else {60}) -Runs $Runs -OutputDirectory $output
+            & $runner -Executable $case.exe -Root $case.root -Manifest $case.manifest -ExpectedRecords $expected -Scenario $scenario -Seconds $(if ($scenario -eq 'open') {20} else {60}) -Runs $Runs -OutputDirectory $output
             python (Join-Path $PSScriptRoot 'summarize_runs.py') $output
         }
     }
