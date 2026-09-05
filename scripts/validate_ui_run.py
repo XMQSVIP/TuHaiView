@@ -41,6 +41,12 @@ def validate(metadata, expected_records=0, require_scan=False):
     timing=run.get('dwm',{});hz=timing.get('refresh_n',60)/(timing.get('refresh_d') or 1)
     result=analyze(Path(run['logs'][0]),csv if csv.is_file() else None,hz)
     errors.extend(validate_result(run,result,expected_records,require_scan))
+    # Preserve the already computed full result before the next graphics run.
+    # Five-run aggregation still revalidates raw data; this is progress evidence,
+    # not a cache that can silently outlive changed inputs or parser rules.
+    result['immediate_validation_errors']=errors
+    output=metadata.with_name(metadata.stem.replace('-run','-validated-summary')+'.json')
+    output.write_text(json.dumps(result,indent=2),encoding='utf-8')
     return errors
 
 

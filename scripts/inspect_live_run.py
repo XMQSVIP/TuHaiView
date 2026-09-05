@@ -11,8 +11,15 @@ from pathlib import Path
 
 def inspect(directory):
     metadata = sorted(directory.glob('*/*-run.json'))
+    validated = sorted(directory.glob('*/*-validated-summary.json'), key=lambda p: p.stat().st_mtime)
     active = sorted(directory.glob('*/performance-*.jsonl'), key=lambda p: p.stat().st_mtime)
     report = {'completed_process_runs': len(metadata), 'c_free_gib': round(shutil.disk_usage('C:/').free / 1024**3, 3)}
+    report['validated_runs'] = len(validated)
+    if validated:
+        result = json.loads(validated[-1].read_text(encoding='utf-8-sig'))
+        report['latest_validated'] = dict(path=str(validated[-1]),
+            errors=result.get('immediate_validation_errors'), memory=result.get('memory_stability'),
+            reclamation=result.get('idle_reclamation', {}).get('passed'))
     if not active:
         report['active_log'] = None
         return report
