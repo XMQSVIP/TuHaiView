@@ -2,7 +2,7 @@ use crate::models::{ImageRecord, SortMode};
 use crate::storage;
 use anyhow::Result;
 use crossbeam_channel::{Receiver, RecvTimeoutError, Sender, bounded, unbounded};
-use notify::{Config, Event, EventKind, RecommendedWatcher, RecursiveMode, Watcher};
+use notify::{Event, EventKind, RecommendedWatcher, RecursiveMode, Watcher};
 use rusqlite::{Connection, params};
 use sha2::{Digest, Sha256};
 use std::{
@@ -86,183 +86,200 @@ pub enum CatalogEvent {
     },
 }
 
-pub struct CatalogService {
-    tx: Sender<CatalogEvent>,
-    pub rx: Receiver<CatalogEvent>,
-    db_path: PathBuf,
+struct ScanRequest {
+    root: PathBuf,
+    sort: SortMode,
     generation: u64,
-    watcher: Option<RecommendedWatcher>,
+    cancel: Arc<AtomicBool>,
+}
+
+#[derive(Default)]
+struct CatalogPending {
+    scan: Option<ScanRequest>,
+    clear: bool,
+}
+
+pub struct CatalogService {
+    pub rx: Receiver<CatalogEvent>,
+    generation: u64,
     scan_cancel: Option<Arc<AtomicBool>>,
-    scan_thread: Option<thread::JoinHandle<()>>,
-    metadata_tx: Option<Sender<MetadataUpdate>>,
-    metadata_thread: Option<thread::JoinHandle<()>>,
-    wakeup: Arc<dyn Fn() + Send + Sync>,
+    pending: Arc<parking_lot::Mutex<CatalogPending>>,
+    notify_tx: Sender<()>,
+    metadata_tx: Sender<MetadataUpdate>,
 }
 
 impl CatalogService {
     pub fn new(wakeup: Arc<dyn Fn() + Send + Sync>) -> Result<Self> {
-        let db_path = storage::database_path()?;
         let (tx, rx) = unbounded();
-        let mut service = Self {
-            tx,
-            rx,
-            db_path,
-            generation: 0,
-            watcher: None,
-            scan_cancel: None,
-            scan_thread: None,
-            metadata_tx: None,
-            metadata_thread: None,
-            wakeup,
-        };
-        if let Err(error) = service.init_db() {
-            // 索引属于可再生数据。迁移中断时仅重建数据库，不能触碰原图和缩略图缓存。
-            for suffix in ["", "-wal", "-shm"] {
-                let path = if suffix.is_empty() {
-                    service.db_path.clone()
-                } else {
-                    PathBuf::from(format!("{}{}", service.db_path.display(), suffix))
+        let (notify_tx, notify_rx) = bounded(1);
+        let pending = Arc::new(parking_lot::Mutex::new(CatalogPending::default()));
+        let worker_pending = pending.clone();
+        let (metadata_tx, metadata_rx) = bounded(1024);
+        let metadata_wakeup = wakeup.clone();
+        // Initialization and migrations belong to the worker, never the UI.
+        thread::Builder::new()
+            .name("catalog-coordinator".into())
+            .spawn(move || {
+                let db = match storage::database_path().and_then(|db| {
+                    init_db(&db)?;
+                    Ok(db)
+                }) {
+                    Ok(db) => db,
+                    Err(error) => {
+                        let _ = tx.send(CatalogEvent::Error {
+                            generation: 0,
+                            message: error.to_string(),
+                        });
+                        wakeup();
+                        return;
+                    }
                 };
-                let _ = fs::remove_file(path);
-            }
-            service.init_db().map_err(|recovery| {
-                anyhow::anyhow!("数据库初始化失败：{error}；重建失败：{recovery}")
+                let metadata_db = db.clone();
+                let _ = thread::Builder::new()
+                    .name("catalog-metadata-writer".into())
+                    .spawn(move || metadata_worker(&metadata_db, metadata_rx, metadata_wakeup));
+                let mut watcher: Option<RecommendedWatcher> = None;
+                let mut watched: Option<(PathBuf, u64)> = None;
+                while notify_rx.recv().is_ok() {
+                    let work = std::mem::take(&mut *worker_pending.lock());
+                    if work.clear {
+                        let result = open_connection(&db).and_then(|conn| {
+                            conn.execute_batch(
+                                "DELETE FROM images; PRAGMA wal_checkpoint(TRUNCATE); VACUUM;",
+                            )?;
+                            Ok(())
+                        });
+                        if let Err(error) = result {
+                            let generation = work.scan.as_ref().map_or(0, |r| r.generation);
+                            let _ = tx.send(CatalogEvent::Error {
+                                generation,
+                                message: format!("清理数据库失败：{error}"),
+                            });
+                            wakeup();
+                        }
+                    }
+                    let Some(request) = work.scan else {
+                        continue;
+                    };
+                    if request.cancel.load(Ordering::Acquire) {
+                        continue;
+                    }
+                    if watched.as_ref() != Some(&(request.root.clone(), request.generation)) {
+                        watcher.take();
+                        let watch_tx = tx.clone();
+                        let watch_wakeup = wakeup.clone();
+                        let generation = request.generation;
+                        let data = storage::data_dir().ok();
+                        watcher = notify::recommended_watcher(move |res: notify::Result<Event>| {
+                            let relevant = match res {
+                                Ok(event) => {
+                                    !matches!(event.kind, EventKind::Access(_))
+                                        && !data.as_ref().is_some_and(|dir| {
+                                            !event.paths.is_empty()
+                                                && event.paths.iter().all(|p| p.starts_with(dir))
+                                        })
+                                }
+                                Err(_) => true,
+                            };
+                            if relevant {
+                                let _ = watch_tx.send(CatalogEvent::Changed { generation });
+                                watch_wakeup();
+                            }
+                        })
+                        .ok();
+                        if let Some(watcher) = watcher.as_mut() {
+                            let _ = watcher.watch(&request.root, RecursiveMode::Recursive);
+                        }
+                        watched = Some((request.root.clone(), request.generation));
+                    }
+                    let _ = tx.send(CatalogEvent::Started {
+                        generation: request.generation,
+                    });
+                    wakeup();
+                    let result = scan_worker(
+                        &request.root,
+                        &db,
+                        request.generation,
+                        &tx,
+                        &request.cancel,
+                        request.sort,
+                        wakeup.clone(),
+                    );
+                    if !request.cancel.load(Ordering::Acquire) {
+                        if let Err(error) = result {
+                            let _ = tx.send(CatalogEvent::Error {
+                                generation: request.generation,
+                                message: error.to_string(),
+                            });
+                            wakeup();
+                        }
+                    }
+                }
             })?;
-        }
-        let (metadata_tx, metadata_rx) = bounded::<MetadataUpdate>(1024);
-        let metadata_db = service.db_path.clone();
-        let metadata_wakeup = service.wakeup.clone();
-        service.metadata_thread = thread::Builder::new()
-            .name("catalog-metadata-writer".into())
-            .spawn(move || metadata_worker(&metadata_db, metadata_rx, metadata_wakeup))
-            .ok();
-        service.metadata_tx = Some(metadata_tx);
-        Ok(service)
+        Ok(Self {
+            rx,
+            generation: 0,
+            scan_cancel: None,
+            pending,
+            notify_tx,
+            metadata_tx,
+        })
     }
 
     pub fn data_dir(&self) -> Result<PathBuf> {
         storage::data_dir()
     }
-
     pub fn clear_database(&mut self) -> Result<()> {
         self.cancel_scan();
-        while self.rx.try_recv().is_ok() {}
-        let conn = open_connection(&self.db_path)?;
-        conn.execute("DELETE FROM images", [])?;
-        conn.execute_batch("PRAGMA wal_checkpoint(TRUNCATE); VACUUM;")?;
+        self.pending.lock().clear = true;
+        let _ = self.notify_tx.try_send(());
         Ok(())
     }
-
-    fn init_db(&self) -> Result<()> {
-        let conn = open_connection(&self.db_path)?;
-        let has_table: bool = conn.query_row(
-            "SELECT EXISTS(SELECT 1 FROM sqlite_master WHERE type='table' AND name='images')",
-            [],
-            |row| row.get(0),
-        )?;
-        let version: i64 = conn.pragma_query_value(None, "user_version", |row| row.get(0))?;
-        if !has_table {
-            create_schema(&conn)?;
-        } else if version < SCHEMA_VERSION {
-            migrate_schema(&conn, version)?;
-        }
-        conn.pragma_update(None, "user_version", SCHEMA_VERSION)?;
-        Ok(())
-    }
-
-    pub fn scan(&mut self, root: PathBuf, sort: SortMode) {
+    pub fn scan(&mut self, root: PathBuf, sort: SortMode) -> u64 {
         self.cancel_scan();
         self.generation = self.generation.wrapping_add(1);
-        let generation = self.generation;
-        let tx = self.tx.clone();
-        let db = self.db_path.clone();
-        let wakeup = self.wakeup.clone();
-        let _ = tx.send(CatalogEvent::Started { generation });
-        wakeup();
-        let root_for_scan = root.clone();
         let cancel = Arc::new(AtomicBool::new(false));
-        let worker_cancel = cancel.clone();
-        let worker_wakeup = wakeup.clone();
-        let error_wakeup = wakeup.clone();
-        self.scan_cancel = Some(cancel);
-        self.scan_thread = thread::Builder::new()
-            .name("image-catalog-scanner".into())
-            .spawn(move || {
-                let result = scan_worker(
-                    &root_for_scan,
-                    &db,
-                    generation,
-                    &tx,
-                    &worker_cancel,
-                    sort,
-                    worker_wakeup,
-                );
-                if let Err(error) = result {
-                    let _ = tx.send(CatalogEvent::Error {
-                        generation,
-                        message: error.to_string(),
-                    });
-                    error_wakeup();
-                }
-            })
-            .ok();
-
-        let tx_watch = self.tx.clone();
-        let root_watch = root;
-        let generation_watch = generation;
-        let watcher_wakeup = self.wakeup.clone();
-        let application_data = storage::data_dir().ok();
-        self.watcher = notify::recommended_watcher(move |res: notify::Result<Event>| {
-            if let Ok(event) = res {
-                let only_application_data = application_data.as_ref().is_some_and(|data_dir| {
-                    !event.paths.is_empty()
-                        && event.paths.iter().all(|path| path.starts_with(data_dir))
-                });
-                if !matches!(event.kind, EventKind::Access(_)) && !only_application_data {
-                    let _ = tx_watch.send(CatalogEvent::Changed {
-                        generation: generation_watch,
-                    });
-                    watcher_wakeup();
-                }
-            }
-        })
-        .ok();
-        if let Some(watcher) = self.watcher.as_mut() {
-            let _ =
-                watcher.configure(Config::default().with_poll_interval(Duration::from_millis(500)));
-            let _ = watcher.watch(&root_watch, RecursiveMode::Recursive);
-        }
+        self.scan_cancel = Some(cancel.clone());
+        self.pending.lock().scan = Some(ScanRequest {
+            root,
+            sort,
+            generation: self.generation,
+            cancel,
+        });
+        let _ = self.notify_tx.try_send(());
+        self.generation
     }
-
     pub fn queue_metadata_update(&self, update: MetadataUpdate) {
-        if self
-            .metadata_tx
-            .as_ref()
-            .is_some_and(|sender| sender.try_send(update).is_ok())
-        {
-            (self.wakeup)();
-        }
+        let _ = self.metadata_tx.try_send(update);
     }
-
     pub fn cancel_scan(&mut self) {
-        self.watcher = None;
         if let Some(cancel) = self.scan_cancel.take() {
             cancel.store(true, Ordering::Release);
         }
-        if let Some(handle) = self.scan_thread.take() {
-            let _ = handle.join();
-        }
+        self.pending.lock().scan = None;
     }
 }
-
 impl Drop for CatalogService {
     fn drop(&mut self) {
         self.cancel_scan();
-        self.metadata_tx.take();
-        if let Some(handle) = self.metadata_thread.take() {
-            let _ = handle.join();
-        }
     }
+}
+
+fn init_db(db_path: &Path) -> Result<()> {
+    let conn = open_connection(db_path)?;
+    let has_table: bool = conn.query_row(
+        "SELECT EXISTS(SELECT 1 FROM sqlite_master WHERE type='table' AND name='images')",
+        [],
+        |row| row.get(0),
+    )?;
+    let version: i64 = conn.pragma_query_value(None, "user_version", |row| row.get(0))?;
+    if !has_table {
+        create_schema(&conn)?;
+    } else if version < SCHEMA_VERSION {
+        migrate_schema(&conn, version)?;
+    }
+    conn.pragma_update(None, "user_version", SCHEMA_VERSION)?;
+    Ok(())
 }
 
 fn open_connection(path: &Path) -> Result<Connection> {
@@ -372,6 +389,9 @@ fn scan_worker(
     sort: SortMode,
     wakeup: Arc<dyn Fn() + Send + Sync>,
 ) -> Result<()> {
+    if cancel.load(Ordering::Acquire) {
+        return Ok(());
+    }
     let started = Instant::now();
     let mut conn = open_connection(db_path)?;
     let snapshot = load_cached_connection(&conn, root)?;

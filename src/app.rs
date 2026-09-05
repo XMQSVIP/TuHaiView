@@ -126,6 +126,8 @@ pub struct PreviewerApp {
     pending: Option<PendingDialog>,
     conflict_policy: ConflictPolicy,
     rescan_due: Option<Instant>,
+    rescan_first: Option<Instant>,
+    last_frame: Instant,
 }
 
 impl PreviewerApp {
@@ -194,6 +196,8 @@ impl PreviewerApp {
             pending: None,
             conflict_policy: ConflictPolicy::Ask,
             rescan_due: None,
+            rescan_first: None,
+            last_frame: Instant::now(),
         })
     }
 
@@ -263,7 +267,8 @@ impl PreviewerApp {
         self.prefetch_rows = None;
         self.status = "正在载入缓存并扫描…".into();
         self.scanning = true;
-        self.catalog.scan(path, self.sort);
+        self.generation = self.catalog.scan(path, self.sort);
+        self.thumbnails.set_generation(self.generation);
     }
 
     fn refresh(&mut self) {
@@ -275,7 +280,8 @@ impl PreviewerApp {
             }
             self.scanning = true;
             self.status = "正在增量校验…".into();
-            self.catalog.scan(root, self.sort);
+            self.generation = self.catalog.scan(root, self.sort);
+            self.thumbnails.set_generation(self.generation);
         }
     }
 
@@ -310,9 +316,13 @@ impl PreviewerApp {
     }
 
     fn process_events(&mut self, ctx: &egui::Context) {
-        while let Ok(event) = self.catalog.rx.try_recv() {
+        let event_start = Instant::now();
+        while event_start.elapsed() < Duration::from_millis(crate::performance::EVENT_BUDGET_MS) {
+            let Ok(event) = self.catalog.rx.try_recv() else {
+                break;
+            };
             match event {
-                CatalogEvent::Started { generation } => {
+                CatalogEvent::Started { generation } if generation == self.generation => {
                     self.generation = generation;
                     self.thumbnails.set_generation(generation);
                 }
@@ -407,13 +417,20 @@ impl PreviewerApp {
                         self.invalidate_duplicates();
                         self.status = "目录内容发生变化，原查重结果已失效，正在增量校验…".into();
                     }
-                    self.rescan_due = Some(Instant::now() + Duration::from_millis(700));
+                    let now = Instant::now();
+                    let first = *self.rescan_first.get_or_insert(now);
+                    self.rescan_due = Some(
+                        (now + Duration::from_millis(700)).min(first + Duration::from_secs(2)),
+                    );
                 }
                 _ => {}
             }
         }
 
-        while let Ok(event) = self.duplicate_service.rx.try_recv() {
+        while event_start.elapsed() < Duration::from_millis(crate::performance::EVENT_BUDGET_MS) {
+            let Ok(event) = self.duplicate_service.rx.try_recv() else {
+                break;
+            };
             match event {
                 DuplicateEvent::Started {
                     generation,
@@ -499,7 +516,10 @@ impl PreviewerApp {
             }
         }
 
-        while let Ok(event) = self.empty_folder_service.rx.try_recv() {
+        while event_start.elapsed() < Duration::from_millis(crate::performance::EVENT_BUDGET_MS) {
+            let Ok(event) = self.empty_folder_service.rx.try_recv() else {
+                break;
+            };
             match event {
                 EmptyFolderEvent::Progress {
                     generation,
@@ -545,7 +565,15 @@ impl PreviewerApp {
             }
         }
 
-        while let Ok(result) = self.thumbnails.rx.try_recv() {
+        let upload_start = Instant::now();
+        let mut upload_count = 0;
+        while upload_count < crate::performance::THUMBNAILS_PER_FRAME
+            && upload_start.elapsed() < Duration::from_millis(crate::performance::UPLOAD_BUDGET_MS)
+        {
+            let Ok(result) = self.thumbnails.rx.try_recv() else {
+                break;
+            };
+            upload_count += 1;
             if result.generation != self.generation {
                 continue;
             }
@@ -595,7 +623,10 @@ impl PreviewerApp {
             self.insert_texture(result.texture_key, texture, bytes);
         }
 
-        while let Ok((action, report)) = self.file_ops.rx.try_recv() {
+        while event_start.elapsed() < Duration::from_millis(crate::performance::EVENT_BUDGET_MS) {
+            let Ok((action, report)) = self.file_ops.rx.try_recv() else {
+                break;
+            };
             self.file_operation_running = false;
             let was_duplicate_delete = self.duplicate_delete_running
                 && matches!(
@@ -603,10 +634,11 @@ impl PreviewerApp {
                     FileAction::RecycleDelete | FileAction::PermanentDelete
                 );
             self.duplicate_delete_running = false;
+            let succeeded: HashSet<_> = report.succeeded.iter().collect();
             let success_ids: HashSet<_> = self
                 .records
                 .iter()
-                .filter(|record| report.succeeded.iter().any(|path| path == &record.path))
+                .filter(|record| succeeded.contains(&record.path))
                 .map(|record| record.id)
                 .collect();
             if matches!(
@@ -668,7 +700,10 @@ impl PreviewerApp {
             }
         }
 
-        while let Ok(mut result) = self.sort_service.rx.try_recv() {
+        while event_start.elapsed() < Duration::from_millis(crate::performance::EVENT_BUDGET_MS) {
+            let Ok(mut result) = self.sort_service.rx.try_recv() else {
+                break;
+            };
             if result.generation == self.generation
                 && result.revision == self.data_revision
                 && result.mode == self.sort
@@ -698,11 +733,21 @@ impl PreviewerApp {
             }
         }
 
+        if !self.catalog.rx.is_empty()
+            || !self.duplicate_service.rx.is_empty()
+            || !self.empty_folder_service.rx.is_empty()
+            || !self.file_ops.rx.is_empty()
+            || !self.sort_service.rx.is_empty()
+            || !self.thumbnails.rx.is_empty()
+        {
+            ctx.request_repaint();
+        }
         if self.rescan_due.is_some_and(|due| Instant::now() >= due)
             && !self.scanning
             && !self.file_operation_running
         {
             self.rescan_due = None;
+            self.rescan_first = None;
             self.refresh();
         }
     }
@@ -2531,6 +2576,12 @@ impl PreviewerApp {
 
 impl eframe::App for PreviewerApp {
     fn update(&mut self, ctx: &egui::Context, _frame: &mut eframe::Frame) {
+        let frame_start = Instant::now();
+        let interval = frame_start.duration_since(self.last_frame);
+        if interval < Duration::from_millis(250) {
+            crate::performance::sample("frame_interval_ms", interval.as_secs_f64() * 1000.0);
+        }
+        self.last_frame = frame_start;
         self.process_events(ctx);
         self.handle_shortcuts(ctx);
 

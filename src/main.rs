@@ -1,12 +1,14 @@
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 
 mod app;
+mod budget;
 mod catalog;
 mod duplicates;
 mod empty_folders;
 mod file_ops;
 mod icon_pixels;
 mod models;
+mod performance;
 mod sorting;
 mod storage;
 mod thumbnails;
