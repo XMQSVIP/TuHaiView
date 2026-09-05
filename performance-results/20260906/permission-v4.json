@@ -1,16 +1,17 @@
 {
   "test": "temporary directory access denial",
   "executable_sha256": "4507D93F1BD9C484065FA3710E1C89C59B7E7E45A7631ED4526A44597C1225EA",
-  "root": "F:\\tuhai-validation\\permission-v4\\case-1392be2e366646b09de4782910bddae4",
+  "root": "F:\\tuhai-validation\\permission-v4-verified\\case-b3482567fdc247c587f31a984e782961",
   "passed": true,
   "acl_restored": true,
+  "dacl_rules_restored": true,
   "stages": [
     {
       "stage": "readable",
       "retained_records": 2,
       "visited_files": 2.0,
       "protected_indexed_size": 58189,
-      "log": "F:\\tuhai-validation\\permission-v4\\case-1392be2e366646b09de4782910bddae4\\readable\\20260906-062325-1-performance-1788647006702.jsonl",
+      "log": "F:\\tuhai-validation\\permission-v4-verified\\case-b3482567fdc247c587f31a984e782961\\readable\\20260906-062610-1-performance-1788647170689.jsonl",
       "passed": true
     },
     {
@@ -18,7 +19,7 @@
       "retained_records": 2,
       "visited_files": 1.0,
       "protected_indexed_size": 58189,
-      "log": "F:\\tuhai-validation\\permission-v4\\case-1392be2e366646b09de4782910bddae4\\denied\\20260906-062337-1-performance-1788647017665.jsonl",
+      "log": "F:\\tuhai-validation\\permission-v4-verified\\case-b3482567fdc247c587f31a984e782961\\denied\\20260906-062621-1-performance-1788647181576.jsonl",
       "passed": true
     },
     {
@@ -26,7 +27,7 @@
       "retained_records": 2,
       "visited_files": 2.0,
       "protected_indexed_size": 58190,
-      "log": "F:\\tuhai-validation\\permission-v4\\case-1392be2e366646b09de4782910bddae4\\restored\\20260906-062348-1-performance-1788647028619.jsonl",
+      "log": "F:\\tuhai-validation\\permission-v4-verified\\case-b3482567fdc247c587f31a984e782961\\restored\\20260906-062632-1-performance-1788647192418.jsonl",
       "passed": true
     }
   ]

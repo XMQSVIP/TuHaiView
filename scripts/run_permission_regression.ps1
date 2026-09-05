@@ -30,7 +30,15 @@ $manifest=Join-Path $testRoot 'manifest.json'
 @{source_image=$source;source_sha256=(Get-FileHash -LiteralPath $source).Hash;count=2} |
     ConvertTo-Json | Set-Content -LiteralPath $manifest -Encoding utf8
 $runner=Join-Path $PSScriptRoot 'run_ui_perf.ps1'
-$report=[ordered]@{test='temporary directory access denial';executable_sha256=(Get-FileHash -LiteralPath $exe).Hash;root=$testRoot;passed=$false;acl_restored=$false;stages=@()}
+$report=[ordered]@{test='temporary directory access denial';executable_sha256=(Get-FileHash -LiteralPath $exe).Hash;root=$testRoot;passed=$false;acl_restored=$false;dacl_rules_restored=$false;stages=@()}
+function Rule-Signature($Security) {
+    # Set-Acl may add SE_DACL_AUTO_INHERITED without changing any access rule.
+    # Compare actual ACEs and inheritance protection, not the SDDL control flags.
+    $rules=$Security.GetAccessRules($true,$true,[Security.Principal.SecurityIdentifier]) | ForEach-Object {
+        '{0}|{1}|{2}|{3}|{4}|{5}' -f $_.IdentityReference.Value,[int]$_.FileSystemRights,$_.AccessControlType,$_.InheritanceFlags,$_.PropagationFlags,$_.IsInherited
+    }
+    return ([string]$Security.AreAccessRulesProtected)+'|'+(($rules | Sort-Object) -join ';')
+}
 function Run-Stage([string]$Name) {
     $out=Join-Path $testRoot $Name
     # Correctness run only. No claim about rendered/input latency without PresentMon.
@@ -67,8 +75,10 @@ try {
 } finally {
     # Restore only the directory created above, even when app/verification failed.
     Set-Acl -LiteralPath $protected -AclObject $acl
-    $report.acl_restored=$true
+    $report.dacl_rules_restored=(Rule-Signature $acl) -eq (Rule-Signature (Get-Acl -LiteralPath $protected))
+    $report.acl_restored=$report.dacl_rules_restored
     $report | ConvertTo-Json -Depth 8 | Set-Content -LiteralPath (Join-Path $testRoot 'result.json') -Encoding utf8
+    if (!$report.acl_restored) { throw 'Original access rules or inheritance protection were not restored' }
 }
 # Change only the test copy after permissions recover; JPEG permits trailing data.
 $stream=[IO.File]::Open($protectedFile,[IO.FileMode]::Append,[IO.FileAccess]::Write)
