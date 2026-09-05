@@ -97,14 +97,15 @@ impl CatalogChangeSet {
     }
     fn scopes(&self) -> Vec<PathBuf> {
         let mut roots: Vec<PathBuf> = Vec::new();
-        for path in self.paths.values() {
-            let key = path_key(path);
-            if !roots
-                .iter()
-                .any(|root| key.starts_with(&(path_key(root) + "\\")))
+        // Look up ancestors directly instead of comparing every pair of paths.
+        for (key, path) in &self.paths {
+            if key
+                .rmatch_indices('\\')
+                .any(|(i, _)| self.paths.contains_key(&key[..i]))
             {
-                roots.push(path.clone());
+                continue;
             }
+            roots.push(path.clone());
         }
         roots
     }
@@ -436,7 +437,7 @@ impl Worker {
             self.watcher = Some(notify::recommended_watcher(
                 move |event: notify::Result<Event>| {
                     let (paths, rescan) = match event {
-                        Ok(e) if !matches!(e.kind, EventKind::Access(_)) => {
+                        Ok(e) if e.need_rescan() || !matches!(e.kind, EventKind::Access(_)) => {
                             let rescan = e.need_rescan() || e.paths.is_empty();
                             (
                                 e.paths
@@ -665,6 +666,11 @@ impl Worker {
                     let mut stmt =
                         tx.prepare_cached("DELETE FROM images WHERE id=?1 AND root=?2")?;
                     for key in &scan.unseen {
+                        if self.closed.load(Ordering::Acquire)
+                            || self.active_generation != self.generation.load(Ordering::Acquire)
+                        {
+                            return Ok(()); // Transaction rollback preserves the previous index.
+                        }
                         if let Some(r) = self.records.get(key) {
                             stmt.execute(params![r.id, self.root.to_string_lossy()])?;
                         }

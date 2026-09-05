@@ -1724,6 +1724,12 @@ impl PreviewerApp {
                     }
                     if let Some(texture) = self.textures.get(&key) {
                         ui.label(format!("预览 {}×{}", texture.size()[0], texture.size()[1]));
+                    } else if let Some(texture) = self.textures.get(&thumbnail_key) {
+                        ui.label(format!(
+                            "缩略图 {}×{} · 正在加载预览",
+                            texture.size()[0],
+                            texture.size()[1]
+                        ));
                     }
                     ui.separator();
                     ui.label(format!(

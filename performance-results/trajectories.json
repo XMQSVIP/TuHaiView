@@ -1,0 +1,386 @@
+{
+  "ssd": [
+    {
+      "run": 1,
+      "first_records_ms": 215.1805,
+      "first_thumbnail_ms": 367.3825,
+      "scan_ms": 120.0,
+      "frame_ms": {
+        "n": 11931,
+        "median": 2.5357000000000003,
+        "p95": 17.4224,
+        "p99": 24.5818,
+        "maximum": 101.04480000000001
+      },
+      "cached_scroll_ms": {
+        "n": 2051,
+        "median": 3.0412999999999997,
+        "p95": 15.453700000000001,
+        "p99": 19.548099999999998,
+        "maximum": 26.5335
+      },
+      "ui_ms": {
+        "n": 11931,
+        "median": 0.29619999999999996,
+        "p95": 2.4339,
+        "p99": 4.4076,
+        "maximum": 49.4566
+      },
+      "preview_ms": {
+        "n": 120,
+        "median": 5.0207999999999995,
+        "p95": 16.450400000000002,
+        "p99": 18.986,
+        "maximum": 20.5415
+      },
+      "max_private_bytes": 591179776.0,
+      "max_texture_bytes": 222560256.0,
+      "max_ready_bytes": 10420224.0,
+      "max_decode_bytes": 38536280.0
+    },
+    {
+      "run": 2,
+      "first_records_ms": 375.41069999999996,
+      "first_thumbnail_ms": 1480.3499,
+      "scan_ms": 884.0,
+      "frame_ms": {
+        "n": 7784,
+        "median": 5.190049999999999,
+        "p95": 20.9134,
+        "p99": 28.0122,
+        "maximum": 139.6522
+      },
+      "cached_scroll_ms": {
+        "n": 1000,
+        "median": 6.4945,
+        "p95": 22.8432,
+        "p99": 29.6498,
+        "maximum": 50.9069
+      },
+      "ui_ms": {
+        "n": 7784,
+        "median": 0.99195,
+        "p95": 2.9436,
+        "p99": 4.2955,
+        "maximum": 118.5847
+      },
+      "preview_ms": {
+        "n": 120,
+        "median": 6.526300000000001,
+        "p95": 19.2354,
+        "p99": 20.4329,
+        "maximum": 23.4254
+      },
+      "max_private_bytes": 589000704.0,
+      "max_texture_bytes": 226689024.0,
+      "max_ready_bytes": 12976128.0,
+      "max_decode_bytes": 29158813.0
+    },
+    {
+      "run": 3,
+      "first_records_ms": 252.2466,
+      "first_thumbnail_ms": 543.1329000000001,
+      "scan_ms": 219.0,
+      "frame_ms": {
+        "n": 9150,
+        "median": 4.4428,
+        "p95": 18.7023,
+        "p99": 25.221899999999998,
+        "maximum": 141.7392
+      },
+      "cached_scroll_ms": {
+        "n": 1399,
+        "median": 4.8567,
+        "p95": 17.7198,
+        "p99": 22.819499999999998,
+        "maximum": 32.827299999999994
+      },
+      "ui_ms": {
+        "n": 9150,
+        "median": 0.91645,
+        "p95": 2.527,
+        "p99": 3.8318,
+        "maximum": 128.91340000000002
+      },
+      "preview_ms": {
+        "n": 120,
+        "median": 6.3656999999999995,
+        "p95": 17.8696,
+        "p99": 20.520699999999998,
+        "maximum": 24.3182
+      },
+      "max_private_bytes": 589131776.0,
+      "max_texture_bytes": 223739904.0,
+      "max_ready_bytes": 13172736.0,
+      "max_decode_bytes": 29158458.0
+    },
+    {
+      "run": 4,
+      "first_records_ms": 290.9854,
+      "first_thumbnail_ms": 508.47850000000005,
+      "scan_ms": 171.0,
+      "frame_ms": {
+        "n": 11462,
+        "median": 3.2817,
+        "p95": 16.6917,
+        "p99": 22.8693,
+        "maximum": 105.3198
+      },
+      "cached_scroll_ms": {
+        "n": 1740,
+        "median": 3.759,
+        "p95": 15.921299999999999,
+        "p99": 19.928,
+        "maximum": 31.417399999999997
+      },
+      "ui_ms": {
+        "n": 11462,
+        "median": 0.71545,
+        "p95": 2.1316,
+        "p99": 3.3926,
+        "maximum": 30.249000000000002
+      },
+      "preview_ms": {
+        "n": 120,
+        "median": 5.81245,
+        "p95": 18.6209,
+        "p99": 20.6619,
+        "maximum": 24.9527
+      },
+      "max_private_bytes": 591376384.0,
+      "max_texture_bytes": 228261888.0,
+      "max_ready_bytes": 11403264.0,
+      "max_decode_bytes": 29158813.0
+    },
+    {
+      "run": 5,
+      "first_records_ms": 244.69150000000002,
+      "first_thumbnail_ms": 466.4935,
+      "scan_ms": 164.0,
+      "frame_ms": {
+        "n": 13438,
+        "median": 2.8789,
+        "p95": 15.3406,
+        "p99": 18.8213,
+        "maximum": 87.85669999999999
+      },
+      "cached_scroll_ms": {
+        "n": 1654,
+        "median": 4.09545,
+        "p95": 16.384900000000002,
+        "p99": 20.63,
+        "maximum": 34.7231
+      },
+      "ui_ms": {
+        "n": 13438,
+        "median": 0.52485,
+        "p95": 1.8837000000000002,
+        "p99": 2.6733,
+        "maximum": 15.234599999999999
+      },
+      "preview_ms": {
+        "n": 120,
+        "median": 4.6851,
+        "p95": 16.0847,
+        "p99": 17.0244,
+        "maximum": 19.817700000000002
+      },
+      "max_private_bytes": 588685312.0,
+      "max_texture_bytes": 228655104.0,
+      "max_ready_bytes": 12386304.0,
+      "max_decode_bytes": 29158813.0
+    }
+  ],
+  "hdd": [
+    {
+      "run": 1,
+      "first_records_ms": 6171.587299999999,
+      "first_thumbnail_ms": 39997.1742,
+      "scan_ms": 15161.0,
+      "frame_ms": {
+        "n": 14420,
+        "median": 2.0290000000000004,
+        "p95": 16.0919,
+        "p99": 18.6425,
+        "maximum": 419.6224
+      },
+      "cached_scroll_ms": {
+        "n": 2889,
+        "median": 1.4834,
+        "p95": 16.4311,
+        "p99": 18.6842,
+        "maximum": 28.568099999999998
+      },
+      "ui_ms": {
+        "n": 14420,
+        "median": 0.16540000000000002,
+        "p95": 1.4161,
+        "p99": 2.1137,
+        "maximum": 97.3989
+      },
+      "preview_ms": {
+        "n": 118,
+        "median": 6.0955,
+        "p95": 31.8737,
+        "p99": 220.3157,
+        "maximum": 231.4915
+      },
+      "max_private_bytes": 586502144.0,
+      "max_texture_bytes": 216268800.0,
+      "max_ready_bytes": 4521984.0,
+      "max_decode_bytes": 29158813.0
+    },
+    {
+      "run": 2,
+      "first_records_ms": 434.6217,
+      "first_thumbnail_ms": 646.5168,
+      "scan_ms": 136.0,
+      "frame_ms": {
+        "n": 11041,
+        "median": 3.5173,
+        "p95": 17.1549,
+        "p99": 22.2254,
+        "maximum": 101.14099999999999
+      },
+      "cached_scroll_ms": {
+        "n": 1393,
+        "median": 4.4193,
+        "p95": 19.0064,
+        "p99": 24.3728,
+        "maximum": 33.889500000000005
+      },
+      "ui_ms": {
+        "n": 11041,
+        "median": 0.8068,
+        "p95": 2.1479,
+        "p99": 3.1884,
+        "maximum": 28.669
+      },
+      "preview_ms": {
+        "n": 120,
+        "median": 6.49725,
+        "p95": 22.1635,
+        "p99": 31.935900000000004,
+        "maximum": 36.7018
+      },
+      "max_private_bytes": 589221888.0,
+      "max_texture_bytes": 220004352.0,
+      "max_ready_bytes": 10223616.0,
+      "max_decode_bytes": 29158813.0
+    },
+    {
+      "run": 3,
+      "first_records_ms": 504.50379999999996,
+      "first_thumbnail_ms": 686.8605,
+      "scan_ms": 128.0,
+      "frame_ms": {
+        "n": 9100,
+        "median": 4.23665,
+        "p95": 19.7265,
+        "p99": 25.375600000000002,
+        "maximum": 105.4491
+      },
+      "cached_scroll_ms": {
+        "n": 1575,
+        "median": 4.2407,
+        "p95": 16.5337,
+        "p99": 24.8779,
+        "maximum": 30.3755
+      },
+      "ui_ms": {
+        "n": 9100,
+        "median": 0.8509500000000001,
+        "p95": 2.862,
+        "p99": 4.5702,
+        "maximum": 61.9789
+      },
+      "preview_ms": {
+        "n": 120,
+        "median": 7.59725,
+        "p95": 20.6908,
+        "p99": 24.863500000000002,
+        "maximum": 46.283199999999994
+      },
+      "max_private_bytes": 590135296.0,
+      "max_texture_bytes": 221380608.0,
+      "max_ready_bytes": 8060928.0,
+      "max_decode_bytes": 29158813.0
+    },
+    {
+      "run": 4,
+      "first_records_ms": 471.98069999999996,
+      "first_thumbnail_ms": 776.4112,
+      "scan_ms": 215.0,
+      "frame_ms": {
+        "n": 9140,
+        "median": 4.4866,
+        "p95": 19.2218,
+        "p99": 26.282799999999998,
+        "maximum": 144.31050000000002
+      },
+      "cached_scroll_ms": {
+        "n": 1352,
+        "median": 4.8638,
+        "p95": 18.251900000000003,
+        "p99": 25.445700000000002,
+        "maximum": 31.917399999999997
+      },
+      "ui_ms": {
+        "n": 9140,
+        "median": 0.6618999999999999,
+        "p95": 2.6492,
+        "p99": 3.9187,
+        "maximum": 37.059799999999996
+      },
+      "preview_ms": {
+        "n": 120,
+        "median": 5.76125,
+        "p95": 23.1156,
+        "p99": 25.2534,
+        "maximum": 34.9131
+      },
+      "max_private_bytes": 586227712.0,
+      "max_texture_bytes": 224329728.0,
+      "max_ready_bytes": 11206656.0,
+      "max_decode_bytes": 29158458.0
+    },
+    {
+      "run": 5,
+      "first_records_ms": 617.2484000000001,
+      "first_thumbnail_ms": 1149.7699,
+      "scan_ms": 419.0,
+      "frame_ms": {
+        "n": 7495,
+        "median": 5.2197,
+        "p95": 21.7727,
+        "p99": 26.7957,
+        "maximum": 152.2619
+      },
+      "cached_scroll_ms": {
+        "n": 814,
+        "median": 7.745000000000001,
+        "p95": 25.6808,
+        "p99": 32.8351,
+        "maximum": 48.372400000000006
+      },
+      "ui_ms": {
+        "n": 7495,
+        "median": 0.9525,
+        "p95": 2.958,
+        "p99": 4.1478,
+        "maximum": 21.6995
+      },
+      "preview_ms": {
+        "n": 120,
+        "median": 6.992850000000001,
+        "p95": 23.9653,
+        "p99": 26.5478,
+        "maximum": 61.4795
+      },
+      "max_private_bytes": 589295616.0,
+      "max_texture_bytes": 227868672.0,
+      "max_ready_bytes": 8257536.0,
+      "max_decode_bytes": 29158813.0
+    }
+  ]
+}

@@ -1,0 +1,30 @@
+{
+  "ssd": {
+    "1": {
+      "entries": 1722,
+      "old_rgba_bytes": 338600304,
+      "new_container_bytes": 50891747,
+      "reduction": 0.8496996417345213
+    },
+    "2": {
+      "entries": 543,
+      "old_rgba_bytes": 106771176,
+      "new_container_bytes": 19733228,
+      "reduction": 0.8151820674898251
+    }
+  },
+  "hdd": {
+    "1": {
+      "entries": 1810,
+      "old_rgba_bytes": 355903920,
+      "new_container_bytes": 53497428,
+      "reduction": 0.8496857578865666
+    },
+    "2": {
+      "entries": 582,
+      "old_rgba_bytes": 114439824,
+      "new_container_bytes": 27122438,
+      "reduction": 0.7629982548732337
+    }
+  }
+}

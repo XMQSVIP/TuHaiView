@@ -241,8 +241,14 @@ impl ThumbnailService {
                             s.inflight.remove(&key);
                             s.ready.insert(key.clone());
                         }
-                        let sent =
-                            send_result(&result_tx, output, &cancelled, request.priority, &wakeup);
+                        let priority = shared
+                            .scheduler
+                            .lock()
+                            .desired
+                            .get(&request.record.thumbnail_key)
+                            .copied()
+                            .map_or(request.priority, |p| p.min(request.priority));
+                        let sent = send_result(&result_tx, output, &cancelled, priority, &wakeup);
                         // ready remains until UI acknowledges, so a completed result is never redundantly decoded.
                         if !sent || cancelled() {
                             shared.scheduler.lock().ready.remove(&key);

@@ -40,25 +40,39 @@ cargo build --release
 | `src/app.rs` | egui 界面、虚拟化图片网格、选择状态、大图预览及对话框。 |
 | `src/catalog.rs` | SQLite schema v3、增量扫描、目录监控、数据库同步与渐进元数据写入。 |
 | `src/duplicates.rs` | 大小预筛、流式 SHA-256、哈希持久化和重复组默认保留规则。 |
-| `src/thumbnails.rs` | 缩略图优先级队列、图片解码、磁盘缓存 v2 和内存/GPU LRU。 |
+| `src/thumbnails.rs` | 缩略图优先级队列、图片解码、版本任务调度、解码与待上传预算。 |
 | `src/file_ops.rs` | Windows STA 文件操作线程：复制、移动、回收站删除及永久删除。 |
 | `src/empty_folders.rs` | 后台扫描、复核和删除空文件夹。 |
-| `src/sorting.rs` | latest-wins 后台排序，避免大记录集排序阻塞界面。 |
+| `src/sorting.rs` | 只保留最新请求的后台索引排序，避免大记录集排序阻塞界面。 |
 | `src/storage.rs` | 解析 exe 同目录的数据目录与缓存目录。 |
 | `src/models.rs` | 图片记录、扫描事件和服务间传输模型。 |
 | `src/icon_pixels.rs`、`build.rs` | 应用图标及 Windows PE 版本资源。 |
 
 ## 性能设计
 
-- 图片网格使用虚拟滚动，只创建视口及其附近的卡片控件；图片记录可在内存中常驻，目标规模为单根目录 5 万张以内。去重显示只缓存记录下标，不复制完整图片记录。
-- 首次扫描仅采集路径、大小与修改时间；尺寸在缩略图解码或缓存命中后渐进写回，避免扫描阶段打开全部原图。
-- SQLite 使用 WAL、`synchronous=NORMAL` 和批量事务。未变化文件复用已有索引，完整扫描成功后才删除过期记录。
-- 查重先排除大小唯一的文件，只对候选文件流式计算 SHA-256；哈希随文件大小和修改时间缓存，未变化文件再次查重不读取原图。
-- 查重完成后可启用“重复副本只显示一张”；它只过滤主网格、全选及预览导航，不修改索引或磁盘文件，目录变化时自动失效。
-- 缩略图任务分为 `Preview`、`Visible`、`Prefetch` 三个有界队列；当前大图和视口任务优先，快速滚动时旧预取可被丢弃。
-- 每个扫描根目录都有 generation。切换目录后旧任务在解码和写缓存前后都会失效，避免旧结果污染新目录。
-- 缩略图磁盘缓存限制为 1 GiB，超过阈值后后台清理至约 800 MiB；内存/GPU 纹理按访问时间淘汰，预算为 256 MiB。
-- 扫描、缩略图、监控和文件操作通过有界 channel 与唤醒回调通知 UI；空闲时不采用固定间隔持续重绘。
+- `catalog_runtime.rs` 的单一后台所有者负责扫描、监控、SQL、元数据合并与共享快照。扫描分片可取消，UI 不等待 join；快照通常最多每 100 ms 发布一次。
+- `CatalogSnapshot` 共享 `Arc<ImageRecord>`，提供路径、ID 查找表；排序返回下标顺序与反向位置表，并校验请求序号和数据版本。旧快照与大型排序表在后台释放。
+- 当前预览使用专用工作线程；普通解码 SSD 4 / HDD 2 个，受核心数限制，无法识别时按 HDD。可见项优先于预取，按文件版本、用途与尺寸去重。
+- 中间缓冲估算 512 MiB（预览保留 128 MiB），待上传像素 96 MiB，缓存写队列 32 MiB，纹理像素 256 MiB。RAII 租约随缓冲生命周期释放；原生解码器内部只能协作取消。
+- JPEG 使用独立 `turbojpeg` 适配层进行缩放解码；不启用旧 image 集成。其他格式一次完整解码，再用面积采样缩小。资源不足有独立状态，不标记为损坏。
+- `gpu_images.rs` 使用 egui 注册的原生 wgpu 纹理，按行分帧上传，完整上传后才替换预览。所有上传共用 4 MiB / 2 ms 提交预算，普通图每帧最多 8 张。CPU 提交时间与 GPU 完成时间不同。
+- 目录监控保持整个根目录会话，合并路径，700 ms 防抖、2 s 最长等待；溢出或丢失事件回退完整校验。遍历失败保留索引。
+- `thumbnail_cache.rs` 是压缩缓存和独立 SQLite 清单的后台所有者；访问时间合并更新，淘汰按 LRU 分批清至 80%。缓存清理有独立 epoch，旧写入不会重新落盘。
+- 去重扫描共享记录，后台按大小筛选、流式 SHA-256；删除前复核移至文件操作线程，保留原有确认流程。文件操作报告的源与目标路径进入相同的增量校验流程。
+- 默认不记录性能；设置 `TUHAI_PERF=1` 后输出有界异步 JSONL。复现实验与限制见 [PERFORMANCE.md](PERFORMANCE.md)。
+
+### 原生构建
+
+安装 CMake、Ninja、NASM 并加入 PATH。`.cargo/config.toml` 固定源码静态构建、Ninja 和 MSVC 静态 CRT；debug 下 turbojpeg-sys 使用非 debug CRT，避免混合 CRT。NASM 缺失时 SIMD 构建直接失败，不静默降速。
+
+中文工作区的 Visual Studio/NASM 自定义步骤曾在本机挂起；使用 Ninja 和 ASCII 输出路径：
+
+```powershell
+$env:CARGO_TARGET_DIR='G:\tuhai-build'
+cargo build --release --locked
+```
+
+Windows 10/11 的系统 DLL 仍是运行前提，无需附带 JPEG 或 VC 运行库 DLL。
 
 ## 本地数据布局
 

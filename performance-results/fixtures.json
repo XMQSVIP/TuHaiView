@@ -1,0 +1,106 @@
+{
+  "version": 1,
+  "source": "Original deterministic synthetic patterns, MIT",
+  "catalog_count": 50000,
+  "manifest_sha256": "ECF1DFDC5BC6997AC7527E34E57DC6E2BD7931C53B46F21208039408E9DB05C2",
+  "generator": "scripts/make_perf_fixtures.py",
+  "catalog_layout": "catalog/part-000 through part-049, 1000 per folder; first 10 folders are the 10k subset",
+  "special_samples": [
+    {
+      "path": "special/baseline-6000x4000.jpg",
+      "sha256": "346a9b1d52c7903db75a5ff9f831fa7638a7c3c3f25aca37fe820ee293b3d324",
+      "bytes": 6795849,
+      "kind": "large-baseline-jpeg"
+    },
+    {
+      "path": "special/progressive-24mp.jpg",
+      "sha256": "c314eb03e04ef0d4b6d4deca9d9d75ffb191eaada195dcab4def2915b90410ba",
+      "bytes": 5882087,
+      "kind": "progressive-jpeg"
+    },
+    {
+      "path": "special/baseline-8000x6000.jpg",
+      "sha256": "ecb70947f10bb44604aeb40964102720b4ebd8c49d46fb3841251513263828a6",
+      "bytes": 13590704,
+      "kind": "large-baseline-jpeg"
+    },
+    {
+      "path": "special/baseline-10000x10000.jpg",
+      "sha256": "a1d3ed083cce3ccc54af19b2c1f48ec16aae500550a8b44867e8318821062b23",
+      "bytes": 28313567,
+      "kind": "large-baseline-jpeg"
+    },
+    {
+      "path": "special/exif-1.jpg",
+      "sha256": "7189a8d0bdb153ca79ef33893eb54c05df148a104d4687b2b11ba32f423e4036",
+      "bytes": 30133,
+      "kind": "exif"
+    },
+    {
+      "path": "special/exif-2.jpg",
+      "sha256": "ad5eabbdf793aa23c4a91fd258e51e0ed11e71a437b5dcf433d257a1eb9fca03",
+      "bytes": 30133,
+      "kind": "exif"
+    },
+    {
+      "path": "special/exif-3.jpg",
+      "sha256": "0e2345c63b2518ba6c8cab07eff8976a4212a32a8076967e2ba69582de488c6c",
+      "bytes": 30133,
+      "kind": "exif"
+    },
+    {
+      "path": "special/exif-4.jpg",
+      "sha256": "5c7b3521a2878bc4efd696ce8e1304bfb4338bb7044bdcb14e7b0479821bdfef",
+      "bytes": 30133,
+      "kind": "exif"
+    },
+    {
+      "path": "special/exif-5.jpg",
+      "sha256": "928d6c85ac6761c7fb278f4b04f5148c184ff86dbea862f389de878bf1a69ece",
+      "bytes": 30133,
+      "kind": "exif"
+    },
+    {
+      "path": "special/exif-6.jpg",
+      "sha256": "0453e5c9d3618deef1a8b02129426225e1865c9bd10f840b03952197e0c6ab73",
+      "bytes": 30133,
+      "kind": "exif"
+    },
+    {
+      "path": "special/exif-7.jpg",
+      "sha256": "6f7b19e71f2ea0ad2ccdb5a460d196949656be05a0731e6dba8d20f1e79b2314",
+      "bytes": 30133,
+      "kind": "exif"
+    },
+    {
+      "path": "special/exif-8.jpg",
+      "sha256": "5171cf11314d20ecb9b93df8b36854a6f259bc937ad1f597b0a89233e6615142",
+      "bytes": 30133,
+      "kind": "exif"
+    },
+    {
+      "path": "special/cmyk.jpg",
+      "sha256": "d95e08a985078a306fd2c56d0f9df474cf629a844f0b21b3e589ca81c40132ba",
+      "bytes": 45094,
+      "kind": "cmyk"
+    },
+    {
+      "path": "special/alpha.png",
+      "sha256": "a94fb8d74fb3e149a6e37c6983eaf7e67ece2c172bab4133ad0c08ddf21bd647",
+      "bytes": 3043,
+      "kind": "alpha"
+    },
+    {
+      "path": "special/long.png",
+      "sha256": "d285ae03367452c5dd8254e7969cdb9b1dd369bad0ea04fc843e842f86d32438",
+      "bytes": 34961,
+      "kind": "long"
+    },
+    {
+      "path": "special/corrupt.jpg",
+      "sha256": "0694f9f80be7f9f0868ae54d8d4eff2971aa71f4e52df8e2c9712b5b1bfc98aa",
+      "bytes": 12,
+      "kind": "corrupt"
+    }
+  ]
+}

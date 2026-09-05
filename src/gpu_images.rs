@@ -21,7 +21,8 @@ struct ImageInner {
 impl Drop for ImageInner {
     fn drop(&mut self) {
         self.state.renderer.write().free_texture(&self.id);
-        self.texture.destroy();
+        // Drop lets wgpu retain resources referenced by an in-flight submission.
+        // Explicit destroy here could invalidate a write queued earlier this frame.
     }
 }
 impl GpuImage {
@@ -65,7 +66,7 @@ impl Uploads {
     pub fn clear(&mut self, service: &ThumbnailService) {
         if let Some(p) = self.pending.take() {
             service.acknowledge(&p.result);
-            p.texture.destroy();
+            drop(p);
         }
     }
     pub fn queue(&mut self, result: ImageResult) {
@@ -283,5 +284,8 @@ mod tests {
         );
         assert!(!uploads.is_pending());
         assert_eq!(budget.used(), 0);
+        // Cancellation can occur between write_texture and the frame submission.
+        state.queue.submit([]);
+        let _ = state.device.poll(wgpu::Maintain::Wait);
     }
 }

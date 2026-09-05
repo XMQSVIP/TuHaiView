@@ -1,0 +1,30 @@
+    Blocking waiting for file lock on build directory
+   Compiling tuhai-view v0.1.0 (G:\codex_chat\临时测试\rust-image-previewer)
+    Finished `release` profile [optimized] target(s) in 1m 06s
+     Running unittests src\main.rs (G:\tuhai-perf-build\release\deps\TuHaiView-ed6d4a33a2f0905a.exe)
+
+running 1 test
+PERF {"fast":false,"file":"baseline-6000x4000.jpg","ms":375.4324,"run":0}
+PERF {"fast":true,"file":"baseline-6000x4000.jpg","ms":61.412,"run":0}
+PERF {"fast":true,"file":"baseline-6000x4000.jpg","ms":59.9536,"run":1}
+PERF {"fast":false,"file":"baseline-6000x4000.jpg","ms":282.7086,"run":1}
+PERF {"fast":false,"file":"baseline-6000x4000.jpg","ms":290.46569999999997,"run":2}
+PERF {"fast":true,"file":"baseline-6000x4000.jpg","ms":64.3055,"run":2}
+PERF {"fast":true,"file":"baseline-6000x4000.jpg","ms":61.5983,"run":3}
+PERF {"fast":false,"file":"baseline-6000x4000.jpg","ms":278.1534,"run":3}
+PERF {"fast":false,"file":"baseline-6000x4000.jpg","ms":292.3356,"run":4}
+PERF {"fast":true,"file":"baseline-6000x4000.jpg","ms":61.7274,"run":4}
+PERF {"fast":false,"file":"baseline-8000x6000.jpg","ms":732.4327000000001,"run":0}
+PERF {"fast":true,"file":"baseline-8000x6000.jpg","ms":123.2615,"run":0}
+PERF {"fast":true,"file":"baseline-8000x6000.jpg","ms":135.70589999999999,"run":1}
+PERF {"fast":false,"file":"baseline-8000x6000.jpg","ms":582.551,"run":1}
+PERF {"fast":false,"file":"baseline-8000x6000.jpg","ms":596.9313000000001,"run":2}
+PERF {"fast":true,"file":"baseline-8000x6000.jpg","ms":124.9721,"run":2}
+PERF {"fast":true,"file":"baseline-8000x6000.jpg","ms":119.5109,"run":3}
+PERF {"fast":false,"file":"baseline-8000x6000.jpg","ms":572.8721,"run":3}
+PERF {"fast":false,"file":"baseline-8000x6000.jpg","ms":569.5359,"run":4}
+PERF {"fast":true,"file":"baseline-8000x6000.jpg","ms":117.6118,"run":4}
+test perf_tests::jpeg_scaled_comparison_and_special_formats ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 34 filtered out; finished in 6.52s
+

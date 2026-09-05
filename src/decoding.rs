@@ -95,7 +95,8 @@ pub fn decode(
             .unwrap_or(usize::MAX)
             .saturating_add(sw.saturating_mul(sh).saturating_mul(20))
             .saturating_add(if progressive {
-                width as usize * height as usize * 6
+                // Four components (CMYK) may each retain 16-bit DCT coefficients.
+                width as usize * height as usize * 8
             } else {
                 8 * MIB
             })
