@@ -2,7 +2,8 @@
 use crossbeam_channel::{Sender, bounded};
 use serde::{Deserialize, Serialize};
 use std::{
-    cell::Cell,
+    cell::{Cell, RefCell},
+    collections::HashMap,
     sync::{
         OnceLock,
         atomic::{AtomicU64, Ordering},
@@ -53,6 +54,7 @@ struct Sample {
     #[serde(skip)]
     flushed: Option<Sender<()>>,
 }
+static ENABLED: OnceLock<bool> = OnceLock::new();
 static SAMPLES: OnceLock<Option<Sender<Sample>>> = OnceLock::new();
 static START: OnceLock<Instant> = OnceLock::new();
 static FRAME: AtomicU64 = AtomicU64::new(0);
@@ -98,7 +100,35 @@ fn qpc() -> i64 {
     0
 }
 
+pub fn enabled() -> bool {
+    *ENABLED.get_or_init(|| std::env::var("TUHAI_PERF").ok().as_deref() == Some("1"))
+}
+thread_local! { static GAUGES: RefCell<HashMap<&'static str, (Instant, f64)>> = RefCell::new(HashMap::new()); }
+/// Resource/config gauges need neither a record nor a scheduler lock every frame.
+pub fn gauge(name: &'static str, value: f64) {
+    if !enabled() {
+        return;
+    }
+    let publish = GAUGES.with(|values| {
+        let mut values = values.borrow_mut();
+        let now = Instant::now();
+        let changed = values
+            .get(name)
+            .is_none_or(|(last, old)| *old != value || last.elapsed().as_secs() >= 1);
+        if changed {
+            values.insert(name, (now, value));
+        }
+        changed
+    });
+    if publish {
+        sample(name, value);
+    }
+}
+
 pub fn sample(name: &'static str, value: f64) {
+    if !enabled() {
+        return;
+    }
     let sender = SAMPLES.get_or_init(|| {
         if std::env::var_os("TUHAI_PERF").as_deref() != Some(std::ffi::OsStr::new("1")) {
             return None;

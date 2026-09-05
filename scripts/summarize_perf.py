@@ -9,19 +9,20 @@ def summary(values):
 
 def analyze(log, presentmon=None, refresh_hz=60):
     d=collections.defaultdict(list); phases=collections.defaultdict(list); memory=[]; frames=[]; legacy_phase=None; header=None; malformed=0
-    for line in log.open(encoding="utf-8-sig"):
-        try: sample=json.loads(line)
-        except json.JSONDecodeError: malformed+=1; continue
-        if sample.get("kind")=="run_header": header=sample; continue
-        name=sample.get("name"); value=sample.get("value")
-        if name is None or not isinstance(value,(int,float)): continue
-        d[name].append(value)
-        if name=="trajectory_phase": legacy_phase=int(value)
-        if name=="frame_interval_ms":
-            phase=sample.get("scenario",legacy_phase)
-            if phase is not None: phases[phase].append(value)
-            if "qpc" in sample: frames.append((sample["qpc"],sample.get("scenario",8)))
-        if name=="process_private_bytes": memory.append((sample.get("monotonic_us",sample["time_ms"]*1000)/1000,value))
+    with log.open(encoding="utf-8-sig") as source:
+        for line in source:
+            try: sample=json.loads(line)
+            except json.JSONDecodeError: malformed+=1; continue
+            if sample.get("kind")=="run_header": header=sample; continue
+            name=sample.get("name"); value=sample.get("value")
+            if name is None or not isinstance(value,(int,float)): continue
+            d[name].append(value)
+            if name=="trajectory_phase": legacy_phase=int(value)
+            if name=="frame_interval_ms":
+                phase=sample.get("scenario",legacy_phase)
+                if phase is not None: phases[phase].append(value)
+                if "qpc" in sample: frames.append((sample["qpc"],sample.get("scenario",8)))
+            if name=="process_private_bytes": memory.append((sample.get("monotonic_us",sample["time_ms"]*1000)/1000,value))
     reasons=[]
     if not header: reasons.append("legacy_log_without_correlated_frames")
     if not d["soak_completed_seconds"]: reasons.append("missing_scenario_completion")
@@ -53,13 +54,13 @@ def analyze(log, presentmon=None, refresh_hz=60):
                     if raw in ("NA","",None): dropped+=1; continue
                     value=float(raw)
                     if value>0: displayed[phase].append(value); all_shown.append(value)
-                    for key,target in [("GPUBusy",gpu),("DisplayLatency",latency)]:
+                    for key,target in [("MsGPUBusy",gpu),("MsUntilDisplayed",latency)]:
                         try: target.append(float(row[key]))
                         except (ValueError,KeyError): pass
                 except (ValueError,KeyError): continue
         out["presentmon"]=dict(path=str(presentmon),displayed_by_phase={str(k):summary(v) for k,v in displayed.items()},all_displayed=summary(all_shown),not_displayed=dropped,gpu_busy_ms=summary(gpu),display_latency_ms=summary(latency))
         scroll=summary(displayed[1]); period=1000/refresh_hz
-        if not scroll or scroll["n"]<300: reasons.append("insufficient_correlated_displayed_scroll_frames")
+        if header and header.get("scenario_name") in ("scroll", "trajectory", "soak") and (not scroll or scroll["n"]<300): reasons.append("insufficient_correlated_displayed_scroll_frames")
         out["scroll_acceptance"]=dict(refresh_hz=refresh_hz,p95_limit_ms=period+.5,p99_limit_ms=2*period+.5,passed=bool(scroll and scroll["n"]>=300 and scroll["p95"]<=period+.5 and scroll["p99"]<=2*period+.5 and not reasons))
     else: out["display_acceptance"]="unverified_without_presentmon"
     out["log_valid"]=not reasons

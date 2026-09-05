@@ -4,3 +4,5 @@
 *.sqlite3-shm
 *.sqlite3-wal
 *.log
+
+__pycache__/

@@ -14,6 +14,7 @@ mod models;
 #[cfg(test)]
 mod perf_tests;
 mod performance;
+mod retirement;
 mod sorting;
 mod storage;
 mod thumbnail_cache;

@@ -232,11 +232,11 @@ impl CatalogService {
         self.pending.lock().progress.take()
     }
     pub fn retire(&self, snapshot: Arc<CatalogSnapshot>) {
-        self.retire_value(snapshot);
+        let bytes = snapshot.records.len() * std::mem::size_of::<Arc<ImageRecord>>();
+        crate::retirement::retire(snapshot, bytes);
     }
     pub fn retire_value<T: Send + 'static>(&self, value: T) {
-        self.pending.lock().retired.push(Box::new(value));
-        let _ = self.notify_tx.try_send(());
+        crate::retirement::retire(value, std::mem::size_of::<T>());
     }
     pub fn queue_metadata_update(&self, update: MetadataUpdate) {
         self.pending.lock().metadata.insert(update.id, update);
@@ -928,6 +928,42 @@ mod tests {
             }
         }
         assert_eq!(service.take_snapshot().unwrap().generation, latest);
+        let subtree = root.join("old-tree");
+        fs::create_dir(&subtree).unwrap();
+        for index in 0..10 {
+            fs::write(subtree.join(format!("{index}.jpg")), b"new-image").unwrap();
+        }
+        service.queue_changes([subtree.clone()]);
+        wait(&service);
+        assert_eq!(service.take_snapshot().unwrap().records.len(), 11);
+        let moved = root.join("new-tree");
+        fs::rename(&subtree, &moved).unwrap();
+        service.queue_changes([subtree.clone(), moved.clone()]);
+        let move_stats = wait(&service);
+        let after_move = service.take_snapshot().unwrap();
+        assert_eq!(
+            move_stats.visited_files, 10,
+            "directory move must not traverse unrelated root files"
+        );
+        assert_eq!(after_move.records.len(), 11);
+        assert!(
+            after_move
+                .records
+                .iter()
+                .all(|r| !r.path.starts_with(&subtree))
+        );
+        assert!(after_move.by_path.contains_key(&moved.join("0.jpg")));
+        // Replacing a file invalidates progressive fields, even when timestamp/length are preserved.
+        let replacement = moved.join("0.jpg");
+        fs::write(&replacement, b"new-image").unwrap();
+        service.queue_changes([replacement.clone()]);
+        let replace_stats = wait(&service);
+        assert_eq!(replace_stats.visited_files, 1);
+        let replaced = service.take_snapshot().unwrap();
+        assert_ne!(
+            after_move.records[after_move.by_path[&replacement]].thumbnail_key,
+            replaced.records[replaced.by_path[&replacement]].thumbnail_key
+        );
         drop(service);
         // The owner exits asynchronously; wait only in the test for its DB/watcher handles.
         for _ in 0..100 {

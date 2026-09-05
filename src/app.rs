@@ -66,6 +66,7 @@ enum AuxiliaryWindow {
 
 pub struct PreviewerApp {
     catalog: CatalogService,
+    wakeup_pending: Arc<std::sync::atomic::AtomicBool>,
     duplicate_service: DuplicateService,
     empty_folder_service: EmptyFolderService,
     thumbnails: ThumbnailService,
@@ -74,12 +75,15 @@ pub struct PreviewerApp {
     root: Option<PathBuf>,
     generation: u64,
     snapshot: Arc<CatalogSnapshot>,
+    pending_snapshot: Option<Arc<CatalogSnapshot>>,
+    viewport_signature: Option<(u64, usize, usize, usize, usize, bool)>,
     records: Arc<[Arc<ImageRecord>]>,
     record_positions: Arc<HashMap<PathBuf, usize>>,
     display_indices: Arc<[usize]>,
     display_positions: Arc<HashMap<i64, usize>>,
     textures: HashMap<String, crate::gpu_images::GpuImage>,
     uploads: crate::gpu_images::Uploads,
+    deferred_image: Option<crate::thumbnails::ImageResult>,
     texture_lru: lru::LruCache<String, ()>,
     pinned_textures: HashSet<String>,
     image_errors: HashMap<String, String>,
@@ -148,10 +152,16 @@ impl PreviewerApp {
     pub fn new(cc: &eframe::CreationContext<'_>) -> anyhow::Result<Self> {
         configure_chinese_font(&cc.egui_ctx);
         let repaint_context = cc.egui_ctx.clone();
-        let wakeup: Arc<dyn Fn() + Send + Sync> =
-            Arc::new(move || repaint_context.request_repaint());
+        let wakeup_pending = Arc::new(std::sync::atomic::AtomicBool::new(false));
+        let signal = wakeup_pending.clone();
+        let wakeup: Arc<dyn Fn() + Send + Sync> = Arc::new(move || {
+            if !signal.swap(true, std::sync::atomic::Ordering::AcqRel) {
+                repaint_context.request_repaint();
+            }
+        });
         let mut app = Self {
             catalog: CatalogService::new(wakeup.clone())?,
+            wakeup_pending,
             duplicate_service: DuplicateService::new(wakeup.clone()),
             empty_folder_service: EmptyFolderService::new(wakeup.clone()),
             thumbnails: ThumbnailService::new(wakeup.clone()),
@@ -160,6 +170,8 @@ impl PreviewerApp {
             root: None,
             generation: 0,
             snapshot: Arc::new(CatalogSnapshot::default()),
+            pending_snapshot: None,
+            viewport_signature: None,
             records: Arc::from([]),
             record_positions: Arc::default(),
             display_indices: Arc::from([]),
@@ -170,6 +182,7 @@ impl PreviewerApp {
                     .clone()
                     .ok_or_else(|| anyhow::anyhow!("DX12 render state unavailable"))?,
             ),
+            deferred_image: None,
             texture_lru: lru::LruCache::unbounded(),
             pinned_textures: HashSet::new(),
             image_errors: HashMap::new(),
@@ -290,6 +303,10 @@ impl PreviewerApp {
         self.first_screen = false;
         self.thumbnails.set_root(path.clone());
         self.root = Some(path.clone());
+        if let Some(old) = self.pending_snapshot.take() {
+            self.catalog.retire(old);
+        }
+        self.viewport_signature = None;
         self.records = Arc::from([]);
         self.record_positions = Arc::default();
         self.display_indices = Arc::from([]);
@@ -301,7 +318,12 @@ impl PreviewerApp {
         self.uploads.clear(&self.thumbnails);
         self.texture_lru.clear();
         self.pinned_textures.clear();
-        self.textures.clear();
+        for (_, texture) in self.textures.drain() {
+            self.uploads.retire(texture);
+        }
+        if let Some(result) = self.deferred_image.take() {
+            self.thumbnails.discard(result);
+        }
         self.texture_bytes = 0;
         self.failed_images.clear();
         self.image_errors.clear();
@@ -368,32 +390,30 @@ impl PreviewerApp {
     }
 
     fn apply_catalog_snapshot(&mut self) {
-        if let Some(snapshot) = self.catalog.take_snapshot() {
-            if snapshot.generation == self.generation {
-                let changed = snapshot.revision != self.data_revision;
-                if self.records.is_empty() && !snapshot.records.is_empty() {
-                    crate::performance::elapsed("first_records_ms", self.root_started);
-                }
-                let preview_ids = self.preview_record_ids();
-                self.records = snapshot.records.clone();
-                self.record_positions = snapshot.by_path.clone();
-                if changed {
-                    self.data_revision = snapshot.revision;
-                    let old_order = std::mem::replace(
-                        &mut self.display_indices,
-                        snapshot.natural_indices.clone(),
-                    );
-                    let old_positions =
-                        std::mem::replace(&mut self.display_positions, snapshot.by_id.clone());
-                    self.catalog.retire_value((old_order, old_positions));
-                    self.selected.retain(|id| snapshot.by_id.contains_key(id));
-                    self.restore_preview_by_ids(preview_ids);
-                    self.request_sort();
-                }
-                let old = std::mem::replace(&mut self.snapshot, snapshot);
+        let Some(snapshot) = self.catalog.take_snapshot() else {
+            return;
+        };
+        if snapshot.generation != self.generation {
+            self.catalog.retire(snapshot);
+            return;
+        }
+        if snapshot.revision == self.snapshot.revision
+            && snapshot.generation == self.snapshot.generation
+        {
+            // Metadata uses the identical record positions and never overwrites an in-flight order.
+            self.records = snapshot.records.clone();
+            self.record_positions = snapshot.by_path.clone();
+            let old = std::mem::replace(&mut self.snapshot, snapshot);
+            self.catalog.retire(old);
+        } else {
+            let same_membership = self.pending_snapshot.as_ref().is_some_and(|old| {
+                old.revision == snapshot.revision && old.generation == snapshot.generation
+            });
+            if let Some(old) = self.pending_snapshot.replace(snapshot) {
                 self.catalog.retire(old);
-            } else {
-                self.catalog.retire(snapshot);
+            }
+            if !same_membership {
+                self.request_sort();
             }
         }
     }
@@ -673,10 +693,26 @@ impl PreviewerApp {
             };
             if result.generation == self.generation
                 && self.sort_service.is_current(&result)
-                && result.revision == self.data_revision
+                && result.revision
+                    == self
+                        .pending_snapshot
+                        .as_ref()
+                        .map_or(self.data_revision, |s| s.revision)
                 && result.mode == self.sort
             {
                 let preview_ids = self.preview_record_ids();
+                if let Some(snapshot) = self.pending_snapshot.take() {
+                    if self.records.is_empty() && !snapshot.records.is_empty() {
+                        crate::performance::elapsed("first_records_ms", self.root_started);
+                    }
+                    self.records = snapshot.records.clone();
+                    self.record_positions = snapshot.by_path.clone();
+                    self.data_revision = snapshot.revision;
+                    self.selected.retain(|id| snapshot.by_id.contains_key(id));
+                    let old = std::mem::replace(&mut self.snapshot, snapshot);
+                    self.catalog.retire(old);
+                }
+                self.viewport_signature = None;
                 let old_order = std::mem::replace(&mut self.display_indices, result.indices);
                 let old_positions =
                     std::mem::replace(&mut self.display_positions, result.positions);
@@ -783,6 +819,13 @@ impl PreviewerApp {
             .map(AsRef::as_ref)
     }
 
+    fn shared_display_record(&self, index: usize) -> Option<Arc<ImageRecord>> {
+        self.display_indices
+            .get(index)
+            .and_then(|i| self.records.get(*i))
+            .cloned()
+    }
+
     fn preview_record_ids(&self) -> (Option<i64>, Option<i64>) {
         let current = self
             .preview
@@ -816,9 +859,13 @@ impl PreviewerApp {
         };
         self.sort_service.submit(
             self.generation,
-            self.data_revision,
+            self.pending_snapshot
+                .as_ref()
+                .map_or(self.data_revision, |s| s.revision),
             self.sort,
-            self.records.clone(),
+            self.pending_snapshot
+                .as_ref()
+                .map_or_else(|| self.records.clone(), |s| s.records.clone()),
             hidden,
         );
         self.previous_sort = self.sort;
@@ -842,6 +889,7 @@ impl PreviewerApp {
                 self.texture_bytes = self
                     .texture_bytes
                     .saturating_sub(texture.size()[0] * texture.size()[1] * 4);
+                self.uploads.retire(texture);
             }
             self.texture_lru.pop(&key);
         }
@@ -853,6 +901,7 @@ impl PreviewerApp {
             self.texture_bytes = self
                 .texture_bytes
                 .saturating_sub(old.size()[0] * old.size()[1] * 4);
+            self.uploads.retire(old);
         }
         self.texture_bytes += bytes;
         self.texture_lru.put(key, ());
@@ -862,6 +911,8 @@ impl PreviewerApp {
     }
 
     fn process_images(&mut self, ctx: &egui::Context) {
+        self.uploads.reclaim();
+        crate::retirement::record_metrics();
         let started = Instant::now();
         let mut remaining = crate::performance::UPLOAD_BYTES;
         let mut count = 0;
@@ -870,16 +921,17 @@ impl PreviewerApp {
             && started.elapsed() < Duration::from_millis(crate::performance::UPLOAD_BUDGET_MS)
         {
             if !self.uploads.is_pending() {
-                let received = self
-                    .thumbnails
-                    .preview_rx
-                    .try_recv()
-                    .or_else(|_| self.thumbnails.rx.try_recv());
+                let received = self.deferred_image.take().map(Ok).unwrap_or_else(|| {
+                    self.thumbnails
+                        .preview_rx
+                        .try_recv()
+                        .or_else(|_| self.thumbnails.rx.try_recv())
+                });
                 let Ok(result) = received else {
                     break;
                 };
                 if !self.thumbnails.is_current(&result) {
-                    self.thumbnails.acknowledge(&result);
+                    self.thumbnails.discard(result);
                     continue;
                 }
                 let Some(record) = self
@@ -892,7 +944,7 @@ impl PreviewerApp {
                             && r.thumbnail_key == result.source_key
                     })
                 else {
-                    self.thumbnails.acknowledge(&result);
+                    self.thumbnails.discard(result);
                     continue;
                 };
                 if let Some(error) = &result.error {
@@ -905,7 +957,7 @@ impl PreviewerApp {
                     self.image_errors
                         .insert(result.texture_key.clone(), self.status.clone());
                     self.failed_images.insert(result.texture_key.clone());
-                    self.thumbnails.acknowledge(&result);
+                    self.thumbnails.discard(result);
                     continue;
                 }
                 if record.width != Some(result.source_width)
@@ -921,10 +973,13 @@ impl PreviewerApp {
                     });
                 }
                 if !self.reserve_texture_bytes(result.pixels.len()) {
-                    self.thumbnails.acknowledge(&result);
+                    self.thumbnails.discard(result);
                     break;
                 }
-                self.uploads.queue(result);
+                if let Err(result) = self.uploads.queue(result) {
+                    self.deferred_image = Some(result);
+                    break;
+                }
             }
             if let Some((result, texture)) =
                 self.uploads
@@ -939,16 +994,22 @@ impl PreviewerApp {
                     crate::performance::elapsed("first_thumbnail_ms", self.root_started);
                 }
                 self.insert_texture(result.texture_key.clone(), texture, bytes);
+                self.thumbnails.discard(result);
                 count += 1;
             } else {
                 break;
             }
         }
-        if self.uploads.is_pending() || self.thumbnails.has_results() {
+        if self.uploads.is_pending()
+            || self.thumbnails.has_results()
+            || self.deferred_image.is_some()
+            || self.uploads.needs_reclaim()
+        {
             ctx.request_repaint();
         }
         self.thumbnails.record_metrics();
-        crate::performance::sample(
+        crate::performance::gauge("texture_allocation_bytes", self.uploads.used_bytes() as f64);
+        crate::performance::gauge(
             "texture_bytes",
             (self.texture_bytes + self.uploads.pending_bytes()) as f64,
         );
@@ -1390,34 +1451,46 @@ impl PreviewerApp {
             let visible_count = visible.len().max(1);
             let prefetch_start = visible.start.saturating_sub(visible_count);
             let prefetch_end = (visible.end + visible_count).min(rows);
-            let visible_keys: Vec<_> = (visible.start * columns
-                ..(visible.end * columns).min(self.display_indices.len()))
-                .filter_map(|i| self.display_record(i).map(|r| r.thumbnail_key.clone()))
-                .collect();
-            let prefetch_keys: Vec<_> = (prefetch_start * columns
-                ..(prefetch_end * columns).min(self.display_indices.len()))
-                .filter_map(|i| self.display_record(i).map(|r| r.thumbnail_key.clone()))
-                .collect();
             let allow_prefetch =
                 !self.duplicate_scanning && Instant::now() >= self.fast_scroll_until;
-            let pinned: HashSet<_> = visible_keys.iter().map(|k| format!("{k}:thumb")).collect();
-            if pinned != self.pinned_textures {
-                self.viewport_started = Instant::now();
-                self.viewport_measured = false;
+            let signature = (
+                self.data_revision,
+                visible.start,
+                visible.end,
+                columns,
+                rows,
+                allow_prefetch,
+            );
+            if self.viewport_signature != Some(signature) {
+                self.viewport_signature = Some(signature);
+                let visible_keys: Vec<_> = (visible.start * columns
+                    ..(visible.end * columns).min(self.display_indices.len()))
+                    .filter_map(|i| self.display_record(i).map(|r| r.thumbnail_key.clone()))
+                    .collect();
+                let prefetch_keys: Vec<_> = (prefetch_start * columns
+                    ..(prefetch_end * columns).min(self.display_indices.len()))
+                    .filter_map(|i| self.display_record(i).map(|r| r.thumbnail_key.clone()))
+                    .collect();
+                let pinned: HashSet<_> =
+                    visible_keys.iter().map(|k| format!("{k}:thumb")).collect();
+                if pinned != self.pinned_textures {
+                    self.viewport_started = Instant::now();
+                    self.viewport_measured = false;
+                }
+                self.pinned_textures = pinned;
+                self.thumbnails
+                    .set_viewport(visible_keys, prefetch_keys, allow_prefetch);
             }
-            self.pinned_textures = pinned;
-            self.thumbnails
-                .set_viewport(visible_keys, prefetch_keys, allow_prefetch);
+            let mut requests = Vec::new();
             for row in visible.clone() {
                 for column in 0..columns {
                     let index = row * columns + column;
-                    let Some(record) = self.display_record(index).cloned() else {
+                    let Some(record) = self.shared_display_record(index) else {
                         break;
                     };
                     let key = texture_key(&record, ImageKind::Thumbnail);
                     if !self.textures.contains_key(&key) && !self.failed_images.contains(&key) {
-                        self.thumbnails
-                            .request_thumbnail(record, ThumbnailPriority::Visible);
+                        requests.push((record, ThumbnailPriority::Visible));
                     }
                 }
             }
@@ -1435,17 +1508,17 @@ impl PreviewerApp {
                     }
                     for column in 0..columns {
                         let index = row * columns + column;
-                        let Some(record) = self.display_record(index).cloned() else {
+                        let Some(record) = self.shared_display_record(index) else {
                             break;
                         };
                         let key = texture_key(&record, ImageKind::Thumbnail);
                         if !self.textures.contains_key(&key) && !self.failed_images.contains(&key) {
-                            self.thumbnails
-                                .request_thumbnail(record, ThumbnailPriority::Prefetch);
+                            requests.push((record, ThumbnailPriority::Prefetch));
                         }
                     }
                 }
             }
+            self.thumbnails.request_thumbnails(requests);
             for row in visible {
                 ui.horizontal(|ui| {
                     for column in 0..columns {
@@ -1453,7 +1526,7 @@ impl PreviewerApp {
                         if index >= self.display_indices.len() {
                             break;
                         }
-                        let Some(record) = self.display_record(index).cloned() else {
+                        let Some(record) = self.shared_display_record(index) else {
                             break;
                         };
                         let key = texture_key(&record, ImageKind::Thumbnail);
@@ -1672,12 +1745,14 @@ impl PreviewerApp {
                 self.texture_bytes = self
                     .texture_bytes
                     .saturating_sub(texture.size()[0] * texture.size()[1] * 4);
+                self.uploads.retire(texture);
             }
             self.texture_lru.pop(&key);
         }
     }
 
     fn close_preview(&mut self) {
+        self.viewport_signature = None;
         self.thumbnails.begin_preview(None);
         self.uploads.clear(&self.thumbnails);
         if let Some(current) = self.preview {
@@ -1699,7 +1774,7 @@ impl PreviewerApp {
             self.preview = None;
             return;
         }
-        let Some(record) = self.display_record(index).cloned() else {
+        let Some(record) = self.shared_display_record(index) else {
             self.preview = None;
             return;
         };
@@ -2710,7 +2785,12 @@ impl PreviewerApp {
                             self.uploads.clear(&self.thumbnails);
                             self.texture_lru.clear();
                             self.pinned_textures.clear();
-                            self.textures.clear();
+                            for (_, texture) in self.textures.drain() {
+                                self.uploads.retire(texture);
+                            }
+                            if let Some(result) = self.deferred_image.take() {
+                                self.thumbnails.discard(result);
+                            }
                             self.texture_bytes = 0;
                             self.failed_images.clear();
                             self.image_errors.clear();
@@ -2739,6 +2819,8 @@ impl PreviewerApp {
 
 impl eframe::App for PreviewerApp {
     fn update(&mut self, ctx: &egui::Context, _frame: &mut eframe::Frame) {
+        self.wakeup_pending
+            .store(false, std::sync::atomic::Ordering::Release);
         let frame_start = Instant::now();
         crate::performance::begin_frame(self.perf_run.as_ref().map_or(8, |r| r.phase()));
         let interval = frame_start.duration_since(self.last_frame);
@@ -2882,7 +2964,16 @@ impl eframe::App for PreviewerApp {
             crate::performance::elapsed("action_ui_feedback_ms", start);
         }
         crate::performance::sample("grid_scroll_offset", self.grid_scroll_offset as f64);
-        crate::performance::sample("pixels_per_point", ctx.pixels_per_point() as f64);
+        crate::performance::gauge("pixels_per_point", ctx.pixels_per_point() as f64);
+        ctx.input(|i| {
+            crate::performance::gauge("window_focused", i.focused as u8 as f64);
+            crate::performance::sample(
+                "window_minimized",
+                i.viewport().minimized.unwrap_or(false) as u8 as f64,
+            );
+            crate::performance::gauge("window_width", i.screen_rect().width() as f64);
+            crate::performance::gauge("window_height", i.screen_rect().height() as f64);
+        });
         crate::performance::elapsed("ui_update_ms", frame_start);
         if let Some(seconds) = _frame.info().cpu_usage {
             crate::performance::sample("eframe_cpu_ms", seconds as f64 * 1000.0);
@@ -2896,7 +2987,12 @@ impl eframe::App for PreviewerApp {
         self.uploads.clear(&self.thumbnails);
         self.texture_lru.clear();
         self.pinned_textures.clear();
-        self.textures.clear();
+        for (_, texture) in self.textures.drain() {
+            self.uploads.retire(texture);
+        }
+        if let Some(result) = self.deferred_image.take() {
+            self.thumbnails.discard(result);
+        }
         self.texture_bytes = 0;
         crate::performance::flush_at_exit();
     }

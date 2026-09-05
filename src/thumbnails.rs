@@ -34,7 +34,7 @@ struct Request {
     generation: u64,
     preview_epoch: u64,
     cache_epoch: u64,
-    record: ImageRecord,
+    record: Arc<ImageRecord>,
     max_side: u32,
     kind: ImageKind,
     priority: ThumbnailPriority,
@@ -184,7 +184,7 @@ impl ThumbnailService {
                                     s.inflight.insert(key, r.clone());
                                     break r;
                                 }
-                                shared.changed.wait_for(&mut s, Duration::from_millis(50));
+                                shared.changed.wait(&mut s);
                             }
                         };
                         performance::begin_request(request.generation, request.serial);
@@ -277,8 +277,12 @@ impl ThumbnailService {
         s.desired.clear();
         s.preview_key = None;
         drop(s);
-        while self.rx.try_recv().is_ok() {}
-        while self.preview_rx.try_recv().is_ok() {}
+        while let Ok(result) = self.rx.try_recv() {
+            self.discard(result);
+        }
+        while let Ok(result) = self.preview_rx.try_recv() {
+            self.discard(result);
+        }
         self.shared.changed.notify_all();
     }
     pub fn set_root(&self, path: PathBuf) {
@@ -297,7 +301,13 @@ impl ThumbnailService {
         s.queued.retain(|_, r| r.kind != ImageKind::Preview);
         s.ready.retain(|k| !k.contains(":preview:"));
         drop(s);
-        while self.preview_rx.try_recv().is_ok() {}
+        while let Ok(result) = self.preview_rx.try_recv() {
+            self.discard(result);
+        }
+        performance::PREVIEW_BUSY.store(
+            self.shared.preview_busy.load(Ordering::Acquire),
+            Ordering::Release,
+        );
         self.shared.changed.notify_all();
     }
     pub fn is_current(&self, r: &ImageResult) -> bool {
@@ -310,12 +320,18 @@ impl ThumbnailService {
                 s.desired.contains_key(&r.source_key)
             }
     }
+    pub fn discard(&self, result: ImageResult) {
+        self.acknowledge(&result);
+        let bytes = result.pixels.len();
+        crate::retirement::retire(result, bytes);
+    }
     pub fn acknowledge(&self, result: &ImageResult) {
-        self.shared
-            .scheduler
-            .lock()
-            .ready
-            .remove(&result.request_key);
+        let mut s = self.shared.scheduler.lock();
+        if s.generation == result.generation
+            && (result.kind != ImageKind::Preview || s.preview_epoch == result.preview_epoch)
+        {
+            s.ready.remove(&result.request_key);
+        }
     }
     pub fn set_viewport(&self, visible: Vec<String>, prefetch: Vec<String>, allow_prefetch: bool) {
         let mut s = self.shared.scheduler.lock();
@@ -329,11 +345,13 @@ impl ThumbnailService {
         for key in visible {
             s.desired.insert(key, ThumbnailPriority::Visible);
         }
-        let desired = s.desired.clone();
-        s.queued.retain(|_, r| {
+        let Scheduler {
+            desired, queued, ..
+        } = &mut *s;
+        queued.retain(|_, r| {
             r.kind == ImageKind::Preview || desired.contains_key(&r.record.thumbnail_key)
         });
-        for r in s.queued.values_mut() {
+        for r in queued.values_mut() {
             if let Some(p) = desired.get(&r.record.thumbnail_key) {
                 r.priority = *p;
             }
@@ -341,9 +359,23 @@ impl ThumbnailService {
         self.shared.changed.notify_all();
     }
     pub fn request_thumbnail(&self, record: ImageRecord, priority: ThumbnailPriority) {
-        self.request(record, 256, ImageKind::Thumbnail, priority);
+        self.request(Arc::new(record), 256, ImageKind::Thumbnail, priority);
     }
-    pub fn request_preview(&self, record: ImageRecord, max_side: u32) {
+    pub fn request_thumbnails(&self, records: Vec<(Arc<ImageRecord>, ThumbnailPriority)>) {
+        if records.is_empty() {
+            return;
+        }
+        let mut s = self.shared.scheduler.lock();
+        let mut changed = false;
+        for (record, priority) in records {
+            changed |= self.queue_request(&mut s, record, 256, ImageKind::Thumbnail, priority);
+        }
+        drop(s);
+        if changed {
+            self.shared.changed.notify_all();
+        }
+    }
+    pub fn request_preview(&self, record: Arc<ImageRecord>, max_side: u32) {
         // Generic codecs decode once to the full bounded preview rather than once per tier.
         let side = if matches!(record.format.as_str(), "jpg" | "jpeg") {
             max_side
@@ -360,19 +392,45 @@ impl ThumbnailService {
         !self.rx.is_empty() || !self.preview_rx.is_empty()
     }
     pub fn record_metrics(&self) {
-        performance::sample("decode_budget_bytes", self.decode_budget.used() as f64);
-        performance::sample("ready_budget_bytes", self.ready_budget.used() as f64);
+        if !performance::enabled() {
+            return;
+        }
+        self.cache.record_metrics();
+        let s = self.shared.scheduler.lock();
+        performance::gauge("image_queued_count", s.queued.len() as f64);
+        performance::gauge("image_inflight_count", s.inflight.len() as f64);
+        performance::gauge("image_ready_count", s.ready.len() as f64);
+        drop(s);
+        performance::gauge("decode_budget_bytes", self.decode_budget.used() as f64);
+        performance::gauge("ready_budget_bytes", self.ready_budget.used() as f64);
     }
     fn request(
         &self,
-        record: ImageRecord,
+        record: Arc<ImageRecord>,
         max_side: u32,
         kind: ImageKind,
         priority: ThumbnailPriority,
     ) {
         let mut s = self.shared.scheduler.lock();
+        let added = self.queue_request(&mut s, record, max_side, kind, priority);
+        if added && kind == ImageKind::Preview {
+            performance::PREVIEW_BUSY.store(true, Ordering::Release);
+        }
+        drop(s);
+        if added {
+            self.shared.changed.notify_all();
+        }
+    }
+    fn queue_request(
+        &self,
+        s: &mut Scheduler,
+        record: Arc<ImageRecord>,
+        max_side: u32,
+        kind: ImageKind,
+        priority: ThumbnailPriority,
+    ) -> bool {
         if kind == ImageKind::Preview && s.preview_key.as_deref() != Some(&record.thumbnail_key) {
-            return;
+            return false;
         }
         if kind == ImageKind::Thumbnail {
             s.desired
@@ -381,11 +439,11 @@ impl ThumbnailService {
         }
         let key = request_key(&record, kind, max_side);
         if s.inflight.contains_key(&key) || s.ready.contains(&key) {
-            return;
+            return false;
         }
         if let Some(r) = s.queued.get_mut(&key) {
             r.priority = r.priority.min(priority);
-            return;
+            return false;
         }
         if s.queued.len() >= 256 {
             if let Some(evict) = s
@@ -397,7 +455,7 @@ impl ThumbnailService {
             {
                 s.queued.remove(&evict);
             } else {
-                return;
+                return false;
             }
         }
         s.serial = s.serial.wrapping_add(1);
@@ -412,7 +470,7 @@ impl ThumbnailService {
             serial: s.serial,
         };
         s.queued.insert(key, r);
-        self.shared.changed.notify_all();
+        true
     }
 }
 impl Drop for ThumbnailService {
@@ -491,11 +549,13 @@ fn load(
     let lease = ready_budget
         .acquire(bytes, preview, cancel)
         .ok_or(decoding::Cancelled)?;
-    let color = eframe::egui::ColorImage::from_rgba_unmultiplied(
-        [image.width, image.height],
-        &image.pixels,
-    );
-    let pixels = color.pixels.iter().flat_map(|c| c.to_array()).collect();
+    let mut pixels = Vec::with_capacity(bytes);
+    for pixel in image.pixels.chunks_exact(4) {
+        pixels.extend_from_slice(
+            &eframe::egui::Color32::from_rgba_unmultiplied(pixel[0], pixel[1], pixel[2], pixel[3])
+                .to_array(),
+        );
+    }
     let result = ImageResult {
         generation: r.generation,
         preview_epoch: r.preview_epoch,
@@ -559,7 +619,7 @@ mod tests {
             generation: 3,
             preview_epoch: 2,
             cache_epoch: 0,
-            record: record(),
+            record: Arc::new(record()),
             max_side: 256,
             kind: ImageKind::Thumbnail,
             priority: ThumbnailPriority::Prefetch,
@@ -577,6 +637,31 @@ mod tests {
         r.kind = ImageKind::Thumbnail;
         assert!(!valid(&s, &r));
     }
+    #[test]
+    fn batch_deduplicates_and_shares_records() {
+        let service = ThumbnailService::new(Arc::new(|| {}));
+        let r = Arc::new(record());
+        let mut scheduler = Scheduler::default();
+        assert!(service.queue_request(
+            &mut scheduler,
+            r.clone(),
+            256,
+            ImageKind::Thumbnail,
+            ThumbnailPriority::Prefetch
+        ));
+        assert!(!service.queue_request(
+            &mut scheduler,
+            r.clone(),
+            256,
+            ImageKind::Thumbnail,
+            ThumbnailPriority::Visible
+        ));
+        assert_eq!(scheduler.queued.len(), 1);
+        let task = scheduler.queued.values().next().unwrap();
+        assert!(Arc::ptr_eq(&task.record, &r));
+        assert_eq!(task.priority, ThumbnailPriority::Visible);
+    }
+
     #[test]
     fn saturated_result_channel_can_be_cancelled_and_releases_lease() {
         let (tx, _rx) = bounded(0);

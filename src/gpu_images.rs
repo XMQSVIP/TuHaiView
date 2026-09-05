@@ -1,14 +1,20 @@
 //! Native texture uploads are sliced by bytes; an incomplete texture is never displayed.
 use crate::{
+    budget::{ByteBudget, ByteLease},
     performance,
     thumbnails::{ImageResult, ThumbnailService},
 };
 use eframe::{egui, egui_wgpu::RenderState};
 use std::{
-    sync::Arc,
+    collections::VecDeque,
+    sync::{
+        Arc,
+        atomic::{AtomicUsize, Ordering},
+    },
     time::{Duration, Instant},
 };
 
+static GPU_RETIRED: AtomicUsize = AtomicUsize::new(0);
 #[derive(Clone)]
 pub struct GpuImage(Arc<ImageInner>);
 struct ImageInner {
@@ -19,12 +25,23 @@ struct ImageInner {
     texture: wgpu::Texture,
     state: RenderState,
     pub requested_side: u32,
+    allocation: Option<ByteLease>,
 }
 impl Drop for ImageInner {
     fn drop(&mut self) {
+        let started = Instant::now();
         self.state.renderer.write().free_texture(&self.id);
-        // Drop lets wgpu retain resources referenced by an in-flight submission.
-        // Explicit destroy here could invalidate a write queued earlier this frame.
+        if let Some(allocation) = self.allocation.take() {
+            let texture = self.texture.clone();
+            let bytes = self.size[0] * self.size[1] * 4;
+            GPU_RETIRED.fetch_add(bytes, Ordering::AcqRel);
+            self.state.queue.on_submitted_work_done(move || {
+                drop(texture);
+                drop(allocation);
+                GPU_RETIRED.fetch_sub(bytes, Ordering::AcqRel);
+            });
+        }
+        performance::elapsed("texture_unregister_ms", started);
     }
 }
 impl GpuImage {
@@ -45,17 +62,68 @@ struct Pending {
     result: ImageResult,
     texture: wgpu::Texture,
     row: usize,
+    allocation: ByteLease,
 }
 pub struct Uploads {
     state: RenderState,
     pending: Option<Pending>,
+    retired: VecDeque<GpuImage>,
+    retired_pending: Vec<Pending>,
+    budget: Arc<ByteBudget>,
 }
 impl Uploads {
     pub fn new(state: RenderState) -> Self {
         Self {
             state,
             pending: None,
+            retired: VecDeque::new(),
+            retired_pending: Vec::new(),
+            budget: ByteBudget::new(performance::TEXTURE_BYTES, 0),
         }
+    }
+    pub fn used_bytes(&self) -> usize {
+        self.budget.used()
+    }
+    pub fn retire(&mut self, image: GpuImage) {
+        self.retired.push_back(image);
+    }
+    pub fn reclaim(&mut self) {
+        let started = Instant::now();
+        // Previous frame has been submitted by eframe before this update begins.
+        for p in self.retired_pending.drain(..) {
+            let bytes = p.result.pixels.len();
+            crate::retirement::retire(p.result, bytes);
+            GPU_RETIRED.fetch_add(bytes, Ordering::AcqRel);
+            self.state.queue.on_submitted_work_done(move || {
+                drop(p.texture);
+                drop(p.allocation);
+                GPU_RETIRED.fetch_sub(bytes, Ordering::AcqRel);
+            });
+        }
+        for _ in 0..8 {
+            if started.elapsed() >= Duration::from_millis(performance::EVENT_BUDGET_MS) {
+                break;
+            }
+            let Some(image) = self.retired.pop_front() else {
+                break;
+            };
+            drop(image);
+        }
+        let _ = self.state.device.poll(wgpu::Maintain::Poll);
+        performance::gauge("gpu_allocated_bytes", self.budget.used() as f64);
+        performance::gauge(
+            "gpu_retired_bytes",
+            GPU_RETIRED.load(Ordering::Acquire) as f64,
+        );
+        performance::gauge(
+            "texture_retired_count",
+            (self.retired.len() + self.retired_pending.len()) as f64,
+        );
+    }
+    pub fn needs_reclaim(&self) -> bool {
+        !self.retired.is_empty()
+            || !self.retired_pending.is_empty()
+            || GPU_RETIRED.load(Ordering::Acquire) > 0
     }
     pub fn pending_bytes(&self) -> usize {
         self.pending
@@ -68,11 +136,15 @@ impl Uploads {
     pub fn clear(&mut self, service: &ThumbnailService) {
         if let Some(p) = self.pending.take() {
             service.acknowledge(&p.result);
-            drop(p);
+            self.retired_pending.push(p);
         }
     }
-    pub fn queue(&mut self, result: ImageResult) {
+    pub fn queue(&mut self, result: ImageResult) -> Result<(), ImageResult> {
         debug_assert!(self.pending.is_none());
+        let Some(allocation) = self.budget.try_acquire(result.pixels.len()) else {
+            return Err(result);
+        };
+        let started = Instant::now();
         let texture = self.state.device.create_texture(&wgpu::TextureDescriptor {
             label: Some("bounded image upload"),
             size: wgpu::Extent3d {
@@ -97,7 +169,10 @@ impl Uploads {
             result,
             texture,
             row: 0,
+            allocation,
         });
+        performance::elapsed("texture_create_ms", started);
+        Ok(())
     }
     pub fn advance(
         &mut self,
@@ -118,6 +193,7 @@ impl Uploads {
                 (*remaining / (pending.result.width * 4)).min(pending.result.height - pending.row);
             let start = pending.row * pending.result.width * 4;
             let length = rows * pending.result.width * 4;
+            let submitted = Instant::now();
             self.state.queue.write_texture(
                 wgpu::TexelCopyTextureInfo {
                     texture: &pending.texture,
@@ -141,6 +217,7 @@ impl Uploads {
                     depth_or_array_layers: 1,
                 },
             );
+            performance::elapsed("texture_write_ms", submitted);
             pending.row += rows;
             *remaining -= length;
         }
@@ -151,17 +228,20 @@ impl Uploads {
         let view = pending
             .texture
             .create_view(&wgpu::TextureViewDescriptor::default());
+        let registered = Instant::now();
         let id = self.state.renderer.write().register_native_texture(
             &self.state.device,
             &view,
             wgpu::FilterMode::Linear,
         );
+        performance::elapsed("texture_register_ms", registered);
         let image = GpuImage(Arc::new(ImageInner {
             id,
             size: [pending.result.width, pending.result.height],
             texture: pending.texture,
             state: self.state.clone(),
             requested_side: pending.result.max_side,
+            allocation: Some(pending.allocation),
         }));
         Some((pending.result, image))
     }
@@ -211,7 +291,7 @@ mod tests {
             _lease: budget.try_acquire(16 * performance::MIB),
         };
         let mut uploads = Uploads::new(state.clone());
-        uploads.queue(make());
+        assert!(uploads.queue(make()).is_ok());
         let mut completed = None;
         let mut frames = 0;
         while completed.is_none() {
@@ -223,6 +303,7 @@ mod tests {
             state.queue.submit([]);
         }
         assert!(frames >= 4);
+        assert_eq!(uploads.used_bytes(), 16 * performance::MIB);
         let (result, texture) = completed.unwrap();
         let buffer = state.device.create_buffer(&wgpu::BufferDescriptor {
             label: None,
@@ -264,7 +345,7 @@ mod tests {
         drop(result);
         drop(texture);
         assert_eq!(budget.used(), 0);
-        uploads.queue(make());
+        assert!(uploads.queue(make()).is_ok());
         assert!(
             uploads
                 .advance(
@@ -285,9 +366,16 @@ mod tests {
                 .is_none()
         );
         assert!(!uploads.is_pending());
-        assert_eq!(budget.used(), 0);
+        assert!(uploads.used_bytes() >= 16 * performance::MIB);
         // Cancellation can occur between write_texture and the frame submission.
         state.queue.submit([]);
+        uploads.reclaim();
         let _ = state.device.poll(wgpu::Maintain::Wait);
+        let until = Instant::now() + Duration::from_secs(2);
+        while budget.used() != 0 && Instant::now() < until {
+            std::thread::yield_now();
+        }
+        assert_eq!(budget.used(), 0);
+        assert_eq!(uploads.used_bytes(), 0);
     }
 }

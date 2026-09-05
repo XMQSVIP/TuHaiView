@@ -105,6 +105,11 @@ impl DiskCache {
                     if let Err(error)=result { *status.lock()=Some(format!("设置保存失败：{error}")); wakeup(); }
                     last_maintenance=Instant::now()-Duration::from_secs(2);
                 }
+                // Yield between work units, retaining clear/settings responsiveness.
+                if performance::PREVIEW_BUSY.load(Ordering::Acquire) {
+                    thread::sleep(Duration::from_millis(10));
+                    continue;
+                }
                 match rx.recv_timeout(Duration::from_millis(20)) {
                     Ok(write) if write.epoch==epoch.load(Ordering::Acquire) => {
                         let result=write_entry(&dir,&mut conn,&write,&epoch);
@@ -138,6 +143,13 @@ impl DiskCache {
             }
         }).expect("cache owner thread");
         cache
+    }
+    pub fn record_metrics(&self) {
+        if !performance::enabled() {
+            return;
+        }
+        performance::gauge("cache_queue_bytes", self.budget.used() as f64);
+        performance::gauge("cache_queue_count", self.tx.len() as f64);
     }
     pub fn epoch(&self) -> u64 {
         self.epoch.load(Ordering::Acquire)

@@ -49,7 +49,13 @@ for ($run=1; $run -le $Runs; $run++) {
     }
     if ($capture) { $null=$capture.WaitForExit(35000) }
     $logs=@(Get-ChildItem -LiteralPath $data -Filter 'performance-*.jsonl' -ErrorAction SilentlyContinue | Where-Object { $_.FullName -notin $before })
-    $report=[ordered]@{run=$run;pid=$process.Id;started=$started.ToString('o');exit_code=$process.ExitCode;seconds=((Get-Date)-$started).TotalSeconds;timed_out=$timedOut;executable=$resolvedExecutable;sha256=$exeHash;root=$resolvedRoot;scenario=$Scenario;present=$Present;repaint_ms=$RepaintMs;display=$display;system_cache='unknown';application_cache='preserved; GPU empty at process start';logs=@($logs.FullName);presentmon=$csv;presentmon_sha256=$toolHash;presentmon_exit=if ($capture -and $capture.HasExited) { $capture.ExitCode } else { $null }}
+    $savedLogs=@()
+    foreach ($log in $logs) {
+        $saved=Join-Path $OutputDirectory ("$stamp-"+$log.Name)
+        Move-Item -LiteralPath $log.FullName -Destination $saved
+        $savedLogs+=$saved
+    }
+    $report=[ordered]@{run=$run;pid=$process.Id;started=$started.ToString('o');exit_code=$process.ExitCode;seconds=((Get-Date)-$started).TotalSeconds;timed_out=$timedOut;executable=$resolvedExecutable;sha256=$exeHash;root=$resolvedRoot;scenario=$Scenario;present=$Present;repaint_ms=$RepaintMs;display=$display;system_cache='unknown';application_cache='preserved; GPU empty at process start';logs=$savedLogs;presentmon=$csv;presentmon_sha256=$toolHash;presentmon_exit=if ($capture -and $capture.HasExited) { $capture.ExitCode } else { $null }}
     $report | ConvertTo-Json -Depth 8 | Set-Content -LiteralPath (Join-Path $OutputDirectory "$stamp-run.json") -Encoding utf8
     $report | ConvertTo-Json -Compress -Depth 8
     if ($process.ExitCode -ne 0) { throw "UI run $run failed" }

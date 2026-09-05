@@ -66,5 +66,9 @@ alpha = im.convert("RGBA"); alpha.putalpha(Image.fromarray(np.tile(np.arange(320
 path = special / "alpha.png"; alpha.save(path); record(path, "alpha")
 path = special / "long.png"; pattern(32, 24000).save(path); record(path, "long")
 path = special / "corrupt.jpg"; path.write_bytes(b"\xff\xd8not-a-jpeg"); record(path, "corrupt")
+ramp = np.tile(np.arange(1024, dtype=np.uint16) * 64, (768, 1))
+for extension in ("png", "tiff"):
+    path = special / f"grayscale16.{extension}"
+    Image.fromarray(ramp).save(path); record(path, "grayscale-16bit")
 (a.directory / "manifest.json").write_text(json.dumps(dict(version=1, source="Original deterministic synthetic patterns, MIT", count=a.count, files=manifest), indent=2), encoding="utf-8")
 print(f"Created {len(manifest)} fixtures", flush=True)
