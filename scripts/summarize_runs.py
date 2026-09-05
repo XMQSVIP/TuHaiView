@@ -22,14 +22,21 @@ def collect(directory):
         result=None
         if len(logs)==1 and Path(logs[0]).is_file():
             csv=Path(run.get('presentmon','missing'))
+            if not csv.is_file(): errors.append('missing_presentmon_csv')
             result=analyze(Path(logs[0]),csv if csv.is_file() else None,hz or 60)
             errors.extend(result['invalid_reasons'])
+            if run.get('scenario')=='open' and run.get('dataset_manifest'):
+                for metric in ['first_records_ms','first_thumbnail_ms','first_screen_ms']:
+                    if metric not in result['metrics']: errors.append('missing_'+metric)
             # Failed frame timing is a valid measurement, separate from an invalid capture.
             (directory/(path.stem.replace('-run','-summary')+'.json')).write_text(json.dumps(result,indent=2),encoding='utf-8')
         else: errors.append('missing_or_multiple_logs')
         runs.append(dict(metadata=run,errors=errors,result=result))
     hashes={r['metadata']['sha256'] for r in runs}
-    counts={k:[] for k in ['first_records_ms','first_thumbnail_ms','first_screen_ms','ui_update_ms']}
+    configurations={json.dumps({k:r['metadata'].get(k) for k in
+        ['root','scenario','present','repaint_ms','timer_ms','dataset_manifest','display','dwm','allocator_diagnostics','wgpu_environment']},sort_keys=True) for r in runs}
+    comparable=len(configurations)==1
+    counts={k:[] for k in ['first_records_ms','first_thumbnail_ms','first_screen_ms','startup_first_records_ms','startup_first_thumbnail_ms','startup_first_screen_ms','ui_update_ms']}
     displayed=[]
     for r in runs:
         if r['result']:
@@ -37,9 +44,9 @@ def collect(directory):
                 if stat:=r['result']['metrics'].get(k): counts[k].append(stat['median'])
             stat=r['result'].get('presentmon',{}).get('displayed_by_phase',{}).get('1')
             if stat: displayed.append(stat)
-    return dict(run_count=len(runs),same_binary=len(hashes)==1,hashes=sorted(hashes),
-        valid_five_runs=len(runs)==5 and len(hashes)==1 and all(not r['errors'] for r in runs),
-        scroll_passed_all_five=len(runs)==5 and len(hashes)==1 and all(not r['errors'] and r['result'].get('scroll_acceptance',{}).get('passed') is True for r in runs),
+    return dict(run_count=len(runs),same_binary=len(hashes)==1,same_configuration=comparable,hashes=sorted(hashes),
+        valid_five_runs=len(runs)==5 and len(hashes)==1 and comparable and all(not r['errors'] for r in runs),
+        scroll_passed_all_five=len(runs)==5 and len(hashes)==1 and comparable and all(not r['errors'] and r['result'].get('scroll_acceptance',{}).get('passed') is True for r in runs),
         displayed_per_run=displayed,median_metrics_across_runs={k:summary(v) for k,v in counts.items()},runs=runs)
 
 

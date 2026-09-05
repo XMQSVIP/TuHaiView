@@ -27,10 +27,25 @@ cargo run --release
 正式构建命令：
 
 ```powershell
-cargo build --release
+cargo build --release --locked
 ```
 
 生成的程序位于 `target\release\TuHaiView.exe`。
+
+JPEG 适配层固定 `turbojpeg = 1.5.1`，通过 `turbojpeg-sys` 从源码静态构建并要求 SIMD。开发机需要 CMake、Ninja、NASM 和 MSVC 工具链；`.cargo/config.toml` 固定 vendor/static 与静态 CRT。运行单 EXE 不需要安装这些构建工具。路径含中文时，本机验证使用 `CARGO_TARGET_DIR=G:\tuhai-perf-build`。
+
+## 性能验收工具
+
+详细记录默认关闭。`TUHAI_PERF=1` 只打开测量；自动轨迹还必须显式指定 `TUHAI_PERF_ROOT` 和 `TUHAI_PERF_SECONDS`。`open` 场景仅打开目录，后台扫描/排序不会自动定位滚动。
+
+- `scripts/prepare_real_fixtures.py`：分类轮流抽样，严格停止于指定数量，记录固定哈希清单。
+- `scripts/prepare_comparison_subset.py`：仅从既有测试副本取最多 512 MiB，两盘保持相同文件，保留至少 2 GiB 空间。
+- `scripts/run_ui_perf.ps1`：可见窗口、外置 PresentMon 2.5.1、二进制/数据/工具哈希、DWM 刷新率与逐轮报告。
+- `scripts/run_acceptance_matrix.ps1`：`short`、`presentation`、`memory-short`、`memory-full`；默认每组五轮，full 每轮 30 分钟。采集失败时终止，修复后重新运行相应组。
+- `scripts/run_native_benchmarks.ps1`：独立进程 JPEG 峰值、固定 JPEG 时间对比、缓存压缩、数据库交替五轮和原生监控验证。
+- `scripts/summarize_perf.py` / `summarize_runs.py`：检查丢样、结束、落盘凭据、呈现数据及逐轮通过条件。`input_frame_processing_ms` 不包含操作系统事件排队时间。
+
+测试工具的路径和本机固定测试集集中在矩阵脚本，不属于产品运行依赖。真实网络图片不进入发布包。最新进度、限制和结果见 `PERFORMANCE.md` 与 `performance-results/20260906/README.md`；当前不标记“性能收尾完成”。
 
 ## 代码结构
 
@@ -137,3 +152,11 @@ git diff --check
 ```
 
 只提交源码、资源、文档和可复现构建所需的 `Cargo.lock`；不要把用户图片、缓存数据库或本地发布包提交到仓库。
+# 追加的内存与显示诊断（2026-09-06）
+
+- `cargo build --release --locked --features heap-diagnostics` 可计量 Rust 活跃分配；诊断时另外传 `-AllocatorDiagnostics`，每五秒记录一次，并记录 wgpu 活跃/预留分配。计量不包含 C 库、驱动和系统堆。
+- `mimalloc` 是默认关闭的对照实验 feature，没有作为产品优化采用。对照结果见 `performance-results/20260906/*probe.json`。
+- `run_ui_perf.ps1` 将新版本日志存到输出目录；旧 EXE 仍从自身 data 目录收集。只在基准期间调用 `SetThreadExecutionState(ES_DISPLAY_REQUIRED | ES_SYSTEM_REQUIRED)` 重置显示和系统空闲计时，不修改电源方案。没有显示样本的运行无效。
+- `-TimerMs 1` 是进程内计时器分辨率诊断，退出时配对恢复；正常启动不会启用。参考 [Windows API](https://learn.microsoft.com/en-us/windows/win32/api/timeapi/nf-timeapi-timebeginperiod)。
+- `summarize_memory_probe.py` 用流式读取生成分钟汇总和相同四分钟周期差值，排除首轮和末段空闲。它不会把诊断结果转换为完整验收通过。
+- 新增真实后台缓存回归覆盖旧 v2 迁移、清理中写入、完成清理后旧任务延迟回写、清理后新写入、缓存配置从 2 GiB 调回 1 GiB。使用独立临时目录。

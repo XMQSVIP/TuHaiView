@@ -1,0 +1,67 @@
+{
+  "log": "F:\\tuhai-validation\\empty-no-label-probe\\20260906-030731-1-performance-1788635252422.jsonl",
+  "sha256": "b757e1893b1d88f36e164ae2175c30f148639a91f8b8024c3c6da2b7957b4666",
+  "header": {
+    "executable": "F:\\tuhai-validation\\surface-probe\\TuHaiView.exe",
+    "kind": "run_header",
+    "pid": 24648,
+    "run_id": 1788635252422,
+    "scenario_name": "trajectory",
+    "schema": 3,
+    "system_cache": "unknown"
+  },
+  "duration_seconds": 180.009442,
+  "completed": true,
+  "durable_log": true,
+  "malformed": 0,
+  "dropped": 0.0,
+  "median_by_minute": {
+    "0": {
+      "rust_live_bytes": 42068788.5,
+      "rust_live_allocations": 1319.5,
+      "wgpu_allocator_allocated_bytes": 2097152.0,
+      "wgpu_allocator_reserved_bytes": 335544320.0,
+      "wgpu_allocator_allocations": 10.0,
+      "gpu_allocated_bytes": 0.0,
+      "cpu_retired_count": 0.0,
+      "image_inflight_count": 0.0,
+      "image_ready_count": 0.0,
+      "egui_data_entries": 36.0,
+      "egui_text_layouts": 14.0,
+      "process_private_bytes": 526299136.0,
+      "process_working_set_bytes": 553975808.0
+    },
+    "1": {
+      "rust_live_bytes": 42094862.0,
+      "rust_live_allocations": 1322.0,
+      "wgpu_allocator_allocated_bytes": 2097152.0,
+      "wgpu_allocator_reserved_bytes": 335544320.0,
+      "wgpu_allocator_allocations": 10.0,
+      "process_private_bytes": 533143552.0,
+      "process_working_set_bytes": 561143808.0,
+      "gpu_allocated_bytes": 0.0,
+      "image_inflight_count": 0.0,
+      "image_ready_count": 0.0,
+      "egui_data_entries": 36.0,
+      "cpu_retired_count": 0.0,
+      "egui_text_layouts": 14.0
+    },
+    "2": {
+      "rust_live_bytes": 42094190.0,
+      "rust_live_allocations": 1316.0,
+      "wgpu_allocator_allocated_bytes": 2097152.0,
+      "wgpu_allocator_reserved_bytes": 335544320.0,
+      "wgpu_allocator_allocations": 10.0,
+      "process_private_bytes": 540348416.0,
+      "process_working_set_bytes": 568365056.0,
+      "gpu_allocated_bytes": 0.0,
+      "image_inflight_count": 0.0,
+      "image_ready_count": 0.0,
+      "egui_data_entries": 36.0,
+      "cpu_retired_count": 0.0,
+      "egui_text_layouts": 14.0
+    }
+  },
+  "comparable_cycle_deltas": [],
+  "acceptance": "diagnostic_only; display and five-run matrix not evaluated"
+}

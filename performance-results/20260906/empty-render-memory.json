@@ -1,0 +1,67 @@
+{
+  "log": "F:\\tuhai-validation\\display-awake-empty\\20260906-025808-1-performance-1788634688611.jsonl",
+  "sha256": "2377a3d871ddb7c2b9054a9f22da411329968b345a0ed71ac1d16ff877d5b760",
+  "header": {
+    "executable": "F:\\tuhai-validation\\heap-probe\\TuHaiView.exe",
+    "kind": "run_header",
+    "pid": 19380,
+    "run_id": 1788634688611,
+    "scenario_name": "trajectory",
+    "schema": 3,
+    "system_cache": "unknown"
+  },
+  "duration_seconds": 180.002909,
+  "completed": true,
+  "durable_log": true,
+  "malformed": 0,
+  "dropped": 0.0,
+  "median_by_minute": {
+    "0": {
+      "rust_live_bytes": 42067885.5,
+      "rust_live_allocations": 1319.5,
+      "wgpu_allocator_allocated_bytes": 2097152.0,
+      "wgpu_allocator_reserved_bytes": 335544320.0,
+      "wgpu_allocator_allocations": 10.0,
+      "gpu_allocated_bytes": 0.0,
+      "cpu_retired_count": 0.0,
+      "image_inflight_count": 0.0,
+      "image_ready_count": 0.0,
+      "egui_data_entries": 36.0,
+      "egui_text_layouts": 14.0,
+      "process_private_bytes": 525930496.0,
+      "process_working_set_bytes": 549212160.0
+    },
+    "1": {
+      "rust_live_bytes": 42092012.0,
+      "rust_live_allocations": 1321.0,
+      "wgpu_allocator_allocated_bytes": 2097152.0,
+      "wgpu_allocator_reserved_bytes": 335544320.0,
+      "wgpu_allocator_allocations": 10.0,
+      "process_private_bytes": 532762624.0,
+      "process_working_set_bytes": 556068864.0,
+      "egui_data_entries": 36.0,
+      "gpu_allocated_bytes": 0.0,
+      "image_inflight_count": 0.0,
+      "image_ready_count": 0.0,
+      "cpu_retired_count": 0.0,
+      "egui_text_layouts": 14.0
+    },
+    "2": {
+      "rust_live_bytes": 42094428.0,
+      "rust_live_allocations": 1322.0,
+      "wgpu_allocator_allocated_bytes": 2097152.0,
+      "wgpu_allocator_reserved_bytes": 335544320.0,
+      "wgpu_allocator_allocations": 10.0,
+      "gpu_allocated_bytes": 0.0,
+      "image_inflight_count": 0.0,
+      "image_ready_count": 0.0,
+      "egui_data_entries": 36.0,
+      "process_private_bytes": 537671680.0,
+      "process_working_set_bytes": 561049600.0,
+      "egui_text_layouts": 14.0,
+      "cpu_retired_count": 0.0
+    }
+  },
+  "comparable_cycle_deltas": [],
+  "acceptance": "diagnostic_only; display and five-run matrix not evaluated"
+}

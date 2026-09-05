@@ -47,6 +47,7 @@ windows = { version = "0.62", features = [
 # eframe disables wgpu's native defaults; enable DX12 explicitly on Windows so
 # the application never falls back to the crashing Intel OpenGL driver.
 wgpu = { version = "24", default-features = false, features = ["dx12"] }
+mimalloc = { version = "=0.1.52", optional = true }
 
 [profile.release]
 lto = "thin"
@@ -58,6 +59,10 @@ winres = "0.1"
 
 [dev-dependencies]
 pollster = "0.4"
+
+[features]
+heap-diagnostics = []
+mimalloc = ["dep:mimalloc"]
 
 # Match Rust's non-debug static CRT even during debug builds.
 [profile.dev.package.turbojpeg-sys]

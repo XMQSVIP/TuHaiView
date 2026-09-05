@@ -706,6 +706,7 @@ impl PreviewerApp {
                 if let Some(snapshot) = self.pending_snapshot.take() {
                     if self.records.is_empty() && !snapshot.records.is_empty() {
                         crate::performance::elapsed("first_records_ms", self.root_started);
+                        crate::performance::since_start("startup_first_records_ms");
                     }
                     self.records = snapshot.records.clone();
                     self.record_positions = snapshot.by_path.clone();
@@ -999,6 +1000,7 @@ impl PreviewerApp {
                 } else if !self.first_thumbnail {
                     self.first_thumbnail = true;
                     crate::performance::elapsed("first_thumbnail_ms", self.root_started);
+                    crate::performance::since_start("startup_first_thumbnail_ms");
                 }
                 self.insert_texture(result.texture_key.clone(), texture, bytes);
                 self.thumbnails.discard(result);
@@ -1717,6 +1719,7 @@ impl PreviewerApp {
                     .all(|k| self.textures.contains_key(k))
             {
                 crate::performance::elapsed("first_screen_ms", self.root_started);
+                crate::performance::since_start("startup_first_screen_ms");
                 self.first_screen = true;
             }
         }
@@ -3006,6 +3009,13 @@ impl eframe::App for PreviewerApp {
         }
         crate::performance::sample("grid_scroll_offset", self.grid_scroll_offset as f64);
         crate::performance::gauge("pixels_per_point", ctx.pixels_per_point() as f64);
+        if crate::performance::enabled() {
+            crate::performance::gauge("egui_data_entries", ctx.data(|d| d.len()) as f64);
+            crate::performance::gauge(
+                "egui_text_layouts",
+                ctx.fonts(|f| f.num_galleys_in_cache()) as f64,
+            );
+        }
         crate::performance::gauge("catalog_displayed_records", self.records.len() as f64);
         crate::performance::gauge(
             "catalog_displayed_table_estimated_bytes",

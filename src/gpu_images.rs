@@ -70,15 +70,23 @@ pub struct Uploads {
     retired: VecDeque<GpuImage>,
     retired_pending: Vec<Pending>,
     budget: Arc<ByteBudget>,
+    allocator_report_due: Instant,
+    allocator_diagnostics: bool,
 }
 impl Uploads {
     pub fn new(state: RenderState) -> Self {
+        if performance::enabled() {
+            tracing::info!(adapter = ?state.adapter.get_info(), "selected renderer adapter");
+        }
         Self {
             state,
             pending: None,
             retired: VecDeque::new(),
             retired_pending: Vec::new(),
             budget: ByteBudget::new(performance::TEXTURE_BYTES, 0),
+            allocator_report_due: Instant::now(),
+            allocator_diagnostics: performance::enabled()
+                && std::env::var("TUHAI_PERF_ALLOCATOR").ok().as_deref() == Some("1"),
         }
     }
     pub fn used_bytes(&self) -> usize {
@@ -110,6 +118,27 @@ impl Uploads {
             drop(image);
         }
         let _ = self.state.device.poll(wgpu::Maintain::Poll);
+        if self.allocator_diagnostics && Instant::now() >= self.allocator_report_due {
+            self.allocator_report_due = Instant::now() + Duration::from_secs(5);
+            let start = Instant::now();
+            crate::heap_diagnostics::record();
+            if let Some(report) = self.state.device.generate_allocator_report() {
+                performance::sample(
+                    "wgpu_allocator_allocated_bytes",
+                    report.total_allocated_bytes as f64,
+                );
+                performance::sample(
+                    "wgpu_allocator_reserved_bytes",
+                    report.total_reserved_bytes as f64,
+                );
+                performance::sample(
+                    "wgpu_allocator_allocations",
+                    report.allocations.len() as f64,
+                );
+                performance::sample("wgpu_allocator_blocks", report.blocks.len() as f64);
+            }
+            performance::elapsed("wgpu_allocator_report_ms", start);
+        }
         performance::gauge("gpu_allocated_bytes", self.budget.used() as f64);
         performance::gauge(
             "gpu_retired_bytes",

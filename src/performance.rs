@@ -22,6 +22,36 @@ pub const READY_BYTES: usize = 96 * MIB;
 pub const CACHE_QUEUE_BYTES: usize = 32 * MIB;
 pub const TEXTURE_BYTES: usize = 256 * MIB;
 
+/// Process-local timer experiment, paired on shutdown; disabled in ordinary use.
+pub struct TimerResolution(bool);
+impl TimerResolution {
+    pub fn diagnostic() -> Self {
+        #[cfg(windows)]
+        if enabled() && std::env::var("TUHAI_PERF_TIMER_MS").ok().as_deref() == Some("1") {
+            let active = unsafe { timeBeginPeriod(1) } == 0;
+            sample("timer_resolution_1ms", active as u8 as f64);
+            return Self(active);
+        }
+        Self(false)
+    }
+}
+impl Drop for TimerResolution {
+    fn drop(&mut self) {
+        #[cfg(windows)]
+        if self.0 {
+            unsafe {
+                timeEndPeriod(1);
+            }
+        }
+    }
+}
+#[cfg(windows)]
+#[link(name = "winmm")]
+unsafe extern "system" {
+    fn timeBeginPeriod(period: u32) -> u32;
+    fn timeEndPeriod(period: u32) -> u32;
+}
+
 #[derive(Clone, Debug, Serialize, Deserialize)]
 #[serde(default)]
 pub struct PerformanceSettings {
@@ -57,6 +87,28 @@ struct Sample {
 static ENABLED: OnceLock<bool> = OnceLock::new();
 static SAMPLES: OnceLock<Option<Sender<Sample>>> = OnceLock::new();
 static START: OnceLock<Instant> = OnceLock::new();
+pub fn initialize_clock() {
+    if enabled() {
+        START.get_or_init(Instant::now);
+    }
+}
+pub fn since_start(name: &'static str) {
+    if enabled() {
+        static PUBLISHED: OnceLock<std::sync::Mutex<std::collections::HashSet<&'static str>>> =
+            OnceLock::new();
+        if PUBLISHED
+            .get_or_init(Default::default)
+            .lock()
+            .unwrap()
+            .insert(name)
+        {
+            sample(
+                name,
+                START.get_or_init(Instant::now).elapsed().as_secs_f64() * 1000.0,
+            );
+        }
+    }
+}
 static FRAME: AtomicU64 = AtomicU64::new(0);
 static SCENARIO: AtomicU64 = AtomicU64::new(0);
 static DROPPED: AtomicU64 = AtomicU64::new(0);
@@ -138,7 +190,14 @@ pub fn sample(name: &'static str, value: f64) {
             .name("performance-log".into())
             .spawn(move || {
                 use std::io::Write;
-                let Ok(dir) = crate::storage::data_dir() else {
+                // Diagnostic output can live on a spacious test volume; product data stays portable.
+                let directory = std::env::var_os("TUHAI_PERF_LOG_DIR")
+                    .map(std::path::PathBuf::from)
+                    .map_or_else(crate::storage::data_dir, |dir| {
+                        std::fs::create_dir_all(&dir)?;
+                        Ok(dir)
+                    });
+                let Ok(dir) = directory else {
                     return;
                 };
                 let stamp = SystemTime::now()

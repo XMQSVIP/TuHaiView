@@ -1,0 +1,243 @@
+diff --git a/src/app.rs b/src/app.rs
+index 57f0369..dcf38e7 100644
+--- a/src/app.rs
++++ b/src/app.rs
+@@ -1613,6 +1613,13 @@ impl PreviewerApp {
+             ui.ctx().request_repaint_after(self.fast_scroll_until - now);
+         }
+         self.grid_scroll_offset = output.state.offset.y;
++        crate::performance::sample(
++            "visible_texture_missing",
++            self.pinned_textures
++                .iter()
++                .filter(|k| !self.textures.contains_key(*k))
++                .count() as f64,
++        );
+         if !self.viewport_measured
+             && !self.pinned_textures.is_empty()
+             && self
+@@ -2740,6 +2747,12 @@ impl PreviewerApp {
+ impl eframe::App for PreviewerApp {
+     fn update(&mut self, ctx: &egui::Context, _frame: &mut eframe::Frame) {
+         let frame_start = Instant::now();
++        if let Some(run) = self.perf_run.as_mut() {
++            if run.route_started.is_none() && !self.scanning && !self.sorting && self.first_screen {
++                run.route_started = Some(Instant::now());
++                crate::performance::sample("route_ready", 1.0);
++            }
++        }
+         crate::performance::begin_frame(self.perf_run.as_ref().map_or(8, |r| r.phase()));
+         let interval = frame_start.duration_since(self.last_frame);
+         crate::performance::sample("frame_interval_ms", interval.as_secs_f64() * 1000.0);
+@@ -2795,7 +2808,11 @@ impl eframe::App for PreviewerApp {
+                             self.close_preview();
+                         }
+                         let speed = if phase == 4 { 2500.0 } else { 600.0 };
+-                        let t = elapsed % 20.0;
++                        let t = if run.scenario == "scroll" {
++                            run.route_started.map_or(0.0, |s| s.elapsed().as_secs_f64())
++                        } else {
++                            elapsed
++                        } % 20.0;
+                         self.pending_grid_scroll_offset =
+                             Some((if t < 10.0 { t } else { 20.0 - t }) as f32 * speed);
+                         if phase == 5 && run.last_sort != elapsed as u64 {
+@@ -2828,7 +2845,9 @@ impl eframe::App for PreviewerApp {
+                         .unwrap_or_default()
+                         .parse::<u64>()
+                     {
+-                        ctx.request_repaint_after(Duration::from_millis(ms));
++                        let predicted =
++                            ctx.input(|i| Duration::from_secs_f32(i.predicted_dt.max(0.0)));
++                        ctx.request_repaint_after(Duration::from_millis(ms) + predicted);
+                     } else {
+                         ctx.request_repaint();
+                     }
+@@ -2882,7 +2901,16 @@ impl eframe::App for PreviewerApp {
+             crate::performance::elapsed("action_ui_feedback_ms", start);
+         }
+         crate::performance::sample("grid_scroll_offset", self.grid_scroll_offset as f64);
+-        crate::performance::sample("pixels_per_point", ctx.pixels_per_point() as f64);
++        crate::performance::gauge("pixels_per_point", ctx.pixels_per_point() as f64);
++        ctx.input(|i| {
++            crate::performance::gauge("window_focused", i.focused as u8 as f64);
++            crate::performance::sample(
++                "window_minimized",
++                i.viewport().minimized.unwrap_or(false) as u8 as f64,
++            );
++            crate::performance::gauge("window_width", i.screen_rect().width() as f64);
++            crate::performance::gauge("window_height", i.screen_rect().height() as f64);
++        });
+         crate::performance::elapsed("ui_update_ms", frame_start);
+         if let Some(seconds) = _frame.info().cpu_usage {
+             crate::performance::sample("eframe_cpu_ms", seconds as f64 * 1000.0);
+diff --git a/src/catalog.rs b/src/catalog.rs
+index b445d3f..b6f197e 100644
+--- a/src/catalog.rs
++++ b/src/catalog.rs
+@@ -729,11 +729,18 @@ mod tests {
+     #[test]
+     #[ignore = "manual release-mode performance benchmark"]
+     fn batch_upsert_50k_completes_within_budget() {
+-        let root = PathBuf::from(env!("CARGO_MANIFEST_DIR"))
+-            .join("target")
++        let root = std::env::var_os("TUHAI_DB_BENCH_ROOT")
++            .map(PathBuf::from)
++            .unwrap_or_else(|| PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("target"))
+             .join("catalog-perf-50k");
+-        let _ = fs::remove_dir_all(&root);
+         fs::create_dir_all(&root).unwrap();
++        for name in [
++            "catalog.sqlite3",
++            "catalog.sqlite3-wal",
++            "catalog.sqlite3-shm",
++        ] {
++            let _ = fs::remove_file(root.join(name));
++        }
+         let db = root.join("catalog.sqlite3");
+         let mut connection = open_connection(&db).unwrap();
+         create_schema(&connection).unwrap();
+@@ -767,6 +774,13 @@ mod tests {
+         eprintln!("50k batched upsert: {:.2}s", elapsed.as_secs_f64());
+         assert!(elapsed < Duration::from_secs(15));
+         drop(connection);
+-        fs::remove_dir_all(root).unwrap();
++        for name in [
++            "catalog.sqlite3",
++            "catalog.sqlite3-wal",
++            "catalog.sqlite3-shm",
++        ] {
++            let _ = fs::remove_file(root.join(name));
++        }
++        fs::remove_dir(root).unwrap();
+     }
+ }
+diff --git a/src/performance.rs b/src/performance.rs
+index 07ac04d..5040b7a 100644
+--- a/src/performance.rs
++++ b/src/performance.rs
+@@ -2,7 +2,8 @@
+ use crossbeam_channel::{Sender, bounded};
+ use serde::{Deserialize, Serialize};
+ use std::{
+-    cell::Cell,
++    cell::{Cell, RefCell},
++    collections::HashMap,
+     sync::{
+         OnceLock,
+         atomic::{AtomicU64, Ordering},
+@@ -53,6 +54,7 @@ struct Sample {
+     #[serde(skip)]
+     flushed: Option<Sender<()>>,
+ }
++static ENABLED: OnceLock<bool> = OnceLock::new();
+ static SAMPLES: OnceLock<Option<Sender<Sample>>> = OnceLock::new();
+ static START: OnceLock<Instant> = OnceLock::new();
+ static FRAME: AtomicU64 = AtomicU64::new(0);
+@@ -98,7 +100,35 @@ fn qpc() -> i64 {
+     0
+ }
+ 
++pub fn enabled() -> bool {
++    *ENABLED.get_or_init(|| std::env::var("TUHAI_PERF").ok().as_deref() == Some("1"))
++}
++thread_local! { static GAUGES: RefCell<HashMap<&'static str, (Instant, f64)>> = RefCell::new(HashMap::new()); }
++/// Resource/config gauges need neither a record nor a scheduler lock every frame.
++pub fn gauge(name: &'static str, value: f64) {
++    if !enabled() {
++        return;
++    }
++    let publish = GAUGES.with(|values| {
++        let mut values = values.borrow_mut();
++        let now = Instant::now();
++        let changed = values
++            .get(name)
++            .is_none_or(|(last, old)| *old != value || last.elapsed().as_secs() >= 1);
++        if changed {
++            values.insert(name, (now, value));
++        }
++        changed
++    });
++    if publish {
++        sample(name, value);
++    }
++}
++
+ pub fn sample(name: &'static str, value: f64) {
++    if !enabled() {
++        return;
++    }
+     let sender = SAMPLES.get_or_init(|| {
+         if std::env::var_os("TUHAI_PERF").as_deref() != Some(std::ffi::OsStr::new("1")) {
+             return None;
+@@ -115,24 +145,35 @@ pub fn sample(name: &'static str, value: f64) {
+                     .duration_since(UNIX_EPOCH)
+                     .unwrap_or_default()
+                     .as_millis();
+-                let Ok(file) =
+-                    std::fs::File::create(dir.join(format!("performance-{stamp}.jsonl")))
++                let path = dir.join(format!("performance-{stamp}.jsonl"));
++                let Ok(file) = std::fs::File::create(&path)
+                 else {
+                     return;
+                 };
+                 let mut file = std::io::BufWriter::new(file);
+-                let header = serde_json::json!({"schema": 2, "run_id": stamp, "pid": std::process::id(), "executable": std::env::current_exe().ok(), "scenario_name": std::env::var("TUHAI_PERF_SCENARIO").unwrap_or_else(|_| "trajectory".into()), "system_cache": "unknown", "kind": "run_header"});
++                let header = serde_json::json!({"schema": 3, "run_id": stamp, "pid": std::process::id(), "executable": std::env::current_exe().ok(), "scenario_name": std::env::var("TUHAI_PERF_SCENARIO").unwrap_or_else(|_| "trajectory".into()), "system_cache": "unknown", "kind": "run_header"});
+                 let _ = serde_json::to_writer(&mut file, &header);
+                 let _ = file.write_all(b"\n");
+                 let mut last_flush = Instant::now();
+                 loop {
+                     match rx.recv_timeout(std::time::Duration::from_secs(1)) {
+                         Ok(event) => {
+-                            let _ = serde_json::to_writer(&mut file, &event);
+-                            let _ = file.write_all(b"\n");
++                            if serde_json::to_writer(&mut file, &event).is_err() || file.write_all(b"\n").is_err() { return; }
+                             if let Some(tx) = event.flushed {
+-                                let _ = file.flush();
+-                                let _ = tx.try_send(());
++                                if file.flush().is_ok() && file.get_ref().sync_data().is_ok() {
++                                    // Publish completion only after the log has reached the filesystem.
++                                    let certify = (|| -> std::io::Result<()> {
++                                        let temporary = path.with_extension("complete.tmp");
++                                        let mut certificate = std::fs::File::create(&temporary)?;
++                                        let data = serde_json::json!({"run_id":stamp,"bytes":file.get_ref().metadata()?.len(),"sync_completed":true});
++                                        certificate.write_all(data.to_string().as_bytes())?;
++                                        certificate.sync_all()?;
++                                        drop(certificate);
++                                        std::fs::rename(temporary, path.with_extension("complete.json"))
++                                    })();
++                                    if certify.is_ok() { let _ = tx.try_send(()); }
++                                }
++                                return;
+                             }
+                         }
+                         Err(crossbeam_channel::RecvTimeoutError::Timeout) => {}
+@@ -223,6 +264,7 @@ pub struct UiRun {
+     pub scenario: String,
+     pub last_root_switch: u64,
+     pub alternate_root: Option<std::path::PathBuf>,
++    pub route_started: Option<Instant>,
+ }
+ impl UiRun {
+     pub fn phase(&self) -> u64 {
+@@ -236,7 +278,10 @@ impl UiRun {
+             return 7;
+         }
+         if self.scenario == "scroll" {
+-            return if self.started.elapsed().as_secs_f64() < 20.0 {
++            return if self
++                .route_started
++                .is_none_or(|s| s.elapsed().as_secs_f64() < 20.0)
++            {
+                 0
+             } else {
+                 1
+@@ -264,6 +309,7 @@ impl UiRun {
+             captures: 0,
+             scenario: std::env::var("TUHAI_PERF_SCENARIO").unwrap_or_else(|_| "trajectory".into()),
+             last_root_switch: 0,
++            route_started: None,
+             alternate_root: std::env::var_os("TUHAI_PERF_ALTERNATE_ROOT")
+                 .map(std::path::PathBuf::from)
+                 .filter(|p| p.is_dir()),

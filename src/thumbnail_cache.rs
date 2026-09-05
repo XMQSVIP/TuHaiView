@@ -52,6 +52,17 @@ pub struct DiskCache {
 }
 impl DiskCache {
     pub fn new(wakeup: Arc<dyn Fn() + Send + Sync>) -> Arc<Self> {
+        Self::with_paths(wakeup, || {
+            Ok((
+                storage::thumbnail_cache_dir()?,
+                storage::data_dir()?.join("performance-settings.json"),
+            ))
+        })
+    }
+    fn with_paths(
+        wakeup: Arc<dyn Fn() + Send + Sync>,
+        paths: impl FnOnce() -> Result<(PathBuf, PathBuf)> + Send + 'static,
+    ) -> Arc<Self> {
         let (tx, rx) = bounded::<Write>(128);
         let cache = Arc::new(Self {
             directory: Arc::default(),
@@ -71,8 +82,8 @@ impl DiskCache {
         let status = cache.status.clone();
         thread::Builder::new().name("thumbnail-cache-owner".into()).spawn(move || {
             let setup = (|| -> Result<_> {
-                let dir = storage::thumbnail_cache_dir()?;
-                let settings_path = storage::data_dir()?.join("performance-settings.json");
+                let (dir, settings_path) = paths()?;
+                fs::create_dir_all(&dir)?;
                 let mut config: PerformanceSettings = fs::read(&settings_path).ok().and_then(|b| serde_json::from_slice(&b).ok()).unwrap_or_default(); config.validate();
                 *settings.lock() = config;
                 let conn = manifest(&dir)?; Ok((dir, settings_path, conn))
@@ -446,6 +457,93 @@ fn cleanup(dir: &Path, conn: &Connection, limit: u64, cleaning: bool) -> Result<
 #[cfg(test)]
 mod tests {
     use super::*;
+    #[test]
+    fn owner_migrates_legacy_and_clear_rejects_late_old_writes() {
+        let dir = std::env::temp_dir().join(format!(
+            "tuhai-owner-{}-{}",
+            std::process::id(),
+            SystemTime::now()
+                .duration_since(UNIX_EPOCH)
+                .unwrap()
+                .as_nanos()
+        ));
+        fs::create_dir_all(&dir).unwrap();
+        let configured = dir.clone();
+        let cache = DiskCache::with_paths(Arc::new(|| {}), move || {
+            Ok((configured.clone(), configured.join("settings.json")))
+        });
+        let wait = |condition: &dyn Fn() -> bool| {
+            let deadline = Instant::now() + Duration::from_secs(10);
+            while !condition() {
+                assert!(
+                    Instant::now() < deadline,
+                    "cache owner did not complete work"
+                );
+                thread::sleep(Duration::from_millis(10));
+            }
+        };
+        wait(&|| cache.directory.lock().is_some());
+        let image = Arc::new(DecodedImage {
+            pixels: vec![3, 8, 15, 42].repeat(256 * 256),
+            width: 256,
+            height: 256,
+            source_width: 1024,
+            source_height: 1024,
+        });
+        let key = "b".repeat(64);
+        let mut legacy = OLD_MAGIC.to_vec();
+        for value in [1024_u32, 1024, 256, 256] {
+            legacy.extend(value.to_le_bytes());
+        }
+        legacy.extend(&image.pixels);
+        fs::write(dir.join(format!("{key}.rgba")), legacy).unwrap();
+        assert!(cache.read(&key).unwrap().1);
+        cache.write(key.clone(), image.clone(), false, cache.epoch());
+        wait(&|| cache.budget.used() == 0 && dir.join(relative_path(&key)).is_file());
+        let (migrated, old) = cache.read(&key).unwrap();
+        assert!(!old);
+        assert_eq!(migrated.pixels, image.pixels);
+        assert!(!dir.join(format!("{key}.rgba")).exists());
+        let old_epoch = cache.epoch();
+        for i in 0..128 {
+            cache.write(format!("{i:064x}"), image.clone(), false, old_epoch);
+        }
+        cache.clear();
+        wait(&|| cache.status.lock().as_deref() == Some("缩略图缓存已清理"));
+        // A decode started before clear may finish after clear was acknowledged.
+        cache.write(key.clone(), image.clone(), false, old_epoch);
+        wait(&|| cache.budget.used() == 0);
+        assert!(cache.read(&key).is_none());
+        assert!(
+            !walkdir::WalkDir::new(&dir)
+                .into_iter()
+                .flatten()
+                .any(|e| is_payload(e.path()))
+        );
+        cache.write(key.clone(), image.clone(), false, cache.epoch());
+        wait(&|| cache.budget.used() == 0 && dir.join(relative_path(&key)).is_file());
+        assert_eq!(cache.read(&key).unwrap().0.pixels, image.pixels);
+        cache.set_limit(2);
+        wait(&|| {
+            fs::read(dir.join("settings.json")).ok().is_some_and(|b| {
+                serde_json::from_slice::<PerformanceSettings>(&b)
+                    .unwrap()
+                    .disk_cache_gib
+                    == 2
+            })
+        });
+        cache.set_limit(1);
+        wait(&|| {
+            fs::read(dir.join("settings.json")).ok().is_some_and(|b| {
+                serde_json::from_slice::<PerformanceSettings>(&b)
+                    .unwrap()
+                    .disk_cache_gib
+                    == 1
+            })
+        });
+        drop(cache);
+        wait(&|| fs::remove_dir_all(&dir).is_ok());
+    }
     #[test]
     fn cleanup_finishes_to_eighty_percent_across_batches() {
         let dir =

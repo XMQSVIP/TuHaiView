@@ -1,0 +1,207 @@
+{
+  "db_baseline": {
+    "runs_ms": [
+      3220.0,
+      3200.0,
+      2730.0,
+      2700.0,
+      2850.0
+    ],
+    "summary": {
+      "n": 5,
+      "median": 2850.0,
+      "p95": 3220.0,
+      "p99": 3220.0,
+      "maximum": 3220.0,
+      "over_50ms": 5,
+      "over_100ms": 5
+    }
+  },
+  "db_candidate": {
+    "runs_ms": [
+      2810.0,
+      2930.0,
+      2890.0,
+      2950.0,
+      2980.0
+    ],
+    "summary": {
+      "n": 5,
+      "median": 2930.0,
+      "p95": 2980.0,
+      "p99": 2980.0,
+      "maximum": 2980.0,
+      "over_50ms": 5,
+      "over_100ms": 5
+    }
+  },
+  "db_regression_fraction": 0.02807017543859658,
+  "db_passed": true,
+  "jpeg": {
+    "baseline-6000x4000.jpg": {
+      "False": {
+        "n": 5,
+        "median": 261.1672,
+        "p95": 398.0258,
+        "p99": 398.0258,
+        "maximum": 398.0258,
+        "over_50ms": 5,
+        "over_100ms": 5
+      },
+      "True": {
+        "n": 5,
+        "median": 58.697399999999995,
+        "p95": 59.7611,
+        "p99": 59.7611,
+        "maximum": 59.7611,
+        "over_50ms": 5,
+        "over_100ms": 0
+      },
+      "reduction": 0.7752497250803316,
+      "passed": true
+    },
+    "baseline-8000x6000.jpg": {
+      "False": {
+        "n": 5,
+        "median": 530.4988000000001,
+        "p95": 563.7649,
+        "p99": 563.7649,
+        "maximum": 563.7649,
+        "over_50ms": 5,
+        "over_100ms": 5
+      },
+      "True": {
+        "n": 5,
+        "median": 114.2282,
+        "p95": 116.938,
+        "p99": 116.938,
+        "maximum": 116.938,
+        "over_50ms": 5,
+        "over_100ms": 5
+      },
+      "reduction": 0.7846777410241079,
+      "passed": true
+    }
+  },
+  "native_peak_0": {
+    "runs": [
+      {
+        "fast": false,
+        "final_private": 2498560,
+        "initial_peak_working_set": 7131136,
+        "initial_private": 1789952,
+        "peak_working_set": 176218112
+      },
+      {
+        "fast": false,
+        "final_private": 3182592,
+        "initial_peak_working_set": 7118848,
+        "initial_private": 1773568,
+        "peak_working_set": 176201728
+      },
+      {
+        "fast": false,
+        "final_private": 2486272,
+        "initial_peak_working_set": 7118848,
+        "initial_private": 1777664,
+        "peak_working_set": 176201728
+      },
+      {
+        "fast": false,
+        "final_private": 2490368,
+        "initial_peak_working_set": 7127040,
+        "initial_private": 1781760,
+        "peak_working_set": 176209920
+      },
+      {
+        "fast": false,
+        "final_private": 2502656,
+        "initial_peak_working_set": 7139328,
+        "initial_private": 1794048,
+        "peak_working_set": 176222208
+      }
+    ],
+    "peak_working_set": {
+      "n": 5,
+      "median": 176209920,
+      "p95": 176222208,
+      "p99": 176222208,
+      "maximum": 176222208,
+      "over_50ms": 5,
+      "over_100ms": 5
+    }
+  },
+  "native_peak_1": {
+    "runs": [
+      {
+        "fast": true,
+        "final_private": 2007040,
+        "initial_peak_working_set": 7122944,
+        "initial_private": 1777664,
+        "peak_working_set": 27287552
+      },
+      {
+        "fast": true,
+        "final_private": 2007040,
+        "initial_peak_working_set": 7118848,
+        "initial_private": 1777664,
+        "peak_working_set": 27283456
+      },
+      {
+        "fast": true,
+        "final_private": 2035712,
+        "initial_peak_working_set": 7147520,
+        "initial_private": 1806336,
+        "peak_working_set": 27312128
+      },
+      {
+        "fast": true,
+        "final_private": 2007040,
+        "initial_peak_working_set": 7122944,
+        "initial_private": 1781760,
+        "peak_working_set": 27287552
+      },
+      {
+        "fast": true,
+        "final_private": 2015232,
+        "initial_peak_working_set": 7135232,
+        "initial_private": 1789952,
+        "peak_working_set": 27299840
+      }
+    ],
+    "peak_working_set": {
+      "n": 5,
+      "median": 27287552,
+      "p95": 27312128,
+      "p99": 27312128,
+      "maximum": 27312128,
+      "over_50ms": 5,
+      "over_100ms": 5
+    }
+  },
+  "real_cache": {
+    "container_bytes": 15328052,
+    "count": 1000,
+    "reduction": 0.9363893910878519,
+    "rgba_bytes": 240966912
+  },
+  "watcher": {
+    "runs_ms": [
+      703.921,
+      763.329,
+      747.603,
+      735.942,
+      761.163
+    ],
+    "summary": {
+      "n": 5,
+      "median": 747.603,
+      "p95": 763.329,
+      "p99": 763.329,
+      "maximum": 763.329,
+      "over_50ms": 5,
+      "over_100ms": 5
+    },
+    "all_under_2s": true
+  }
+}

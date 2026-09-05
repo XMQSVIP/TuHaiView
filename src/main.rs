@@ -9,6 +9,7 @@ mod duplicates;
 mod empty_folders;
 mod file_ops;
 mod gpu_images;
+mod heap_diagnostics;
 mod icon_pixels;
 mod models;
 #[cfg(test)]
@@ -28,12 +29,28 @@ pub(crate) const APP_VERSION: &str = "20260905";
 pub(crate) const APP_WINDOW_TITLE: &str = "图海速览 20260905";
 
 fn main() -> Result<()> {
+    performance::initialize_clock();
     tracing_subscriber::fmt().with_env_filter("info").init();
+    let _timer_resolution = performance::TimerResolution::diagnostic();
     let mut wgpu_options = eframe::egui_wgpu::WgpuConfiguration::default();
     // DX12 exposes Mailbox: retain the newest frame without tearing or waiting
     // for every queued FIFO frame. Idle windows still rely on event-driven repaint.
     wgpu_options.present_mode = wgpu::PresentMode::Mailbox;
     if std::env::var("TUHAI_PERF").ok().as_deref() == Some("1") {
+        let on_error = wgpu_options.on_surface_error.clone();
+        wgpu_options.on_surface_error = std::sync::Arc::new(move |error| {
+            performance::sample(
+                match error {
+                    wgpu::SurfaceError::Timeout => "surface_timeout",
+                    wgpu::SurfaceError::Outdated => "surface_outdated",
+                    wgpu::SurfaceError::Lost => "surface_lost",
+                    wgpu::SurfaceError::OutOfMemory => "surface_out_of_memory",
+                    wgpu::SurfaceError::Other => "surface_other_error",
+                },
+                1.0,
+            );
+            on_error(error)
+        });
         if std::env::var("TUHAI_PERF_PRESENT").ok().as_deref() == Some("immediate") {
             wgpu_options.present_mode = wgpu::PresentMode::AutoNoVsync;
         }

@@ -4,13 +4,43 @@ import tempfile
 import unittest
 from pathlib import Path
 from summarize_perf import analyze
+from summarize_runs import collect
 
 class ReportTests(unittest.TestCase):
+    def test_open_capture_requires_displayed_frames_from_target_process(self):
+        with tempfile.TemporaryDirectory() as root:
+            path=Path(root)/'samples.jsonl'; capture=Path(root)/'display.csv'
+            samples=[dict(kind='run_header',schema=2,pid=123,scenario_name='open')]
+            for name in ['soak_completed_seconds','log_flush','log_dropped']:
+                samples.append(dict(name=name,value=0,time_ms=2))
+            path.write_text(''.join(json.dumps(s)+'\n' for s in samples))
+            capture.write_text('ProcessID,CPUStartQPC,MsBetweenDisplayChange\n'+''.join(f'999,{q},16\n' for q in range(40)))
+            self.assertIn('insufficient_target_display_samples',analyze(path,capture)['invalid_reasons'])
+            capture.write_text('ProcessID,CPUStartQPC,MsBetweenDisplayChange\n'+''.join(f'123,{q},16\n' for q in range(40)))
+            self.assertTrue(analyze(path,capture)['log_valid'])
+
+    def test_five_successful_process_exits_without_capture_do_not_pass(self):
+        with tempfile.TemporaryDirectory() as root:
+            directory=Path(root)
+            log=directory/'samples.jsonl'
+            samples=[dict(kind='run_header',schema=2,scenario_name='open')]
+            for name in ['soak_completed_seconds','log_flush','log_dropped']:
+                samples.append(dict(name=name,value=0,time_ms=2))
+            log.write_text(''.join(json.dumps(s)+'\n' for s in samples))
+            for i in range(5):
+                run=dict(sha256='same',exit_code=0,presentmon_exit=0,logs=[str(log)],presentmon=str(directory/'missing.csv'),dataset_manifest={'sha256':'fixture'},dwm=dict(hresult='0x0',refresh_n=60,refresh_d=1))
+                (directory/f'{i}-run.json').write_text(json.dumps(run))
+            result=collect(directory)
+            self.assertFalse(result['valid_five_runs'])
+            self.assertTrue(all('missing_presentmon_csv' in r['errors'] for r in result['runs']))
+
     def test_flush_marker_without_durable_certificate_is_invalid(self):
         with tempfile.TemporaryDirectory() as root:
             path=Path(root)/'samples.jsonl'
             samples=[dict(kind='run_header',schema=3,run_id=7,scenario_name='open')]
             for name in ['soak_completed_seconds','log_flush','log_dropped']:
+                samples.append(dict(name=name,value=0,time_ms=2))
+            for name in ['window_minimized','window_width','window_height','pixels_per_point']:
                 samples.append(dict(name=name,value=0,time_ms=2))
             path.write_text(''.join(json.dumps(s)+'\n' for s in samples))
             self.assertIn('missing_flush_certificate',analyze(path)['invalid_reasons'])

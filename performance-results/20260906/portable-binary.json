@@ -1,0 +1,30 @@
+{
+  "executable": "F:\\tuhai-validation\\candidate\\TuHaiView.exe",
+  "bytes": 17354240,
+  "sha256": "b77e34e3083aeb5f4c419efe2a613c0a28070b56687a2078ba8dc4531bca480d",
+  "machine": "0x8664",
+  "subsystem": 2,
+  "imports": [
+    "advapi32.dll",
+    "api-ms-win-core-synch-l1-2-0.dll",
+    "bcryptprimitives.dll",
+    "combase.dll",
+    "d3dcompiler_47.dll",
+    "dwmapi.dll",
+    "gdi32.dll",
+    "imm32.dll",
+    "kernel32.dll",
+    "ntdll.dll",
+    "ole32.dll",
+    "oleaut32.dll",
+    "opengl32.dll",
+    "psapi.dll",
+    "shell32.dll",
+    "shlwapi.dll",
+    "uiautomationcore.dll",
+    "user32.dll",
+    "uxtheme.dll"
+  ],
+  "non_system_crt_dependencies": [],
+  "clean_windows_10_11_tested": false
+}
