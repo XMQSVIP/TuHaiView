@@ -2,7 +2,14 @@ param(
     [Parameter(Mandatory=$true)][string]$Executable,
     [Parameter(Mandatory=$true)][string]$Root,
     [int]$Runs=5,
-    [int]$Seconds=60
+    [int]$Seconds=60,
+    [ValidateSet('trajectory','open','scroll','soak','idle')][string]$Scenario='trajectory',
+    [ValidateSet('mailbox','vsync','immediate')][string]$Present='mailbox',
+    [int]$RepaintMs=0,
+    [string]$PresentMon='F:\tuhai-validation\tools\PresentMon-2.5.1-x64.exe',
+    [string]$AlternateRoot,
+    [string]$OutputDirectory='F:\tuhai-validation\runs',
+    [switch]$SkipPresentMon
 )
 $ErrorActionPreference='Stop'
 $resolvedExecutable=(Resolve-Path -LiteralPath $Executable).Path
@@ -10,13 +17,40 @@ $resolvedRoot=(Resolve-Path -LiteralPath $Root).Path
 $env:TUHAI_PERF='1'
 $env:TUHAI_PERF_ROOT=$resolvedRoot
 $env:TUHAI_PERF_SECONDS="$Seconds"
+$env:TUHAI_PERF_SCENARIO=$Scenario
+$env:TUHAI_PERF_PRESENT=$Present
+$env:TUHAI_PERF_REPAINT_MS=if ($RepaintMs -gt 0) { "$RepaintMs" } else { '' }
+$env:TUHAI_PERF_ALTERNATE_ROOT=$AlternateRoot
 Remove-Item Env:/TUHAI_PERF_CAPTURE -ErrorAction SilentlyContinue
-Remove-Item Env:/TUHAI_PERF_PRESENT -ErrorAction SilentlyContinue
 Remove-Item Env:/TUHAI_PERF_LATENCY -ErrorAction SilentlyContinue
+New-Item -ItemType Directory -Path $OutputDirectory -Force | Out-Null
+$exeHash=(Get-FileHash -LiteralPath $resolvedExecutable -Algorithm SHA256).Hash
+$toolHash=if (!$SkipPresentMon) { (Get-FileHash -LiteralPath $PresentMon -Algorithm SHA256).Hash } else { $null }
+$display=Get-CimInstance Win32_VideoController | Select-Object Name,DriverVersion,CurrentRefreshRate,CurrentHorizontalResolution,CurrentVerticalResolution
 for ($run=1; $run -le $Runs; $run++) {
     $started=Get-Date
-    $process=Start-Process -FilePath $resolvedExecutable -WindowStyle Hidden -PassThru
-    while (!$process.WaitForExit(1000)) {}
-    [pscustomobject]@{run=$run;pid=$process.Id;started=$started.ToString('o');exit_code=$process.ExitCode;seconds=((Get-Date)-$started).TotalSeconds} | ConvertTo-Json -Compress
+    $stamp=$started.ToString('yyyyMMdd-HHmmss')+"-$run"
+    $data=Join-Path (Split-Path -Parent $resolvedExecutable) 'data'
+    $before=@(Get-ChildItem -LiteralPath $data -Filter 'performance-*.jsonl' -ErrorAction SilentlyContinue | ForEach-Object FullName)
+    $process=Start-Process -FilePath $resolvedExecutable -WindowStyle Normal -PassThru
+    $capture=$null
+    $csv=Join-Path $OutputDirectory "$stamp-presentmon.csv"
+    if (!$SkipPresentMon) {
+        $capture=Start-Process -FilePath $PresentMon -WindowStyle Hidden -PassThru -ArgumentList @('--process_id',"$($process.Id)",'--output_file',"`"$csv`"",'--qpc_time','--timed',"$($Seconds+30)",'--terminate_after_timed','--terminate_on_proc_exit','--no_console_stats','--session_name',"tuhai-$stamp") -RedirectStandardError (Join-Path $OutputDirectory "$stamp-presentmon-errors.txt") -RedirectStandardOutput (Join-Path $OutputDirectory "$stamp-presentmon-output.txt")
+    }
+    $timedOut=$false
+    while (!$process.WaitForExit(1000)) {
+        if (((Get-Date)-$started).TotalSeconds -gt $Seconds+120) {
+            $timedOut=$true
+            $process.Kill()
+            $process.WaitForExit()
+            break
+        }
+    }
+    if ($capture) { $null=$capture.WaitForExit(35000) }
+    $logs=@(Get-ChildItem -LiteralPath $data -Filter 'performance-*.jsonl' -ErrorAction SilentlyContinue | Where-Object { $_.FullName -notin $before })
+    $report=[ordered]@{run=$run;pid=$process.Id;started=$started.ToString('o');exit_code=$process.ExitCode;seconds=((Get-Date)-$started).TotalSeconds;timed_out=$timedOut;executable=$resolvedExecutable;sha256=$exeHash;root=$resolvedRoot;scenario=$Scenario;present=$Present;repaint_ms=$RepaintMs;display=$display;system_cache='unknown';application_cache='preserved; GPU empty at process start';logs=@($logs.FullName);presentmon=$csv;presentmon_sha256=$toolHash;presentmon_exit=if ($capture -and $capture.HasExited) { $capture.ExitCode } else { $null }}
+    $report | ConvertTo-Json -Depth 8 | Set-Content -LiteralPath (Join-Path $OutputDirectory "$stamp-run.json") -Encoding utf8
+    $report | ConvertTo-Json -Compress -Depth 8
     if ($process.ExitCode -ne 0) { throw "UI run $run failed" }
 }

@@ -2,7 +2,11 @@
 use crossbeam_channel::{Sender, bounded};
 use serde::{Deserialize, Serialize};
 use std::{
-    sync::OnceLock,
+    cell::Cell,
+    sync::{
+        OnceLock,
+        atomic::{AtomicU64, Ordering},
+    },
     time::{Instant, SystemTime, UNIX_EPOCH},
 };
 
@@ -38,12 +42,61 @@ impl PerformanceSettings {
 #[derive(Serialize)]
 struct Sample {
     time_ms: u128,
+    monotonic_us: u128,
+    qpc: i64,
+    frame_id: u64,
+    scenario: u64,
+    request_id: u64,
+    generation: u64,
     name: &'static str,
     value: f64,
     #[serde(skip)]
     flushed: Option<Sender<()>>,
 }
 static SAMPLES: OnceLock<Option<Sender<Sample>>> = OnceLock::new();
+static START: OnceLock<Instant> = OnceLock::new();
+static FRAME: AtomicU64 = AtomicU64::new(0);
+static SCENARIO: AtomicU64 = AtomicU64::new(0);
+static DROPPED: AtomicU64 = AtomicU64::new(0);
+thread_local! { static REQUEST: Cell<(u64, u64)> = const { Cell::new((0, 0)) }; }
+
+pub fn begin_frame(scenario: u64) {
+    FRAME.fetch_add(1, Ordering::Relaxed);
+    SCENARIO.store(scenario, Ordering::Relaxed);
+}
+pub fn begin_request(generation: u64, request: u64) {
+    REQUEST.set((generation, request));
+}
+fn event(name: &'static str, value: f64) -> Sample {
+    let (generation, request_id) = REQUEST.get();
+    Sample {
+        time_ms: SystemTime::now()
+            .duration_since(UNIX_EPOCH)
+            .unwrap_or_default()
+            .as_millis(),
+        monotonic_us: START.get_or_init(Instant::now).elapsed().as_micros(),
+        qpc: qpc(),
+        frame_id: FRAME.load(Ordering::Relaxed),
+        scenario: SCENARIO.load(Ordering::Relaxed),
+        request_id,
+        generation,
+        name,
+        value,
+        flushed: None,
+    }
+}
+#[cfg(windows)]
+fn qpc() -> i64 {
+    let mut value = 0;
+    unsafe {
+        let _ = windows::Win32::System::Performance::QueryPerformanceCounter(&mut value);
+    }
+    value
+}
+#[cfg(not(windows))]
+fn qpc() -> i64 {
+    0
+}
 
 pub fn sample(name: &'static str, value: f64) {
     let sender = SAMPLES.get_or_init(|| {
@@ -68,6 +121,9 @@ pub fn sample(name: &'static str, value: f64) {
                     return;
                 };
                 let mut file = std::io::BufWriter::new(file);
+                let header = serde_json::json!({"schema": 2, "run_id": stamp, "pid": std::process::id(), "executable": std::env::current_exe().ok(), "scenario_name": std::env::var("TUHAI_PERF_SCENARIO").unwrap_or_else(|_| "trajectory".into()), "system_cache": "unknown", "kind": "run_header"});
+                let _ = serde_json::to_writer(&mut file, &header);
+                let _ = file.write_all(b"\n");
                 let mut last_flush = Instant::now();
                 loop {
                     match rx.recv_timeout(std::time::Duration::from_secs(1)) {
@@ -88,15 +144,7 @@ pub fn sample(name: &'static str, value: f64) {
                                 ("process_private_bytes", private),
                                 ("process_working_set_bytes", working),
                             ] {
-                                let event = Sample {
-                                    time_ms: SystemTime::now()
-                                        .duration_since(UNIX_EPOCH)
-                                        .unwrap_or_default()
-                                        .as_millis(),
-                                    name,
-                                    value: bytes as f64,
-                                    flushed: None,
-                                };
+                                let event = event(name, bytes as f64);
                                 let _ = serde_json::to_writer(&mut file, &event);
                                 let _ = file.write_all(b"\n");
                             }
@@ -111,34 +159,26 @@ pub fn sample(name: &'static str, value: f64) {
         Some(tx)
     });
     if let Some(tx) = sender {
-        let _ = tx.try_send(Sample {
-            time_ms: SystemTime::now()
-                .duration_since(UNIX_EPOCH)
-                .unwrap_or_default()
-                .as_millis(),
-            name,
-            value,
-            flushed: None,
-        });
+        if tx.try_send(event(name, value)).is_err() {
+            DROPPED.fetch_add(1, Ordering::Relaxed);
+        }
     }
 }
 /// Only called at process exit when diagnostics were explicitly enabled.
 pub fn flush_at_exit() {
     if let Some(Some(tx)) = SAMPLES.get() {
         let (ack, rx) = bounded(1);
+        let _ = tx.send_timeout(
+            event("log_dropped", DROPPED.load(Ordering::Relaxed) as f64),
+            std::time::Duration::from_millis(200),
+        );
+        let mut completed = event("log_flush", 1.0);
+        completed.flushed = Some(ack);
         if tx
-            .try_send(Sample {
-                time_ms: SystemTime::now()
-                    .duration_since(UNIX_EPOCH)
-                    .unwrap_or_default()
-                    .as_millis(),
-                name: "log_flush",
-                value: 0.0,
-                flushed: Some(ack),
-            })
+            .send_timeout(completed, std::time::Duration::from_millis(200))
             .is_ok()
         {
-            let _ = rx.recv_timeout(std::time::Duration::from_millis(200));
+            let _ = rx.recv_timeout(std::time::Duration::from_millis(500));
         }
     }
 }
@@ -180,8 +220,30 @@ pub struct UiRun {
     pub started: Instant,
     pub last_sort: u64,
     pub captures: u8,
+    pub scenario: String,
+    pub last_root_switch: u64,
+    pub alternate_root: Option<std::path::PathBuf>,
 }
 impl UiRun {
+    pub fn phase(&self) -> u64 {
+        if self.scenario == "open" {
+            return 6;
+        }
+        if self.scenario == "idle"
+            || self.seconds - self.started.elapsed().as_secs_f64() <= 30.0
+                && self.scenario == "soak"
+        {
+            return 7;
+        }
+        if self.scenario == "scroll" {
+            return if self.started.elapsed().as_secs_f64() < 20.0 {
+                0
+            } else {
+                1
+            };
+        }
+        (self.started.elapsed().as_secs() % 60) / 10
+    }
     pub fn from_environment() -> Option<Self> {
         if std::env::var("TUHAI_PERF").ok().as_deref() != Some("1") {
             return None;
@@ -200,6 +262,11 @@ impl UiRun {
             started: Instant::now(),
             last_sort: u64::MAX,
             captures: 0,
+            scenario: std::env::var("TUHAI_PERF_SCENARIO").unwrap_or_else(|_| "trajectory".into()),
+            last_root_switch: 0,
+            alternate_root: std::env::var_os("TUHAI_PERF_ALTERNATE_ROOT")
+                .map(std::path::PathBuf::from)
+                .filter(|p| p.is_dir()),
         })
     }
 }

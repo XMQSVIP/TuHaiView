@@ -187,6 +187,7 @@ impl ThumbnailService {
                                 shared.changed.wait_for(&mut s, Duration::from_millis(50));
                             }
                         };
+                        performance::begin_request(request.generation, request.serial);
                         let cancelled = || !valid(&shared.scheduler.lock(), &request);
                         if index == 0 {
                             shared.preview_busy.store(true, Ordering::Release);

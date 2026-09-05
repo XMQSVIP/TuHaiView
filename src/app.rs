@@ -88,6 +88,9 @@ pub struct PreviewerApp {
     preview_changed: Instant,
     root_started: Instant,
     first_thumbnail: bool,
+    first_screen: bool,
+    preview_first_display: bool,
+    input_started: Option<Instant>,
     viewport_started: Instant,
     viewport_measured: bool,
     texture_bytes: usize,
@@ -175,6 +178,9 @@ impl PreviewerApp {
             preview_changed: Instant::now(),
             root_started: Instant::now(),
             first_thumbnail: false,
+            first_screen: false,
+            preview_first_display: false,
+            input_started: None,
             viewport_started: Instant::now(),
             viewport_measured: false,
             texture_bytes: 0,
@@ -269,6 +275,7 @@ impl PreviewerApp {
     }
 
     fn open_root(&mut self, path: PathBuf) {
+        self.input_started = Some(Instant::now());
         // 切换根目录时重置仅属于旧目录的 UI 状态；后台服务用 generation 过滤迟到事件。
         self.close_auxiliary_windows();
         self.duplicate_rescan_after_catalog = false;
@@ -280,6 +287,7 @@ impl PreviewerApp {
         self.empty_folders.clear();
         self.root_started = Instant::now();
         self.first_thumbnail = false;
+        self.first_screen = false;
         self.thumbnails.set_root(path.clone());
         self.root = Some(path.clone());
         self.records = Arc::from([]);
@@ -1142,6 +1150,7 @@ impl PreviewerApp {
             }
         });
         if self.sort != self.previous_sort {
+            self.input_started = Some(Instant::now());
             self.pending_sort_anchor = self.grid_anchor.filter(|_| self.preview.is_none());
             self.request_sort();
         }
@@ -1613,10 +1622,22 @@ impl PreviewerApp {
         {
             crate::performance::elapsed("viewport_complete_ms", self.viewport_started);
             self.viewport_measured = true;
+            if !self.first_screen
+                && self.grid_scroll_offset < 0.5
+                && self
+                    .pinned_textures
+                    .iter()
+                    .all(|k| self.textures.contains_key(k))
+            {
+                crate::performance::elapsed("first_screen_ms", self.root_started);
+                self.first_screen = true;
+            }
         }
     }
 
     fn open_preview(&mut self, index: usize) {
+        self.preview_first_display = false;
+        self.input_started = Some(Instant::now());
         if self.preview.is_none() {
             // 记住网格实际滚动偏移，关闭大图预览后回到用户打开的那一行。
             self.preview_origin = Some(index);
@@ -1775,6 +1796,13 @@ impl PreviewerApp {
                                 .get(&key)
                                 .or_else(|| self.textures.get(&thumbnail_key))
                             {
+                                if !self.preview_first_display {
+                                    crate::performance::elapsed(
+                                        "preview_first_display_ms",
+                                        self.preview_changed,
+                                    );
+                                    self.preview_first_display = true;
+                                }
                                 let available = ui.available_size();
                                 let natural = texture.size_vec2() / ctx.pixels_per_point();
                                 let base_scale = if self.fit_preview {
@@ -2712,6 +2740,7 @@ impl PreviewerApp {
 impl eframe::App for PreviewerApp {
     fn update(&mut self, ctx: &egui::Context, _frame: &mut eframe::Frame) {
         let frame_start = Instant::now();
+        crate::performance::begin_frame(self.perf_run.as_ref().map_or(8, |r| r.phase()));
         let interval = frame_start.duration_since(self.last_frame);
         crate::performance::sample("frame_interval_ms", interval.as_secs_f64() * 1000.0);
         self.last_frame = frame_start;
@@ -2740,7 +2769,7 @@ impl eframe::App for PreviewerApp {
             } else {
                 // Explicit opt-in Release QA trajectory. Uses the same grid,
                 // preview, sorter and uploader as interactive browsing.
-                let phase = (elapsed as u64 % 60) / 10;
+                let phase = run.phase();
                 if std::env::var("TUHAI_PERF_CAPTURE").ok().as_deref() == Some("1") {
                     for (bit, second, name) in
                         [(1, 8.0, "grid"), (2, 25.0, "preview"), (4, 45.0, "scroll")]
@@ -2754,7 +2783,7 @@ impl eframe::App for PreviewerApp {
                     }
                 }
                 crate::performance::sample("trajectory_phase", phase as f64);
-                if !self.records.is_empty() && !self.scanning {
+                if !self.records.is_empty() && !self.scanning && phase < 6 {
                     if phase == 2 || phase == 3 {
                         let index = ((elapsed * if phase == 2 { 2.0 } else { 10.0 }) as usize)
                             % self.display_indices.len().max(1);
@@ -2780,7 +2809,32 @@ impl eframe::App for PreviewerApp {
                         }
                     }
                 }
-                ctx.request_repaint();
+                if run.scenario == "soak"
+                    && phase < 6
+                    && elapsed as u64 / 120 > run.last_root_switch
+                {
+                    run.last_root_switch = elapsed as u64 / 120;
+                    if let Some(root) = run.alternate_root.as_ref() {
+                        let target = if run.last_root_switch % 2 == 0 {
+                            &run.root
+                        } else {
+                            root
+                        };
+                        self.open_root(target.clone());
+                    }
+                }
+                if phase < 6 {
+                    if let Ok(ms) = std::env::var("TUHAI_PERF_REPAINT_MS")
+                        .unwrap_or_default()
+                        .parse::<u64>()
+                    {
+                        ctx.request_repaint_after(Duration::from_millis(ms));
+                    } else {
+                        ctx.request_repaint();
+                    }
+                } else {
+                    ctx.request_repaint_after(Duration::from_millis(100));
+                }
             }
             self.perf_run = Some(run);
         }
@@ -2824,6 +2878,11 @@ impl eframe::App for PreviewerApp {
         if let Some(due) = self.rescan_due {
             ctx.request_repaint_after(due.saturating_duration_since(Instant::now()));
         }
+        if let Some(start) = self.input_started.take() {
+            crate::performance::elapsed("action_ui_feedback_ms", start);
+        }
+        crate::performance::sample("grid_scroll_offset", self.grid_scroll_offset as f64);
+        crate::performance::sample("pixels_per_point", ctx.pixels_per_point() as f64);
         crate::performance::elapsed("ui_update_ms", frame_start);
         if let Some(seconds) = _frame.info().cpu_usage {
             crate::performance::sample("eframe_cpu_ms", seconds as f64 * 1000.0);
