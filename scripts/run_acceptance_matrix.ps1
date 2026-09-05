@@ -3,6 +3,8 @@ param(
     [string]$OutputDirectory='F:\tuhai-validation\final-matrix',
     [string]$HddExecutable='F:\tuhai-validation\validation-v2\TuHaiView.exe',
     [string]$SsdExecutable='C:\tuhai-validation-v2\TuHaiView.exe',
+    [string[]]$CaseNames,
+    [ValidateRange(30,1800)][int]$IndexWarmupSeconds=300,
     [int]$Runs=5
 )
 $ErrorActionPreference='Stop'
@@ -21,10 +23,10 @@ $cases=@(
     @{name='real-shared-hdd';exe=$hdd;root='F:\tuhai-real-fixtures-20260906\comparison-512mib';manifest='F:\tuhai-real-fixtures-20260906\comparison-512mib\comparison-manifest.json'}
 )
 if ($Group -eq 'short') {
-    foreach ($case in $cases) {
+    foreach ($case in ($cases | Where-Object { !$CaseNames -or $_.name -in $CaseNames })) {
         $expected=if($case.name -like '*10k*'){10000}elseif($case.name -like '*shared*'){1333}else{50000}
         # Build/validate the complete bounded index before the fixed route warmup.
-        & $runner -Executable $case.exe -Root $case.root -Manifest $case.manifest -ExpectedRecords $expected -RequireScanCompletion -Scenario open -Seconds 300 -Runs 1 -OutputDirectory (Join-Path $OutputDirectory ($case.name+'-index-warmup'))
+        & $runner -Executable $case.exe -Root $case.root -Manifest $case.manifest -ExpectedRecords $expected -RequireScanCompletion -Scenario open -Seconds $IndexWarmupSeconds -Runs 1 -OutputDirectory (Join-Path $OutputDirectory ($case.name+'-index-warmup'))
         # One explicit index/route warmup is excluded from the five measured repeats.
         & $runner -Executable $case.exe -Root $case.root -Manifest $case.manifest -ExpectedRecords $expected -Scenario scroll -Seconds 90 -Runs 1 -OutputDirectory (Join-Path $OutputDirectory ($case.name+'-warmup'))
         foreach ($scenario in @('open','scroll')) {
