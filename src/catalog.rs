@@ -1,22 +1,26 @@
-use crate::models::{ImageRecord, SortMode};
-use crate::storage;
+use crate::models::ImageRecord;
 use anyhow::Result;
-use crossbeam_channel::{Receiver, RecvTimeoutError, Sender, bounded, unbounded};
-use notify::{Event, EventKind, RecommendedWatcher, RecursiveMode, Watcher};
 use rusqlite::{Connection, params};
 use sha2::{Digest, Sha256};
 use std::{
-    collections::{HashMap, HashSet},
     fs,
     path::{Path, PathBuf},
-    sync::{
-        Arc,
-        atomic::{AtomicBool, Ordering},
-    },
-    thread,
-    time::{Duration, Instant, UNIX_EPOCH},
+    time::{Duration, UNIX_EPOCH},
 };
-use walkdir::WalkDir;
+#[cfg(test)]
+use {
+    crate::models::SortMode,
+    crossbeam_channel::Sender,
+    std::{
+        collections::{HashMap, HashSet},
+        sync::{
+            Arc,
+            atomic::{AtomicBool, Ordering},
+        },
+        time::Instant,
+    },
+    walkdir::WalkDir,
+};
 
 const SCHEMA_VERSION: i64 = 3;
 // 以事务批量写入，避免上万张图片逐条提交导致 SQLite fsync 成为瓶颈。
@@ -43,12 +47,19 @@ pub struct MetadataUpdate {
     pub id: i64,
     pub path: PathBuf,
     pub modified_ns: i64,
+    pub thumbnail_key: String,
     pub width: u32,
     pub height: u32,
 }
 
+#[path = "catalog_runtime.rs"]
+mod runtime;
+pub use runtime::{CatalogEvent, CatalogService};
+
+#[cfg(test)]
 #[derive(Clone, Debug)]
-pub enum CatalogEvent {
+#[allow(dead_code)]
+enum ScanEvent {
     Started {
         generation: u64,
     },
@@ -84,185 +95,6 @@ pub enum CatalogEvent {
     Changed {
         generation: u64,
     },
-}
-
-struct ScanRequest {
-    root: PathBuf,
-    sort: SortMode,
-    generation: u64,
-    cancel: Arc<AtomicBool>,
-}
-
-#[derive(Default)]
-struct CatalogPending {
-    scan: Option<ScanRequest>,
-    clear: bool,
-}
-
-pub struct CatalogService {
-    pub rx: Receiver<CatalogEvent>,
-    generation: u64,
-    scan_cancel: Option<Arc<AtomicBool>>,
-    pending: Arc<parking_lot::Mutex<CatalogPending>>,
-    notify_tx: Sender<()>,
-    metadata_tx: Sender<MetadataUpdate>,
-}
-
-impl CatalogService {
-    pub fn new(wakeup: Arc<dyn Fn() + Send + Sync>) -> Result<Self> {
-        let (tx, rx) = unbounded();
-        let (notify_tx, notify_rx) = bounded(1);
-        let pending = Arc::new(parking_lot::Mutex::new(CatalogPending::default()));
-        let worker_pending = pending.clone();
-        let (metadata_tx, metadata_rx) = bounded(1024);
-        let metadata_wakeup = wakeup.clone();
-        // Initialization and migrations belong to the worker, never the UI.
-        thread::Builder::new()
-            .name("catalog-coordinator".into())
-            .spawn(move || {
-                let db = match storage::database_path().and_then(|db| {
-                    init_db(&db)?;
-                    Ok(db)
-                }) {
-                    Ok(db) => db,
-                    Err(error) => {
-                        let _ = tx.send(CatalogEvent::Error {
-                            generation: 0,
-                            message: error.to_string(),
-                        });
-                        wakeup();
-                        return;
-                    }
-                };
-                let metadata_db = db.clone();
-                let _ = thread::Builder::new()
-                    .name("catalog-metadata-writer".into())
-                    .spawn(move || metadata_worker(&metadata_db, metadata_rx, metadata_wakeup));
-                let mut watcher: Option<RecommendedWatcher> = None;
-                let mut watched: Option<(PathBuf, u64)> = None;
-                while notify_rx.recv().is_ok() {
-                    let work = std::mem::take(&mut *worker_pending.lock());
-                    if work.clear {
-                        let result = open_connection(&db).and_then(|conn| {
-                            conn.execute_batch(
-                                "DELETE FROM images; PRAGMA wal_checkpoint(TRUNCATE); VACUUM;",
-                            )?;
-                            Ok(())
-                        });
-                        if let Err(error) = result {
-                            let generation = work.scan.as_ref().map_or(0, |r| r.generation);
-                            let _ = tx.send(CatalogEvent::Error {
-                                generation,
-                                message: format!("清理数据库失败：{error}"),
-                            });
-                            wakeup();
-                        }
-                    }
-                    let Some(request) = work.scan else {
-                        continue;
-                    };
-                    if request.cancel.load(Ordering::Acquire) {
-                        continue;
-                    }
-                    if watched.as_ref() != Some(&(request.root.clone(), request.generation)) {
-                        watcher.take();
-                        let watch_tx = tx.clone();
-                        let watch_wakeup = wakeup.clone();
-                        let generation = request.generation;
-                        let data = storage::data_dir().ok();
-                        watcher = notify::recommended_watcher(move |res: notify::Result<Event>| {
-                            let relevant = match res {
-                                Ok(event) => {
-                                    !matches!(event.kind, EventKind::Access(_))
-                                        && !data.as_ref().is_some_and(|dir| {
-                                            !event.paths.is_empty()
-                                                && event.paths.iter().all(|p| p.starts_with(dir))
-                                        })
-                                }
-                                Err(_) => true,
-                            };
-                            if relevant {
-                                let _ = watch_tx.send(CatalogEvent::Changed { generation });
-                                watch_wakeup();
-                            }
-                        })
-                        .ok();
-                        if let Some(watcher) = watcher.as_mut() {
-                            let _ = watcher.watch(&request.root, RecursiveMode::Recursive);
-                        }
-                        watched = Some((request.root.clone(), request.generation));
-                    }
-                    let _ = tx.send(CatalogEvent::Started {
-                        generation: request.generation,
-                    });
-                    wakeup();
-                    let result = scan_worker(
-                        &request.root,
-                        &db,
-                        request.generation,
-                        &tx,
-                        &request.cancel,
-                        request.sort,
-                        wakeup.clone(),
-                    );
-                    if !request.cancel.load(Ordering::Acquire) {
-                        if let Err(error) = result {
-                            let _ = tx.send(CatalogEvent::Error {
-                                generation: request.generation,
-                                message: error.to_string(),
-                            });
-                            wakeup();
-                        }
-                    }
-                }
-            })?;
-        Ok(Self {
-            rx,
-            generation: 0,
-            scan_cancel: None,
-            pending,
-            notify_tx,
-            metadata_tx,
-        })
-    }
-
-    pub fn data_dir(&self) -> Result<PathBuf> {
-        storage::data_dir()
-    }
-    pub fn clear_database(&mut self) -> Result<()> {
-        self.cancel_scan();
-        self.pending.lock().clear = true;
-        let _ = self.notify_tx.try_send(());
-        Ok(())
-    }
-    pub fn scan(&mut self, root: PathBuf, sort: SortMode) -> u64 {
-        self.cancel_scan();
-        self.generation = self.generation.wrapping_add(1);
-        let cancel = Arc::new(AtomicBool::new(false));
-        self.scan_cancel = Some(cancel.clone());
-        self.pending.lock().scan = Some(ScanRequest {
-            root,
-            sort,
-            generation: self.generation,
-            cancel,
-        });
-        let _ = self.notify_tx.try_send(());
-        self.generation
-    }
-    pub fn queue_metadata_update(&self, update: MetadataUpdate) {
-        let _ = self.metadata_tx.try_send(update);
-    }
-    pub fn cancel_scan(&mut self) {
-        if let Some(cancel) = self.scan_cancel.take() {
-            cancel.store(true, Ordering::Release);
-        }
-        self.pending.lock().scan = None;
-    }
-}
-impl Drop for CatalogService {
-    fn drop(&mut self) {
-        self.cancel_scan();
-    }
 }
 
 fn init_db(db_path: &Path) -> Result<()> {
@@ -380,11 +212,12 @@ fn load_cached_connection(conn: &Connection, root: &Path) -> Result<Vec<ImageRec
     Ok(rows.collect::<rusqlite::Result<Vec<_>>>()?)
 }
 
+#[cfg(test)]
 fn scan_worker(
     root: &Path,
     db_path: &Path,
     generation: u64,
-    tx: &Sender<CatalogEvent>,
+    tx: &Sender<ScanEvent>,
     cancel: &AtomicBool,
     sort: SortMode,
     wakeup: Arc<dyn Fn() + Send + Sync>,
@@ -402,7 +235,7 @@ fn scan_worker(
         .collect::<HashMap<_, _>>();
     let mut sorted_snapshot = snapshot;
     sort_records(&mut sorted_snapshot, sort);
-    let _ = tx.send(CatalogEvent::Snapshot {
+    let _ = tx.send(ScanEvent::Snapshot {
         generation,
         records: sorted_snapshot,
     });
@@ -536,7 +369,7 @@ fn scan_worker(
         }
         transaction.commit()?;
         db_write_time += started_delete.elapsed();
-        let _ = tx.send(CatalogEvent::RemoveBatch {
+        let _ = tx.send(ScanEvent::RemoveBatch {
             generation,
             ids: removed_ids.clone(),
         });
@@ -555,7 +388,7 @@ fn scan_worker(
                 .filter(|record| !seen.contains(&record.path))
                 .count()
     };
-    let _ = tx.send(CatalogEvent::Finished {
+    let _ = tx.send(ScanEvent::Finished {
         generation,
         total,
         stats,
@@ -564,15 +397,7 @@ fn scan_worker(
     Ok(())
 }
 
-fn upsert_batch(
-    conn: &mut Connection,
-    root: &Path,
-    pending: &mut Vec<ImageRecord>,
-    generation: u64,
-    tx: &Sender<CatalogEvent>,
-    wakeup: &Arc<dyn Fn() + Send + Sync>,
-) -> Result<Duration> {
-    let started = Instant::now();
+fn upsert_records(conn: &mut Connection, root: &Path, pending: &mut [ImageRecord]) -> Result<()> {
     let transaction = conn.transaction()?;
     {
         let mut statement = transaction.prepare_cached(
@@ -611,8 +436,22 @@ fn upsert_batch(
         }
     }
     transaction.commit()?;
+    Ok(())
+}
+
+#[cfg(test)]
+fn upsert_batch(
+    conn: &mut Connection,
+    root: &Path,
+    pending: &mut Vec<ImageRecord>,
+    generation: u64,
+    tx: &Sender<ScanEvent>,
+    wakeup: &Arc<dyn Fn() + Send + Sync>,
+) -> Result<Duration> {
+    let started = Instant::now();
+    upsert_records(conn, root, pending)?;
     let batch = std::mem::take(pending);
-    let _ = tx.send(CatalogEvent::UpsertBatch {
+    let _ = tx.send(ScanEvent::UpsertBatch {
         generation,
         records: batch,
     });
@@ -620,75 +459,9 @@ fn upsert_batch(
     Ok(started.elapsed())
 }
 
-fn metadata_worker(
-    db_path: &Path,
-    rx: Receiver<MetadataUpdate>,
-    wakeup: Arc<dyn Fn() + Send + Sync>,
-) {
-    let Ok(mut conn) = open_connection(db_path) else {
-        return;
-    };
-    let mut pending = Vec::with_capacity(128);
-    loop {
-        let first = match rx.recv() {
-            Ok(update) => update,
-            Err(_) => {
-                if !pending.is_empty() {
-                    let _ = write_metadata_batch(&mut conn, &mut pending);
-                }
-                break;
-            }
-        };
-        pending.push(first);
-        // 缩略图结果会逐张补齐尺寸；最多等待 100ms 或攒够 128 条后统一持久化。
-        let deadline = Instant::now() + Duration::from_millis(100);
-        let mut disconnected = false;
-        while pending.len() < 128 {
-            let remaining = deadline.saturating_duration_since(Instant::now());
-            if remaining.is_zero() {
-                break;
-            }
-            match rx.recv_timeout(remaining) {
-                Ok(update) => pending.push(update),
-                Err(RecvTimeoutError::Timeout) => break,
-                Err(RecvTimeoutError::Disconnected) => {
-                    disconnected = true;
-                    break;
-                }
-            }
-        }
-        if write_metadata_batch(&mut conn, &mut pending).is_ok() {
-            wakeup();
-        }
-        if disconnected {
-            break;
-        }
-    }
-}
-
-fn write_metadata_batch(conn: &mut Connection, pending: &mut Vec<MetadataUpdate>) -> Result<()> {
-    let transaction = conn.transaction()?;
-    {
-        let mut statement = transaction.prepare_cached(
-            "UPDATE images SET width=?1,height=?2 WHERE id=?3 AND path=?4 AND modified_ns=?5",
-        )?;
-        for update in pending.iter() {
-            statement.execute(params![
-                update.width as i64,
-                update.height as i64,
-                update.id,
-                update.path.to_string_lossy(),
-                update.modified_ns,
-            ])?;
-        }
-    }
-    transaction.commit()?;
-    pending.clear();
-    Ok(())
-}
-
-fn send_progress(tx: &Sender<CatalogEvent>, generation: u64, stats: &ScanStats) {
-    let _ = tx.send(CatalogEvent::Progress {
+#[cfg(test)]
+fn send_progress(tx: &Sender<ScanEvent>, generation: u64, stats: &ScanStats) {
+    let _ = tx.send(ScanEvent::Progress {
         generation,
         visited_files: stats.visited_files,
         supported_images: stats.supported_images,
@@ -715,6 +488,7 @@ pub fn cache_key(path: &Path, size: u64, modified_ns: i64) -> String {
     format!("{:x}", hasher.finalize())
 }
 
+#[cfg(test)]
 pub fn sort_records(records: &mut [ImageRecord], sort: SortMode) {
     match sort {
         SortMode::ModifiedDesc => records.sort_by(|a, b| b.modified_ns.cmp(&a.modified_ns)),
@@ -795,7 +569,7 @@ mod tests {
         scan_worker(&root, &db, 1, &tx, &cancel, SortMode::ModifiedDesc, wakeup).unwrap();
         assert!(
             rx.try_iter()
-                .all(|event| !matches!(event, CatalogEvent::Finished { .. }))
+                .all(|event| !matches!(event, ScanEvent::Finished { .. }))
         );
         fs::remove_dir_all(root).unwrap();
     }
@@ -911,10 +685,10 @@ mod tests {
         assert!(
             first
                 .iter()
-                .any(|event| matches!(event, CatalogEvent::UpsertBatch { .. }))
+                .any(|event| matches!(event, ScanEvent::UpsertBatch { .. }))
         );
         assert!(first.iter().any(
-            |event| matches!(event, CatalogEvent::Finished { stats, .. } if stats.inserted == 2)
+            |event| matches!(event, ScanEvent::Finished { stats, .. } if stats.inserted == 2)
         ));
 
         let (tx, rx) = unbounded();
@@ -932,20 +706,22 @@ mod tests {
         assert!(
             !second
                 .iter()
-                .any(|event| matches!(event, CatalogEvent::UpsertBatch { .. }))
+                .any(|event| matches!(event, ScanEvent::UpsertBatch { .. }))
         );
-        assert!(second.iter().any(
-            |event| matches!(event, CatalogEvent::Finished { stats, .. } if stats.reused == 2)
-        ));
+        assert!(
+            second.iter().any(
+                |event| matches!(event, ScanEvent::Finished { stats, .. } if stats.reused == 2)
+            )
+        );
 
         fs::remove_file(root.join("b.png")).unwrap();
         let (tx, rx) = unbounded();
         scan_worker(&root, &db, 3, &tx, &cancel, SortMode::ModifiedDesc, wakeup).unwrap();
         let third = rx.try_iter().collect::<Vec<_>>();
         assert!(
-            third.iter().any(
-                |event| matches!(event, CatalogEvent::RemoveBatch { ids, .. } if ids.len() == 1)
-            )
+            third
+                .iter()
+                .any(|event| matches!(event, ScanEvent::RemoveBatch { ids, .. } if ids.len() == 1))
         );
         fs::remove_dir_all(root).unwrap();
     }

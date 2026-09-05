@@ -40,6 +40,8 @@ struct Sample {
     time_ms: u128,
     name: &'static str,
     value: f64,
+    #[serde(skip)]
+    flushed: Option<Sender<()>>,
 }
 static SAMPLES: OnceLock<Option<Sender<Sample>>> = OnceLock::new();
 
@@ -72,6 +74,10 @@ pub fn sample(name: &'static str, value: f64) {
                         Ok(event) => {
                             let _ = serde_json::to_writer(&mut file, &event);
                             let _ = file.write_all(b"\n");
+                            if let Some(tx) = event.flushed {
+                                let _ = file.flush();
+                                let _ = tx.try_send(());
+                            }
                         }
                         Err(crossbeam_channel::RecvTimeoutError::Timeout) => {}
                         Err(crossbeam_channel::RecvTimeoutError::Disconnected) => break,
@@ -89,6 +95,7 @@ pub fn sample(name: &'static str, value: f64) {
                                         .as_millis(),
                                     name,
                                     value: bytes as f64,
+                                    flushed: None,
                                 };
                                 let _ = serde_json::to_writer(&mut file, &event);
                                 let _ = file.write_all(b"\n");
@@ -111,7 +118,28 @@ pub fn sample(name: &'static str, value: f64) {
                 .as_millis(),
             name,
             value,
+            flushed: None,
         });
+    }
+}
+/// Only called at process exit when diagnostics were explicitly enabled.
+pub fn flush_at_exit() {
+    if let Some(Some(tx)) = SAMPLES.get() {
+        let (ack, rx) = bounded(1);
+        if tx
+            .try_send(Sample {
+                time_ms: SystemTime::now()
+                    .duration_since(UNIX_EPOCH)
+                    .unwrap_or_default()
+                    .as_millis(),
+                name: "log_flush",
+                value: 0.0,
+                flushed: Some(ack),
+            })
+            .is_ok()
+        {
+            let _ = rx.recv_timeout(std::time::Duration::from_millis(200));
+        }
     }
 }
 
@@ -142,4 +170,64 @@ fn process_memory() -> Option<(usize, usize)> {
 #[cfg(not(windows))]
 fn process_memory() -> Option<(usize, usize)> {
     None
+}
+
+pub static PREVIEW_BUSY: std::sync::atomic::AtomicBool = std::sync::atomic::AtomicBool::new(false);
+
+pub struct UiRun {
+    pub root: std::path::PathBuf,
+    pub seconds: f64,
+    pub started: Instant,
+    pub last_sort: u64,
+    pub captures: u8,
+}
+impl UiRun {
+    pub fn from_environment() -> Option<Self> {
+        if std::env::var("TUHAI_PERF").ok().as_deref() != Some("1") {
+            return None;
+        }
+        let root = std::path::PathBuf::from(std::env::var_os("TUHAI_PERF_ROOT")?);
+        if !root.is_dir() {
+            return None;
+        }
+        Some(Self {
+            root,
+            seconds: std::env::var("TUHAI_PERF_SECONDS")
+                .ok()?
+                .parse::<f64>()
+                .ok()?
+                .clamp(10.0, 7200.0),
+            started: Instant::now(),
+            last_sort: u64::MAX,
+            captures: 0,
+        })
+    }
+}
+
+// Render-output QA: eframe supplies only this application's rendered framebuffer.
+pub fn save_capture(image: std::sync::Arc<eframe::egui::ColorImage>, name: String) {
+    if std::env::var("TUHAI_PERF_CAPTURE").ok().as_deref() != Some("1") {
+        return;
+    }
+    static CAPTURES: OnceLock<Sender<(std::sync::Arc<eframe::egui::ColorImage>, String)>> =
+        OnceLock::new();
+    let tx = CAPTURES.get_or_init(|| {
+        let (tx, rx) = bounded::<(std::sync::Arc<eframe::egui::ColorImage>, String)>(2);
+        std::thread::spawn(move || {
+            while let Ok((image, name)) = rx.recv() {
+                if let Ok(dir) = crate::storage::data_dir() {
+                    let bytes: Vec<_> = image.pixels.iter().flat_map(|p| p.to_array()).collect();
+                    let _ = image::save_buffer(
+                        dir.join(format!("qa-{name}.png")),
+                        &bytes,
+                        image.size[0] as u32,
+                        image.size[1] as u32,
+                        image::ColorType::Rgba8,
+                    );
+                }
+            }
+        });
+        tx
+    });
+    let _ = tx.try_send((image, name));
 }

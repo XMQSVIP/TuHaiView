@@ -1,6 +1,7 @@
-use crate::{models::ImageRecord, storage};
+use crate::models::ImageRecord;
 use anyhow::{Context, Result};
-use crossbeam_channel::{Receiver, Sender, unbounded};
+use crossbeam_channel::{Receiver, Sender};
+#[cfg(test)]
 use rusqlite::{Connection, params};
 use sha2::{Digest, Sha256};
 use std::{
@@ -22,7 +23,7 @@ const HASH_BATCH_SIZE: usize = 128;
 #[derive(Clone, Debug)]
 pub struct DuplicateGroup {
     pub hash: String,
-    pub members: Vec<ImageRecord>,
+    pub members: Arc<[ImageRecord]>,
     pub keeper_id: i64,
     pub included: bool,
 }
@@ -63,6 +64,7 @@ pub struct HashUpdate {
     pub size: u64,
     pub modified_ns: i64,
     pub content_hash: String,
+    pub thumbnail_key: String,
 }
 
 #[derive(Debug)]
@@ -101,70 +103,102 @@ pub enum DuplicateEvent {
     },
 }
 
+struct DuplicateRequest {
+    generation: u64,
+    task_id: u64,
+    records: Arc<[Arc<ImageRecord>]>,
+    cancel: Arc<AtomicBool>,
+}
 pub struct DuplicateService {
-    tx: Sender<DuplicateEvent>,
     pub rx: Receiver<DuplicateEvent>,
     task_id: u64,
     cancel: Option<Arc<AtomicBool>>,
-    wakeup: Arc<dyn Fn() + Send + Sync>,
+    pending: Arc<parking_lot::Mutex<Option<DuplicateRequest>>>,
+    notify_tx: Sender<()>,
 }
-
 impl DuplicateService {
     pub fn new(wakeup: Arc<dyn Fn() + Send + Sync>) -> Self {
-        let (tx, rx) = unbounded();
-        Self {
-            tx,
-            rx,
-            task_id: 0,
-            cancel: None,
-            wakeup,
-        }
-    }
-
-    pub fn scan(&mut self, generation: u64, records: Vec<ImageRecord>) -> u64 {
-        self.cancel_token();
-        self.task_id = self.task_id.wrapping_add(1);
-        let task_id = self.task_id;
-        let cancel = Arc::new(AtomicBool::new(false));
-        self.cancel = Some(cancel.clone());
-        let tx = self.tx.clone();
-        let wakeup = self.wakeup.clone();
+        let (tx, rx) = crossbeam_channel::bounded(128);
+        let (notify_tx, notify_rx) = crossbeam_channel::bounded(1);
+        let pending = Arc::new(parking_lot::Mutex::new(None::<DuplicateRequest>));
+        let worker_pending = pending.clone();
         thread::Builder::new()
             .name("duplicate-image-scanner".into())
             .spawn(move || {
-                let result = storage::database_path().and_then(|db_path| {
-                    scan_worker(
-                        generation, task_id, records, &db_path, &cancel, &tx, &wakeup,
-                    )
-                });
-                if let Err(error) = result
-                    && !cancel.load(Ordering::Acquire)
-                {
-                    let _ = tx.send(DuplicateEvent::Error {
-                        generation,
-                        task_id,
-                        message: error.to_string(),
-                    });
-                    wakeup();
+                while notify_rx.recv().is_ok() {
+                    let Some(request) = worker_pending.lock().take() else {
+                        continue;
+                    };
+                    if request.cancel.load(Ordering::Acquire) {
+                        continue;
+                    }
+                    // Only candidates acquire owned mutable hash fields, on the worker.
+                    let mut counts = HashMap::new();
+                    for r in request.records.iter() {
+                        *counts.entry(r.size).or_insert(0usize) += 1;
+                    }
+                    let records = request
+                        .records
+                        .iter()
+                        .filter(|r| counts[&r.size] > 1)
+                        .map(|r| r.as_ref().clone())
+                        .collect();
+                    let result = scan_worker(
+                        request.generation,
+                        request.task_id,
+                        records,
+                        Path::new(""),
+                        &request.cancel,
+                        &tx,
+                        &wakeup,
+                    );
+                    if let Err(error) = result {
+                        if !request.cancel.load(Ordering::Acquire) {
+                            let _ = tx.send(DuplicateEvent::Error {
+                                generation: request.generation,
+                                task_id: request.task_id,
+                                message: error.to_string(),
+                            });
+                            wakeup();
+                        }
+                    }
                 }
             })
-            .expect("failed to create duplicate scanner");
-        task_id
+            .expect("duplicate worker");
+        Self {
+            rx,
+            task_id: 0,
+            cancel: None,
+            pending,
+            notify_tx,
+        }
     }
-
+    pub fn scan(&mut self, generation: u64, records: Arc<[Arc<ImageRecord>]>) -> u64 {
+        self.cancel_token();
+        self.task_id = self.task_id.wrapping_add(1);
+        let cancel = Arc::new(AtomicBool::new(false));
+        self.cancel = Some(cancel.clone());
+        *self.pending.lock() = Some(DuplicateRequest {
+            generation,
+            task_id: self.task_id,
+            records,
+            cancel,
+        });
+        let _ = self.notify_tx.try_send(());
+        self.task_id
+    }
     pub fn cancel(&mut self) -> u64 {
         self.cancel_token();
+        self.pending.lock().take();
         self.task_id = self.task_id.wrapping_add(1);
         self.task_id
     }
-
     fn cancel_token(&mut self) {
         if let Some(cancel) = self.cancel.take() {
             cancel.store(true, Ordering::Release);
         }
     }
 }
-
 impl Drop for DuplicateService {
     fn drop(&mut self) {
         self.cancel_token();
@@ -175,7 +209,7 @@ fn scan_worker(
     generation: u64,
     task_id: u64,
     records: Vec<ImageRecord>,
-    db_path: &Path,
+    _db_path: &Path,
     cancel: &AtomicBool,
     tx: &Sender<DuplicateEvent>,
     wakeup: &Arc<dyn Fn() + Send + Sync>,
@@ -203,7 +237,6 @@ fn scan_worker(
     });
     wakeup();
 
-    let mut conn = open_connection(db_path)?;
     let mut groups = HashMap::<(u64, String), Vec<ImageRecord>>::new();
     let mut hash_updates = Vec::<HashUpdate>::with_capacity(HASH_BATCH_SIZE);
     let mut errors = Vec::<(PathBuf, String)>::new();
@@ -212,14 +245,7 @@ fn scan_worker(
 
     for mut record in candidates {
         if cancel.load(Ordering::Acquire) {
-            flush_hash_updates(
-                &mut conn,
-                &mut hash_updates,
-                generation,
-                task_id,
-                tx,
-                wakeup,
-            )?;
+            flush_hash_updates(&mut hash_updates, generation, task_id, tx, wakeup)?;
             stats.elapsed_ms = started.elapsed().as_millis();
             let _ = tx.send(DuplicateEvent::Cancelled {
                 generation,
@@ -258,14 +284,7 @@ fn scan_worker(
                 }
             };
             let Some((hash, bytes_read)) = hash_result else {
-                flush_hash_updates(
-                    &mut conn,
-                    &mut hash_updates,
-                    generation,
-                    task_id,
-                    tx,
-                    wakeup,
-                )?;
+                flush_hash_updates(&mut hash_updates, generation, task_id, tx, wakeup)?;
                 stats.elapsed_ms = started.elapsed().as_millis();
                 let _ = tx.send(DuplicateEvent::Cancelled {
                     generation,
@@ -301,6 +320,7 @@ fn scan_worker(
                 size: record.size,
                 modified_ns: record.modified_ns,
                 content_hash: hash.clone(),
+                thumbnail_key: record.thumbnail_key.clone(),
             });
             hash
         };
@@ -316,14 +336,7 @@ fn scan_worker(
         if hash_updates.len() >= HASH_BATCH_SIZE
             || (!hash_updates.is_empty() && last_flush.elapsed() >= Duration::from_secs(1))
         {
-            flush_hash_updates(
-                &mut conn,
-                &mut hash_updates,
-                generation,
-                task_id,
-                tx,
-                wakeup,
-            )?;
+            flush_hash_updates(&mut hash_updates, generation, task_id, tx, wakeup)?;
             last_flush = Instant::now();
         }
         if last_progress.elapsed() >= Duration::from_millis(150) {
@@ -338,14 +351,7 @@ fn scan_worker(
         }
     }
 
-    flush_hash_updates(
-        &mut conn,
-        &mut hash_updates,
-        generation,
-        task_id,
-        tx,
-        wakeup,
-    )?;
+    flush_hash_updates(&mut hash_updates, generation, task_id, tx, wakeup)?;
     let mut duplicate_groups = groups
         .into_iter()
         .filter_map(|((_, hash), mut members)| {
@@ -356,7 +362,7 @@ fn scan_worker(
             let keeper_id = members[0].id;
             Some(DuplicateGroup {
                 hash,
-                members,
+                members: members.into(),
                 keeper_id,
                 included: true,
             })
@@ -380,15 +386,7 @@ fn scan_worker(
     Ok(())
 }
 
-fn open_connection(path: &Path) -> Result<Connection> {
-    let conn = Connection::open(path)?;
-    conn.busy_timeout(Duration::from_secs(5))?;
-    conn.execute_batch("PRAGMA journal_mode=WAL; PRAGMA synchronous=NORMAL;")?;
-    Ok(conn)
-}
-
 fn flush_hash_updates(
-    conn: &mut Connection,
     pending: &mut Vec<HashUpdate>,
     generation: u64,
     task_id: u64,
@@ -398,23 +396,6 @@ fn flush_hash_updates(
     if pending.is_empty() {
         return Ok(());
     }
-    let transaction = conn.transaction()?;
-    {
-        let mut statement = transaction.prepare_cached(
-            "UPDATE images SET content_hash=?1
-             WHERE id=?2 AND path=?3 AND size=?4 AND modified_ns=?5",
-        )?;
-        for update in pending.iter() {
-            statement.execute(params![
-                update.content_hash,
-                update.id,
-                update.path.to_string_lossy(),
-                update.size as i64,
-                update.modified_ns,
-            ])?;
-        }
-    }
-    transaction.commit()?;
     let updates = std::mem::take(pending);
     let _ = tx.send(DuplicateEvent::HashBatch {
         generation,
@@ -431,6 +412,14 @@ fn hash_file(path: &Path, cancel: &AtomicBool) -> Result<Option<(String, u64)>> 
     let mut hasher = Sha256::new();
     let mut bytes_read = 0_u64;
     loop {
+        if cancel.load(Ordering::Acquire) {
+            return Ok(None);
+        }
+        while crate::performance::PREVIEW_BUSY.load(Ordering::Acquire)
+            && !cancel.load(Ordering::Acquire)
+        {
+            thread::sleep(Duration::from_millis(10));
+        }
         if cancel.load(Ordering::Acquire) {
             return Ok(None);
         }

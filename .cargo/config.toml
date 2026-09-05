@@ -1,0 +1,7 @@
+[env]
+TURBOJPEG_SOURCE = "vendor"
+TURBOJPEG_STATIC = "1"
+CMAKE_GENERATOR = "Ninja"
+
+[target.x86_64-pc-windows-msvc]
+rustflags = ["-C", "target-feature=+crt-static"]

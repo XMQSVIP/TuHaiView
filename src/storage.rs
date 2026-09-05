@@ -21,12 +21,3 @@ pub fn thumbnail_cache_dir() -> Result<PathBuf> {
     fs::create_dir_all(&directory)?;
     Ok(directory)
 }
-
-pub fn clear_thumbnail_cache() -> Result<()> {
-    let directory = thumbnail_cache_dir()?;
-    if directory.exists() {
-        fs::remove_dir_all(&directory)?;
-    }
-    fs::create_dir_all(&directory)?;
-    Ok(())
-}

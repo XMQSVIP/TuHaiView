@@ -1,350 +1,361 @@
-use crate::models::ImageRecord;
-use crate::storage;
-use anyhow::Result;
+use crate::{
+    budget::{ByteBudget, ByteLease},
+    decoding::{self},
+    models::ImageRecord,
+    performance::{self, MIB},
+    thumbnail_cache::DiskCache,
+};
 use crossbeam_channel::{Receiver, Sender, bounded};
-use image::{ImageDecoder, ImageReader, imageops::FilterType};
+use parking_lot::{Condvar, Mutex};
 use std::{
-    collections::HashSet,
-    fs,
-    path::{Path, PathBuf},
+    collections::{HashMap, HashSet},
+    path::PathBuf,
     sync::{
         Arc,
-        atomic::{AtomicBool, AtomicU64, Ordering},
+        atomic::{AtomicBool, AtomicUsize, Ordering},
     },
     thread,
+    time::{Duration, Instant},
 };
-
-const CACHE_START_LIMIT: u64 = 1024 * 1024 * 1024;
-const CACHE_TARGET_LIMIT: u64 = 800 * 1024 * 1024;
-const CACHE_MAGIC: &[u8; 8] = b"RIPTHM2\0";
-const CACHE_HEADER_LEN: usize = 24;
-static CACHE_TEMP_COUNTER: AtomicU64 = AtomicU64::new(0);
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
 pub enum ImageKind {
     Thumbnail,
     Preview,
 }
-
-#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub enum ThumbnailPriority {
-    // 沉浸预览必须抢占缩略图解码，保证切图时的响应感。
     Preview,
-    // 视口内卡片。
     Visible,
-    // 视口上下各一屏的预取，可随滚动丢弃。
     Prefetch,
 }
-
 #[derive(Clone)]
 struct Request {
     generation: u64,
-    prefetch_epoch: u64,
+    preview_epoch: u64,
     cache_epoch: u64,
     record: ImageRecord,
     max_side: u32,
     kind: ImageKind,
     priority: ThumbnailPriority,
+    serial: u64,
 }
-
-struct DecodedImage {
-    pixels: Vec<u8>,
-    width: usize,
-    height: usize,
-    source_width: u32,
-    source_height: u32,
+impl Request {
+    fn key(&self) -> String {
+        request_key(&self.record, self.kind, self.max_side)
+    }
 }
-
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum FailureKind {
+    Decode,
+    ResourceLimit,
+}
 pub struct ImageResult {
     pub generation: u64,
+    pub preview_epoch: u64,
     pub record_id: i64,
     pub path: PathBuf,
     pub modified_ns: i64,
+    pub source_key: String,
     pub texture_key: String,
+    pub request_key: String,
+    pub kind: ImageKind,
+    pub max_side: u32,
+    /// Premultiplied sRGBA, prepared off the UI thread.
     pub pixels: Vec<u8>,
     pub width: usize,
     pub height: usize,
     pub source_width: u32,
     pub source_height: u32,
     pub error: Option<String>,
+    pub failure: Option<FailureKind>,
+    pub _lease: Option<ByteLease>,
 }
-
-struct CacheState {
-    directory: PathBuf,
-    bytes: AtomicU64,
-    cleanup_running: AtomicBool,
-    io_gate: parking_lot::RwLock<()>,
+#[derive(Default)]
+struct Scheduler {
+    generation: u64,
+    preview_epoch: u64,
+    preview_key: Option<String>,
+    serial: u64,
+    queued: HashMap<String, Request>,
+    inflight: HashMap<String, Request>,
+    ready: HashSet<String>,
+    desired: HashMap<String, ThumbnailPriority>,
+    prefetch: bool,
+    closed: bool,
 }
-
-impl CacheState {
-    fn new() -> Result<Arc<Self>> {
-        let directory = storage::thumbnail_cache_dir()?;
-        let mut bytes = 0_u64;
-        for entry in fs::read_dir(&directory)?.flatten() {
-            let path = entry.path();
-            if path
-                .file_name()
-                .and_then(|name| name.to_str())
-                .is_some_and(|name| name.contains(".tmp-"))
-            {
-                let _ = fs::remove_file(path);
-                continue;
-            }
-            if let Ok(metadata) = entry.metadata()
-                && metadata.is_file()
-            {
-                bytes = bytes.saturating_add(metadata.len());
-            }
-        }
-        let state = Arc::new(Self {
-            directory,
-            bytes: AtomicU64::new(bytes),
-            cleanup_running: AtomicBool::new(false),
-            io_gate: parking_lot::RwLock::new(()),
-        });
-        state.maybe_cleanup();
-        Ok(state)
-    }
-
-    fn path_for(&self, thumbnail_key: &str) -> PathBuf {
-        self.directory.join(format!("{thumbnail_key}.rgba"))
-    }
-
-    fn record_write(self: &Arc<Self>, old_size: u64, new_size: u64) {
-        if new_size >= old_size {
-            self.bytes.fetch_add(new_size - old_size, Ordering::Relaxed);
-        } else {
-            self.bytes.fetch_sub(old_size - new_size, Ordering::Relaxed);
-        }
-        self.maybe_cleanup();
-    }
-
-    fn maybe_cleanup(self: &Arc<Self>) {
-        if self.bytes.load(Ordering::Relaxed) <= CACHE_START_LIMIT
-            || self
-                .cleanup_running
-                .compare_exchange(false, true, Ordering::AcqRel, Ordering::Acquire)
-                .is_err()
-        {
-            return;
-        }
-        // 清理在后台执行，并由原子标记保证任意时刻至多一个清理任务，
-        // 写入路径只维护字节计数，不会反复遍历整个缓存目录。
-        let state = self.clone();
-        let _ = thread::Builder::new()
-            .name("thumbnail-cache-cleaner".into())
-            .spawn(move || {
-                let _ = state.cleanup();
-                state.cleanup_running.store(false, Ordering::Release);
-            });
-    }
-
-    fn cleanup(&self) -> Result<()> {
-        let _io_guard = self.io_gate.write();
-        let mut files = Vec::new();
-        let mut total = 0_u64;
-        for entry in fs::read_dir(&self.directory)?.flatten() {
-            let path = entry.path();
-            let Ok(metadata) = entry.metadata() else {
-                continue;
-            };
-            if !metadata.is_file() {
-                continue;
-            }
-            total = total.saturating_add(metadata.len());
-            files.push((metadata.modified().ok(), metadata.len(), path));
-        }
-        files.sort_by_key(|(modified, _, _)| *modified);
-        for (_, size, path) in files {
-            if total <= CACHE_TARGET_LIMIT {
-                break;
-            }
-            if fs::remove_file(path).is_ok() {
-                total = total.saturating_sub(size);
-            }
-        }
-        self.bytes.store(total, Ordering::Relaxed);
-        Ok(())
-    }
-
-    fn clear(&self) -> Result<()> {
-        let _io_guard = self.io_gate.write();
-        storage::clear_thumbnail_cache()?;
-        self.bytes.store(0, Ordering::Relaxed);
-        Ok(())
-    }
+struct Shared {
+    scheduler: Mutex<Scheduler>,
+    changed: Condvar,
+    workers: AtomicUsize,
+    profile_path: Mutex<Option<PathBuf>>,
+    preview_busy: Arc<AtomicBool>,
 }
-
 pub struct ThumbnailService {
-    preview_tx: Sender<Request>,
-    visible_tx: Sender<Request>,
-    prefetch_tx: Sender<Request>,
+    shared: Arc<Shared>,
     pub rx: Receiver<ImageResult>,
-    pending: Arc<parking_lot::Mutex<HashSet<(u64, u64, String, ThumbnailPriority)>>>,
-    generation: Arc<AtomicU64>,
-    prefetch_epoch: Arc<AtomicU64>,
-    cache_epoch: Arc<AtomicU64>,
-    cache: Option<Arc<CacheState>>,
+    pub preview_rx: Receiver<ImageResult>,
+    pub cache: Arc<DiskCache>,
+    decode_budget: Arc<ByteBudget>,
+    ready_budget: Arc<ByteBudget>,
 }
-
+fn valid(s: &Scheduler, r: &Request) -> bool {
+    !s.closed
+        && s.generation == r.generation
+        && if r.kind == ImageKind::Preview {
+            s.preview_epoch == r.preview_epoch
+                && s.preview_key.as_deref() == Some(&r.record.thumbnail_key)
+        } else {
+            s.desired.contains_key(&r.record.thumbnail_key)
+        }
+}
 impl ThumbnailService {
     pub fn new(wakeup: Arc<dyn Fn() + Send + Sync>) -> Self {
-        let (preview_tx, preview_rx) = bounded::<Request>(8);
-        let (visible_tx, visible_rx) = bounded::<Request>(128);
-        let (prefetch_tx, prefetch_rx) = bounded::<Request>(128);
-        let (result_tx, rx) = bounded::<ImageResult>(64);
-        let pending = Arc::new(parking_lot::Mutex::new(HashSet::new()));
-        let generation = Arc::new(AtomicU64::new(0));
-        let prefetch_epoch = Arc::new(AtomicU64::new(0));
-        let cache_epoch = Arc::new(AtomicU64::new(0));
-        let cache = CacheState::new().ok();
-        // 留出一个核心给 UI 和系统；限制上限避免高核机器同时解码过多大图。
-        let workers = std::thread::available_parallelism()
-            .map(|count| count.get().saturating_sub(1))
-            .unwrap_or(2)
-            .clamp(2, 8);
-
-        for index in 0..workers {
-            let preview_rx = preview_rx.clone();
-            let visible_rx = visible_rx.clone();
-            let prefetch_rx = prefetch_rx.clone();
-            let result_tx = result_tx.clone();
-            let pending = pending.clone();
-            let generation_state = generation.clone();
-            let prefetch_epoch_state = prefetch_epoch.clone();
-            let cache_epoch_state = cache_epoch.clone();
+        let shared = Arc::new(Shared {
+            scheduler: Mutex::new(Scheduler {
+                prefetch: true,
+                ..Default::default()
+            }),
+            changed: Condvar::new(),
+            workers: AtomicUsize::new(2),
+            profile_path: Mutex::new(None),
+            preview_busy: Arc::new(AtomicBool::new(false)),
+        });
+        let cache = DiskCache::new(wakeup.clone());
+        let decode_budget =
+            ByteBudget::new(performance::DECODE_BYTES, performance::PREVIEW_RESERVE);
+        let ready_budget = ByteBudget::new(performance::READY_BYTES, 64 * MIB);
+        let (result_tx, rx) = bounded(64);
+        let (preview_tx, preview_rx) = bounded(1);
+        let max = std::thread::available_parallelism()
+            .map_or(2, |n| n.get())
+            .saturating_sub(1)
+            .clamp(1, 4);
+        for index in 0..=max {
+            let shared = shared.clone();
             let cache = cache.clone();
+            let decode_budget = decode_budget.clone();
+            let ready_budget = ready_budget.clone();
+            let result_tx = if index == 0 {
+                preview_tx.clone()
+            } else {
+                result_tx.clone()
+            };
             let wakeup = wakeup.clone();
             thread::Builder::new()
-                .name(format!("image-decoder-{index}"))
-                .spawn(move || loop {
-                    // 固定优先级：预览 > 当前可见项 > 预取。
-                    let request = crossbeam_channel::select_biased! {
-                        recv(preview_rx) -> request => match request { Ok(request) => request, Err(_) => break },
-                        recv(visible_rx) -> request => match request { Ok(request) => request, Err(_) => break },
-                        recv(prefetch_rx) -> request => match request { Ok(request) => request, Err(_) => break },
-                    };
-                    let key = texture_key(&request.record, request.kind);
-                    let pending_key = (
-                        request.generation,
-                        request.prefetch_epoch,
-                        key.clone(),
-                        request.priority,
-                    );
-                    let stale_generation =
-                        request.generation != generation_state.load(Ordering::Acquire);
-                    let stale_prefetch = request.priority == ThumbnailPriority::Prefetch
-                        && request.prefetch_epoch
-                            != prefetch_epoch_state.load(Ordering::Acquire);
-                    // 目录切换或快速滚动后，旧任务不解码、不回传，避免占用 CPU 和显存。
-                    if stale_generation || stale_prefetch {
-                        pending.lock().remove(&pending_key);
-                        continue;
-                    }
-                    let loaded = load_image(
-                        &request.record,
-                        request.max_side,
-                        request.kind,
-                        cache.as_ref(),
-                        request.generation,
-                        &generation_state,
-                        request.cache_epoch,
-                        &cache_epoch_state,
-                    );
-                    let stale_generation =
-                        request.generation != generation_state.load(Ordering::Acquire);
-                    let stale_prefetch = request.priority == ThumbnailPriority::Prefetch
-                        && request.prefetch_epoch
-                            != prefetch_epoch_state.load(Ordering::Acquire);
-                    if stale_generation || stale_prefetch {
-                        pending.lock().remove(&pending_key);
-                        continue;
-                    }
-                    let result = match loaded {
-                        Ok(image) => ImageResult {
-                            generation: request.generation,
-                            record_id: request.record.id,
-                            path: request.record.path.clone(),
-                            modified_ns: request.record.modified_ns,
-                            texture_key: key.clone(),
-                            pixels: image.pixels,
-                            width: image.width,
-                            height: image.height,
-                            source_width: image.source_width,
-                            source_height: image.source_height,
-                            error: None,
-                        },
-                        Err(error) => ImageResult {
-                            generation: request.generation,
-                            record_id: request.record.id,
-                            path: request.record.path.clone(),
-                            modified_ns: request.record.modified_ns,
-                            texture_key: key.clone(),
-                            pixels: Vec::new(),
-                            width: 0,
-                            height: 0,
-                            source_width: 0,
-                            source_height: 0,
-                            error: Some(error.to_string()),
-                        },
-                    };
-                    pending.lock().remove(&pending_key);
-                    if result_tx.try_send(result).is_ok() {
-                        wakeup();
+                .name(if index == 0 {
+                    "preview-decoder".into()
+                } else {
+                    format!("thumbnail-decoder-{index}")
+                })
+                .spawn(move || {
+                    loop {
+                        if index == 1 {
+                            if let Some(path) = shared.profile_path.lock().take() {
+                                shared.workers.store(
+                                    crate::disk_profile::ordinary_workers(&path),
+                                    Ordering::Release,
+                                );
+                            }
+                        }
+                        let request = {
+                            let mut s = shared.scheduler.lock();
+                            loop {
+                                if s.closed {
+                                    return;
+                                }
+                                let key = s
+                                    .queued
+                                    .iter()
+                                    .filter(|(_, r)| {
+                                        if index == 0 {
+                                            r.kind == ImageKind::Preview
+                                        } else {
+                                            r.kind == ImageKind::Thumbnail
+                                                && index <= shared.workers.load(Ordering::Acquire)
+                                                && (r.priority != ThumbnailPriority::Prefetch
+                                                    || s.prefetch)
+                                        }
+                                    })
+                                    .min_by_key(|(_, r)| (r.priority, r.serial))
+                                    .map(|(key, _)| key.clone());
+                                if let Some(key) = key {
+                                    let r = s.queued.remove(&key).unwrap();
+                                    s.inflight.insert(key, r.clone());
+                                    break r;
+                                }
+                                shared.changed.wait_for(&mut s, Duration::from_millis(50));
+                            }
+                        };
+                        let cancelled = || !valid(&shared.scheduler.lock(), &request);
+                        if index == 0 {
+                            shared.preview_busy.store(true, Ordering::Release);
+                            performance::PREVIEW_BUSY.store(true, Ordering::Release);
+                        }
+                        let result =
+                            load(&request, &cache, &decode_budget, &ready_budget, &cancelled);
+                        if index == 0 {
+                            shared.preview_busy.store(false, Ordering::Release);
+                            performance::PREVIEW_BUSY.store(false, Ordering::Release);
+                        }
+                        let key = request.key();
+                        if cancelled() {
+                            shared.scheduler.lock().inflight.remove(&key);
+                            wakeup();
+                            continue;
+                        }
+                        let output = match result {
+                            Ok(output) => output,
+                            Err(error) if error.is::<decoding::Cancelled>() => {
+                                shared.scheduler.lock().inflight.remove(&key);
+                                wakeup();
+                                continue;
+                            }
+                            Err(error) => ImageResult {
+                                generation: request.generation,
+                                preview_epoch: request.preview_epoch,
+                                record_id: request.record.id,
+                                path: request.record.path.clone(),
+                                modified_ns: request.record.modified_ns,
+                                source_key: request.record.thumbnail_key.clone(),
+                                texture_key: texture_key(&request.record, request.kind),
+                                request_key: key.clone(),
+                                kind: request.kind,
+                                max_side: request.max_side,
+                                pixels: vec![],
+                                width: 0,
+                                height: 0,
+                                source_width: 0,
+                                source_height: 0,
+                                error: Some(error.to_string()),
+                                failure: Some(if error.is::<decoding::ResourceLimit>() {
+                                    FailureKind::ResourceLimit
+                                } else {
+                                    FailureKind::Decode
+                                }),
+                                _lease: None,
+                            },
+                        };
+                        {
+                            let mut s = shared.scheduler.lock();
+                            s.inflight.remove(&key);
+                            s.ready.insert(key.clone());
+                        }
+                        let sent =
+                            send_result(&result_tx, output, &cancelled, request.priority, &wakeup);
+                        // ready remains until UI acknowledges, so a completed result is never redundantly decoded.
+                        if !sent || cancelled() {
+                            shared.scheduler.lock().ready.remove(&key);
+                            wakeup();
+                        }
                     }
                 })
-                .expect("failed to create image decoder thread");
+                .expect("image worker thread");
         }
-
         Self {
-            preview_tx,
-            visible_tx,
-            prefetch_tx,
+            shared,
             rx,
-            pending,
-            generation,
-            prefetch_epoch,
-            cache_epoch,
+            preview_rx,
             cache,
+            decode_budget,
+            ready_budget,
         }
     }
-
     pub fn set_generation(&mut self, generation: u64) {
-        // generation 是根目录会话号；清空 pending 仅为去重集合，工作线程仍会自行检查旧请求。
-        self.generation.store(generation, Ordering::Release);
-        self.prefetch_epoch.fetch_add(1, Ordering::AcqRel);
-        self.pending.lock().clear();
+        let mut s = self.shared.scheduler.lock();
+        s.generation = generation;
+        s.preview_epoch = s.preview_epoch.wrapping_add(1);
+        s.queued.clear();
+        s.ready.clear();
+        s.desired.clear();
+        s.preview_key = None;
+        drop(s);
+        while self.rx.try_recv().is_ok() {}
+        while self.preview_rx.try_recv().is_ok() {}
+        self.shared.changed.notify_all();
     }
-
-    pub fn advance_prefetch_epoch(&self) {
-        // 仅使旧预取失效，不影响已在视口中的缩略图任务。
-        self.prefetch_epoch.fetch_add(1, Ordering::AcqRel);
+    pub fn set_root(&self, path: PathBuf) {
+        *self.shared.profile_path.lock() = Some(path);
+        self.shared.changed.notify_all();
     }
-
+    pub fn sync_preview(&self, key: String) {
+        if self.shared.scheduler.lock().preview_key.as_ref() != Some(&key) {
+            self.begin_preview(Some(key));
+        }
+    }
+    pub fn begin_preview(&self, key: Option<String>) {
+        let mut s = self.shared.scheduler.lock();
+        s.preview_epoch = s.preview_epoch.wrapping_add(1);
+        s.preview_key = key;
+        s.queued.retain(|_, r| r.kind != ImageKind::Preview);
+        s.ready.retain(|k| !k.contains(":preview:"));
+        drop(s);
+        while self.preview_rx.try_recv().is_ok() {}
+        self.shared.changed.notify_all();
+    }
+    pub fn is_current(&self, r: &ImageResult) -> bool {
+        let s = self.shared.scheduler.lock();
+        s.generation == r.generation
+            && if r.kind == ImageKind::Preview {
+                s.preview_epoch == r.preview_epoch
+                    && s.preview_key.as_deref() == Some(&r.source_key)
+            } else {
+                s.desired.contains_key(&r.source_key)
+            }
+    }
+    pub fn acknowledge(&self, result: &ImageResult) {
+        self.shared
+            .scheduler
+            .lock()
+            .ready
+            .remove(&result.request_key);
+    }
+    pub fn set_viewport(&self, visible: Vec<String>, prefetch: Vec<String>, allow_prefetch: bool) {
+        let mut s = self.shared.scheduler.lock();
+        s.prefetch = allow_prefetch;
+        s.desired.clear();
+        if allow_prefetch {
+            for key in prefetch {
+                s.desired.insert(key, ThumbnailPriority::Prefetch);
+            }
+        }
+        for key in visible {
+            s.desired.insert(key, ThumbnailPriority::Visible);
+        }
+        let desired = s.desired.clone();
+        s.queued.retain(|_, r| {
+            r.kind == ImageKind::Preview || desired.contains_key(&r.record.thumbnail_key)
+        });
+        for r in s.queued.values_mut() {
+            if let Some(p) = desired.get(&r.record.thumbnail_key) {
+                r.priority = *p;
+            }
+        }
+        self.shared.changed.notify_all();
+    }
     pub fn request_thumbnail(&self, record: ImageRecord, priority: ThumbnailPriority) {
-        debug_assert!(priority != ThumbnailPriority::Preview);
         self.request(record, 256, ImageKind::Thumbnail, priority);
     }
-
     pub fn request_preview(&self, record: ImageRecord, max_side: u32) {
-        self.request(
-            record,
-            max_side,
-            ImageKind::Preview,
-            ThumbnailPriority::Preview,
-        );
-    }
-
-    pub fn clear_disk_cache(&self) -> Result<()> {
-        // 先递增 epoch，防止正在解码的旧任务在清理完成后又把缓存写回来。
-        self.cache_epoch.fetch_add(1, Ordering::AcqRel);
-        if let Some(cache) = &self.cache {
-            cache.clear()
+        // Generic codecs decode once to the full bounded preview rather than once per tier.
+        let side = if matches!(record.format.as_str(), "jpg" | "jpeg") {
+            max_side
         } else {
-            storage::clear_thumbnail_cache()
-        }
+            4096
+        };
+        self.request(record, side, ImageKind::Preview, ThumbnailPriority::Preview);
     }
-
+    pub fn clear_disk_cache(&self) -> anyhow::Result<()> {
+        self.cache.clear();
+        Ok(())
+    }
+    pub fn has_results(&self) -> bool {
+        !self.rx.is_empty() || !self.preview_rx.is_empty()
+    }
+    pub fn record_metrics(&self) {
+        performance::sample("decode_budget_bytes", self.decode_budget.used() as f64);
+        performance::sample("ready_budget_bytes", self.ready_budget.used() as f64);
+    }
     fn request(
         &self,
         record: ImageRecord,
@@ -352,218 +363,247 @@ impl ThumbnailService {
         kind: ImageKind,
         priority: ThumbnailPriority,
     ) {
-        let generation = self.generation.load(Ordering::Acquire);
-        let prefetch_epoch = self.prefetch_epoch.load(Ordering::Acquire);
-        let cache_epoch = self.cache_epoch.load(Ordering::Acquire);
-        let key = texture_key(&record, kind);
-        let pending_epoch = if priority == ThumbnailPriority::Prefetch {
-            prefetch_epoch
-        } else {
-            0
-        };
-        let pending_key = (generation, pending_epoch, key, priority);
-        let mut pending = self.pending.lock();
-        if !pending.insert(pending_key.clone()) {
+        let mut s = self.shared.scheduler.lock();
+        if kind == ImageKind::Preview && s.preview_key.as_deref() != Some(&record.thumbnail_key) {
             return;
         }
-        let sender = match priority {
-            ThumbnailPriority::Preview => &self.preview_tx,
-            ThumbnailPriority::Visible => &self.visible_tx,
-            ThumbnailPriority::Prefetch => &self.prefetch_tx,
+        if kind == ImageKind::Thumbnail {
+            s.desired
+                .entry(record.thumbnail_key.clone())
+                .or_insert(priority);
+        }
+        let key = request_key(&record, kind, max_side);
+        if s.inflight.contains_key(&key) || s.ready.contains(&key) {
+            return;
+        }
+        if let Some(r) = s.queued.get_mut(&key) {
+            r.priority = r.priority.min(priority);
+            return;
+        }
+        if s.queued.len() >= 256 {
+            if let Some(evict) = s
+                .queued
+                .iter()
+                .filter(|(_, r)| r.priority == ThumbnailPriority::Prefetch)
+                .max_by_key(|(_, r)| r.serial)
+                .map(|(k, _)| k.clone())
+            {
+                s.queued.remove(&evict);
+            } else {
+                return;
+            }
+        }
+        s.serial = s.serial.wrapping_add(1);
+        let r = Request {
+            generation: s.generation,
+            preview_epoch: s.preview_epoch,
+            cache_epoch: self.cache.epoch(),
+            record,
+            max_side,
+            kind,
+            priority,
+            serial: s.serial,
         };
-        if sender
-            .try_send(Request {
-                generation,
-                prefetch_epoch: pending_epoch,
-                cache_epoch,
-                record,
-                max_side,
-                kind,
-                priority,
-            })
-            .is_err()
-        {
-            pending.remove(&pending_key);
+        s.queued.insert(key, r);
+        self.shared.changed.notify_all();
+    }
+}
+impl Drop for ThumbnailService {
+    fn drop(&mut self) {
+        self.shared.scheduler.lock().closed = true;
+        self.shared.changed.notify_all();
+    }
+}
+fn send_result(
+    tx: &Sender<ImageResult>,
+    mut output: ImageResult,
+    cancel: &impl Fn() -> bool,
+    priority: ThumbnailPriority,
+    wakeup: &Arc<dyn Fn() + Send + Sync>,
+) -> bool {
+    loop {
+        if cancel() {
+            return false;
+        }
+        match tx.send_timeout(output, Duration::from_millis(10)) {
+            Ok(()) => {
+                wakeup();
+                return true;
+            }
+            Err(crossbeam_channel::SendTimeoutError::Timeout(r)) => {
+                if priority == ThumbnailPriority::Prefetch {
+                    return false;
+                }
+                output = r;
+            }
+            Err(_) => return false,
         }
     }
 }
-
 pub fn texture_key(record: &ImageRecord, kind: ImageKind) -> String {
-    let suffix = match kind {
-        ImageKind::Thumbnail => "thumb",
-        ImageKind::Preview => "preview",
-    };
-    format!("{}:{suffix}", record.thumbnail_key)
-}
-
-fn load_image(
-    record: &ImageRecord,
-    max_side: u32,
-    kind: ImageKind,
-    cache: Option<&Arc<CacheState>>,
-    generation: u64,
-    generation_state: &AtomicU64,
-    cache_epoch: u64,
-    cache_epoch_state: &AtomicU64,
-) -> Result<DecodedImage> {
-    if kind == ImageKind::Thumbnail {
-        if let Some(cache) = cache {
-            let cached_path = cache.path_for(&record.thumbnail_key);
-            if let Some(image) = read_cache(&cached_path) {
-                return Ok(image);
-            }
-            let image = decode_scaled(record, max_side)?;
-            if generation == generation_state.load(Ordering::Acquire) {
-                write_cache(
-                    &cached_path,
-                    &image,
-                    cache,
-                    Some((generation_state, generation)),
-                    Some((cache_epoch_state, cache_epoch)),
-                )?;
-            }
-            return Ok(image);
+    format!(
+        "{}:{}",
+        record.thumbnail_key,
+        if kind == ImageKind::Thumbnail {
+            "thumb"
+        } else {
+            "preview"
         }
-    }
-    decode_scaled(record, max_side)
+    )
 }
-
-fn decode_scaled(record: &ImageRecord, max_side: u32) -> Result<DecodedImage> {
-    let reader = ImageReader::open(&record.path)?.with_guessed_format()?;
-    let mut decoder = reader.into_decoder()?;
-    let orientation = decoder.orientation().ok();
-    let mut image = image::DynamicImage::from_decoder(decoder)?;
-    if let Some(orientation) = orientation {
-        image.apply_orientation(orientation);
-    }
-    let source_width = image.width();
-    let source_height = image.height();
-    let resized = image
-        .resize(max_side, max_side, FilterType::Triangle)
-        .to_rgba8();
-    Ok(DecodedImage {
-        width: resized.width() as usize,
-        height: resized.height() as usize,
-        pixels: resized.into_raw(),
-        source_width,
-        source_height,
-    })
+fn request_key(record: &ImageRecord, kind: ImageKind, side: u32) -> String {
+    format!("{}:{side}", texture_key(record, kind))
 }
-
-fn read_cache(path: &Path) -> Option<DecodedImage> {
-    let bytes = fs::read(path).ok()?;
-    if bytes.len() < CACHE_HEADER_LEN || &bytes[0..8] != CACHE_MAGIC {
-        return None;
-    }
-    let source_width = u32::from_le_bytes(bytes[8..12].try_into().ok()?);
-    let source_height = u32::from_le_bytes(bytes[12..16].try_into().ok()?);
-    let width = u32::from_le_bytes(bytes[16..20].try_into().ok()?) as usize;
-    let height = u32::from_le_bytes(bytes[20..24].try_into().ok()?) as usize;
-    let pixel_length = width.checked_mul(height)?.checked_mul(4)?;
-    if source_width == 0
-        || source_height == 0
-        || width == 0
-        || height == 0
-        || bytes.len() != CACHE_HEADER_LEN + pixel_length
-    {
-        return None;
-    }
-    Some(DecodedImage {
-        pixels: bytes[CACHE_HEADER_LEN..].to_vec(),
-        width,
-        height,
-        source_width,
-        source_height,
-    })
-}
-
-fn write_cache(
-    path: &Path,
-    image: &DecodedImage,
-    cache: &Arc<CacheState>,
-    generation: Option<(&AtomicU64, u64)>,
-    cache_epoch: Option<(&AtomicU64, u64)>,
-) -> Result<()> {
-    let is_stale = || {
-        generation.is_some_and(|(state, expected)| state.load(Ordering::Acquire) != expected)
-            || cache_epoch
-                .is_some_and(|(state, expected)| state.load(Ordering::Acquire) != expected)
+fn load(
+    r: &Request,
+    cache: &DiskCache,
+    decode_budget: &Arc<ByteBudget>,
+    ready_budget: &Arc<ByteBudget>,
+    cancel: &impl Fn() -> bool,
+) -> anyhow::Result<ImageResult> {
+    let start = Instant::now();
+    let preview = r.kind == ImageKind::Preview;
+    let cached = if !preview {
+        cache.read(&r.record.thumbnail_key)
+    } else {
+        None
     };
-    if is_stale() {
-        return Ok(());
+    performance::sample("cache_hit", if cached.is_some() { 1.0 } else { 0.0 });
+    let write_cache = cached.as_ref().is_none_or(|(_, legacy)| *legacy);
+    let (image, decode_lease) = if let Some((image, _)) = cached {
+        (image, None)
+    } else {
+        let decoded = decoding::decode(&r.record, r.max_side, preview, decode_budget, cancel)?;
+        (decoded.image, Some(decoded._lease))
+    };
+    if cancel() {
+        return Err(decoding::Cancelled.into());
     }
-    let mut bytes = Vec::with_capacity(CACHE_HEADER_LEN + image.pixels.len());
-    bytes.extend_from_slice(CACHE_MAGIC);
-    bytes.extend_from_slice(&image.source_width.to_le_bytes());
-    bytes.extend_from_slice(&image.source_height.to_le_bytes());
-    bytes.extend_from_slice(&(image.width as u32).to_le_bytes());
-    bytes.extend_from_slice(&(image.height as u32).to_le_bytes());
-    bytes.extend_from_slice(&image.pixels);
-    // 清缓存时持有写锁；普通写入持读锁，使“清空”和“临时文件原子替换”不会交错。
-    let _io_guard = cache.io_gate.read();
-    if is_stale() {
-        return Ok(());
+    let image = Arc::new(image);
+    let bytes = image.pixels.len();
+    let lease = ready_budget
+        .acquire(bytes, preview, cancel)
+        .ok_or(decoding::Cancelled)?;
+    let color = eframe::egui::ColorImage::from_rgba_unmultiplied(
+        [image.width, image.height],
+        &image.pixels,
+    );
+    let pixels = color.pixels.iter().flat_map(|c| c.to_array()).collect();
+    let result = ImageResult {
+        generation: r.generation,
+        preview_epoch: r.preview_epoch,
+        record_id: r.record.id,
+        path: r.record.path.clone(),
+        modified_ns: r.record.modified_ns,
+        source_key: r.record.thumbnail_key.clone(),
+        texture_key: texture_key(&r.record, r.kind),
+        request_key: r.key(),
+        kind: r.kind,
+        max_side: r.max_side,
+        pixels,
+        width: image.width,
+        height: image.height,
+        source_width: image.source_width,
+        source_height: image.source_height,
+        error: None,
+        failure: None,
+        _lease: Some(lease),
+    };
+    drop(decode_lease);
+    if !preview && write_cache {
+        cache.write(
+            r.record.thumbnail_key.clone(),
+            image,
+            matches!(r.record.format.as_str(), "jpg" | "jpeg"),
+            r.cache_epoch,
+        );
     }
-    let old_size = fs::metadata(path)
-        .map(|metadata| metadata.len())
-        .unwrap_or(0);
-    let counter = CACHE_TEMP_COUNTER.fetch_add(1, Ordering::Relaxed);
-    let file_name = path
-        .file_name()
-        .and_then(|name| name.to_str())
-        .unwrap_or("thumbnail");
-    let temporary =
-        path.with_file_name(format!("{file_name}.tmp-{}-{counter}", std::process::id()));
-    fs::write(&temporary, &bytes)?;
-    if is_stale() {
-        let _ = fs::remove_file(temporary);
-        return Ok(());
-    }
-    // Writes only follow cache misses. Replace a malformed existing entry,
-    // while normal first writes still install the completed temporary file
-    // with one rename.
-    if old_size > 0 {
-        fs::remove_file(path)?;
-    }
-    if let Err(error) = fs::rename(&temporary, path) {
-        let _ = fs::remove_file(temporary);
-        return Err(error.into());
-    }
-    cache.record_write(old_size, bytes.len() as u64);
-    Ok(())
+    performance::elapsed("image_ready_ms", start);
+    Ok(result)
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
-
+    fn record() -> ImageRecord {
+        ImageRecord {
+            id: 1,
+            path: "missing.jpg".into(),
+            relative_path: "missing.jpg".into(),
+            file_name: "missing.jpg".into(),
+            size: 1,
+            modified_ns: 0,
+            width: None,
+            height: None,
+            format: "jpg".into(),
+            thumbnail_key: "a".repeat(64),
+            content_hash: None,
+        }
+    }
     #[test]
-    fn cache_v2_header_round_trips_dimensions() {
-        let root = std::env::temp_dir().join(format!("tuhai-view-thumb-{}", std::process::id()));
-        let _ = fs::remove_dir_all(&root);
-        fs::create_dir_all(&root).unwrap();
-        let path = root.join("thumb.rgba");
-        let cache = Arc::new(CacheState {
-            directory: root.clone(),
-            bytes: AtomicU64::new(0),
-            cleanup_running: AtomicBool::new(false),
-            io_gate: parking_lot::RwLock::new(()),
-        });
-        let image = DecodedImage {
-            pixels: vec![1, 2, 3, 4, 5, 6, 7, 8],
-            width: 2,
-            height: 1,
-            source_width: 4000,
-            source_height: 3000,
+    fn viewport_and_preview_cancel_old_work() {
+        let mut s = Scheduler {
+            generation: 3,
+            preview_epoch: 2,
+            preview_key: Some("a".repeat(64)),
+            ..Default::default()
         };
-        write_cache(&path, &image, &cache, None, None).unwrap();
-        let loaded = read_cache(&path).unwrap();
-        assert_eq!((loaded.source_width, loaded.source_height), (4000, 3000));
-        assert_eq!((loaded.width, loaded.height), (2, 1));
-        assert_eq!(loaded.pixels, image.pixels);
-        fs::write(&path, b"broken-cache").unwrap();
-        write_cache(&path, &image, &cache, None, None).unwrap();
-        assert_eq!(read_cache(&path).unwrap().pixels, image.pixels);
-        fs::remove_dir_all(root).unwrap();
+        let mut r = Request {
+            generation: 3,
+            preview_epoch: 2,
+            cache_epoch: 0,
+            record: record(),
+            max_side: 256,
+            kind: ImageKind::Thumbnail,
+            priority: ThumbnailPriority::Prefetch,
+            serial: 1,
+        };
+        assert!(!valid(&s, &r));
+        s.desired
+            .insert(r.record.thumbnail_key.clone(), ThumbnailPriority::Visible);
+        assert!(valid(&s, &r));
+        r.kind = ImageKind::Preview;
+        assert!(valid(&s, &r));
+        s.preview_epoch += 1;
+        assert!(!valid(&s, &r));
+        s.generation += 1;
+        r.kind = ImageKind::Thumbnail;
+        assert!(!valid(&s, &r));
+    }
+    #[test]
+    fn saturated_result_channel_can_be_cancelled_and_releases_lease() {
+        let (tx, _rx) = bounded(0);
+        let budget = ByteBudget::new(64, 0);
+        let output = ImageResult {
+            generation: 1,
+            preview_epoch: 1,
+            record_id: 1,
+            path: "x".into(),
+            modified_ns: 0,
+            source_key: "x".into(),
+            texture_key: "x".into(),
+            request_key: "x".into(),
+            kind: ImageKind::Preview,
+            max_side: 1,
+            pixels: vec![0; 4],
+            width: 1,
+            height: 1,
+            source_width: 1,
+            source_height: 1,
+            error: None,
+            failure: None,
+            _lease: budget.try_acquire(4),
+        };
+        let started = Instant::now();
+        let wakeup: Arc<dyn Fn() + Send + Sync> = Arc::new(|| {});
+        assert!(!send_result(
+            &tx,
+            output,
+            &|| started.elapsed() > Duration::from_millis(30),
+            ThumbnailPriority::Preview,
+            &wakeup
+        ));
+        assert!(started.elapsed() < Duration::from_secs(1));
+        assert_eq!(budget.used(), 0);
     }
 }

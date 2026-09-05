@@ -3,14 +3,20 @@
 mod app;
 mod budget;
 mod catalog;
+mod decoding;
+mod disk_profile;
 mod duplicates;
 mod empty_folders;
 mod file_ops;
+mod gpu_images;
 mod icon_pixels;
 mod models;
+#[cfg(test)]
+mod perf_tests;
 mod performance;
 mod sorting;
 mod storage;
+mod thumbnail_cache;
 mod thumbnails;
 
 use anyhow::Result;
@@ -23,6 +29,20 @@ pub(crate) const APP_WINDOW_TITLE: &str = "图海速览 20260905";
 fn main() -> Result<()> {
     tracing_subscriber::fmt().with_env_filter("info").init();
     let mut wgpu_options = eframe::egui_wgpu::WgpuConfiguration::default();
+    // DX12 exposes Mailbox: retain the newest frame without tearing or waiting
+    // for every queued FIFO frame. Idle windows still rely on event-driven repaint.
+    wgpu_options.present_mode = wgpu::PresentMode::Mailbox;
+    if std::env::var("TUHAI_PERF").ok().as_deref() == Some("1") {
+        if std::env::var("TUHAI_PERF_PRESENT").ok().as_deref() == Some("immediate") {
+            wgpu_options.present_mode = wgpu::PresentMode::AutoNoVsync;
+        }
+        if std::env::var("TUHAI_PERF_PRESENT").ok().as_deref() == Some("vsync") {
+            wgpu_options.present_mode = wgpu::PresentMode::AutoVsync;
+        }
+        if let Ok(value) = std::env::var("TUHAI_PERF_LATENCY") {
+            wgpu_options.desired_maximum_frame_latency = value.parse().ok();
+        }
+    }
     let mut wgpu_setup = eframe::egui_wgpu::WgpuSetupCreateNew::default();
     // The default backend selection used OpenGL on some Intel systems. The
     // affected ig9icd64.dll driver crashes while tearing down the window.

@@ -54,8 +54,45 @@ impl FileOperationService {
     }
 }
 
-pub fn execute(request: FileOperationRequest) -> Result<FileOperationReport> {
-    match request.action {
+pub fn execute(mut request: FileOperationRequest) -> Result<FileOperationReport> {
+    let mut skipped = Vec::new();
+    if let Some(check) = request.duplicate_check.take() {
+        anyhow::ensure!(
+            matches!(
+                request.action,
+                FileAction::RecycleDelete | FileAction::PermanentDelete
+            ),
+            "查重校验只能用于删除"
+        );
+        for (members, hash, keeper) in check.groups {
+            for scanned in members.iter().filter(|r| Some(r.id) != keeper) {
+                let current = check
+                    .snapshot
+                    .by_id
+                    .get(&scanned.id)
+                    .and_then(|i| check.snapshot.records.get(*i));
+                let result = current
+                    .filter(|r| {
+                        r.thumbnail_key == scanned.thumbnail_key
+                            && r.size == scanned.size
+                            && r.modified_ns == scanned.modified_ns
+                    })
+                    .ok_or_else(|| anyhow::anyhow!("图片索引已发生变化"))
+                    .and_then(|_| crate::duplicates::validate_delete_candidate(scanned, &hash));
+                match result {
+                    Ok(()) => request.sources.push(scanned.path.clone()),
+                    Err(e) => skipped.push((scanned.path.clone(), e.to_string())),
+                }
+            }
+        }
+    }
+    if request.sources.is_empty() {
+        return Ok(FileOperationReport {
+            skipped,
+            ..Default::default()
+        });
+    }
+    let mut report = match request.action {
         FileAction::PermanentDelete => permanent_delete(request.sources),
         _ => {
             #[cfg(windows)]
@@ -67,7 +104,9 @@ pub fn execute(request: FileOperationRequest) -> Result<FileOperationReport> {
                 anyhow::bail!("此文件操作仅支持 Windows")
             }
         }
-    }
+    }?;
+    report.skipped.extend(skipped);
+    Ok(report)
 }
 
 fn permanent_delete(sources: Vec<PathBuf>) -> Result<FileOperationReport> {
@@ -80,7 +119,10 @@ fn permanent_delete(sources: Vec<PathBuf>) -> Result<FileOperationReport> {
             fs::remove_file(&source)
         };
         match result {
-            Ok(()) => report.succeeded.push(source),
+            Ok(()) => {
+                report.affected_paths.push(source.clone());
+                report.succeeded.push(source);
+            }
             Err(error) => report.failed.push((source, error.to_string())),
         }
     }
@@ -214,6 +256,12 @@ fn execute_shell(request: FileOperationRequest) -> Result<FileOperationReport> {
                 FileAction::PermanentDelete => false,
             };
             if success {
+                if request.action != FileAction::Copy {
+                    report.affected_paths.push(source.clone());
+                }
+                if let Some(target) = target {
+                    report.affected_paths.push(target);
+                }
                 report.succeeded.push(source);
             } else if report.cancelled {
                 report.skipped.push((source, "用户取消".into()));
@@ -297,6 +345,62 @@ pub fn open_with_default(path: &Path) -> Result<()> {
 #[cfg(test)]
 mod tests {
     use super::*;
+    #[test]
+    fn duplicate_delete_validates_before_mutating_and_reports_paths() {
+        use crate::models::{CatalogSnapshot, DuplicateDeleteCheck, ImageRecord};
+        let root = std::env::temp_dir().join(format!("tuhai-delete-check-{}", std::process::id()));
+        fs::create_dir_all(&root).unwrap();
+        let path = root.join("candidate.jpg");
+        fs::write(&path, b"old").unwrap();
+        let meta = fs::metadata(&path).unwrap();
+        let record = ImageRecord {
+            id: 1,
+            path: path.clone(),
+            relative_path: "candidate.jpg".into(),
+            file_name: "candidate.jpg".into(),
+            size: 3,
+            modified_ns: meta
+                .modified()
+                .unwrap()
+                .duration_since(std::time::UNIX_EPOCH)
+                .unwrap()
+                .as_nanos()
+                .min(i64::MAX as u128) as i64,
+            width: None,
+            height: None,
+            format: "jpg".into(),
+            thumbnail_key: "a".repeat(64),
+            content_hash: Some("b".repeat(64)),
+        };
+        let snapshot = Arc::new(CatalogSnapshot::new(1, 1, vec![Arc::new(record.clone())]));
+        let request = || FileOperationRequest {
+            action: FileAction::PermanentDelete,
+            sources: vec![],
+            destination: None,
+            conflict: ConflictPolicy::Skip,
+            conflict_overrides: Default::default(),
+            duplicate_check: Some(DuplicateDeleteCheck {
+                snapshot: snapshot.clone(),
+                groups: vec![(vec![record.clone()].into(), "b".repeat(64), None)],
+            }),
+        };
+        fs::write(&path, b"changed").unwrap();
+        let report = execute(request()).unwrap();
+        assert_eq!(report.skipped.len(), 1);
+        assert!(path.exists());
+        let report = execute(FileOperationRequest {
+            action: FileAction::PermanentDelete,
+            sources: vec![path.clone()],
+            destination: None,
+            conflict: ConflictPolicy::Skip,
+            conflict_overrides: Default::default(),
+            duplicate_check: None,
+        })
+        .unwrap();
+        assert_eq!(report.affected_paths, vec![path]);
+        assert_eq!(report.succeeded.len(), 1);
+        fs::remove_dir(root).unwrap();
+    }
     #[test]
     fn same_windows_path_is_case_insensitive() {
         assert!(same_path(
