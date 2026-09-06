@@ -31,13 +31,15 @@
 | 实际临时读取权限失败 | 拒绝访问时保留索引，恢复后更新；测试访问规则恢复 | 独立副本、本机通过 |
 | 原生文件夹对话框取消 | 原始帧 22,750.95 ms，模态等待 22,749.92 ms，处理 1.03 ms；返回后偏移 0 | 计时修正通过；非五轮输入到显示验收 |
 | 呈现设置对照 | Mailbox／8 ms 测试节流／FIFO 各五轮有效，P95 约 32 ms | 15 轮均未达到 60 Hz P95；维持 Mailbox |
-| 最终 EXE 30 分钟矩阵 | SSD/HDD 各五轮，已于 06:55 启动串行执行 | 进行中，未记为通过 |
+| 最终 EXE 30 分钟矩阵 | SSD 五轮全部有效且内存通过：斜率 0.208～0.299 MiB/min，增长 3.125～5.051 MiB；HDD 五轮正在执行 | SSD 通过，HDD 尚未完成；详见 [内存报告](performance-results/20260906/MEMORY-V4.md) |
 | 最终 EXE 完整短矩阵 | 合成与真实数据的 8 个磁盘／数据组合 | 待重跑；旧 EXE 的 80 轮只作历史对照 |
 | 单 EXE 静态依赖 | 17,414,656 字节，x64 GUI，只发现已核对系统 DLL | 静态检查通过；干净 Windows 10/11 启动未验证 |
 
 逐轮数据：[原生基准](performance-results/20260906/native-v4-summary.json)、[呈现对照](performance-results/20260906/PRESENTATION-V4.md)、[权限回归](performance-results/20260906/permission-v4.json)、[输入验证](performance-results/20260906/INPUT-ATTEMPT.md)、[依赖检查](performance-results/20260906/portable-v4.json)。原始输出在对应 JSON 的本地路径；真实网络图片不进入仓库或发布包。
 
 旧上传候选 `FAE039A3…` 的单次 30 分钟 SSD 内存结果通过（斜率 0.1005 MiB／分钟，末段增长 3.94 MiB），只能作为修复线索，不能计入当前 EXE 的十轮验收。上传问题的独立对照与限制见 [MESH-UPLOAD.md](performance-results/20260906/MESH-UPLOAD.md)。
+
+SSD 第五次尝试在 1439 秒被 C 盘余量保护中止，无完成凭据，保留为 [无效尝试](performance-results/20260906/v4-memory-ssd-aborted-05.json)。归档本任务旧候选测试目录到 F 盘后，使用同一 EXE、相同窗口／显示／数据参数补跑一个完整轮次；五轮聚合同时验证配置一致和独立运行 ID，没有将中止轮次写成通过。迁移位置见 [归档清单](performance-results/20260906/ssd-test-data-relocation.json)，旧记录的 C 盘目录可按此映射查找。
 
 ## 测量与环境
 

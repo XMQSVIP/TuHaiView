@@ -1,0 +1,27 @@
+[
+  {
+    "source": "C:\\tuhai-validation-v2",
+    "destination": "F:\\tuhai-validation\\ssd-old-run-archive-20260906-0925\\tuhai-validation-v2",
+    "executable_sha256": "19199B97FB4E929D4495DDD839ED2D6BAD7C50C44AD9B066AF1C7ED75A845B69"
+  },
+  {
+    "source": "C:\\tuhai-mesh-reuse-v3",
+    "destination": "F:\\tuhai-validation\\ssd-old-run-archive-20260906-0925\\tuhai-mesh-reuse-v3",
+    "executable_sha256": "FAE039A3724BCBFFD752CD630B170AB77D303A43F2C6A9A30CD5722A4B0F00D6"
+  },
+  {
+    "source": "C:\\tuhai-qa-diagnostic",
+    "destination": "F:\\tuhai-validation\\ssd-old-run-archive-20260906-0925\\tuhai-qa-diagnostic",
+    "executable_sha256": "6EF90EEEA3843FDEC6DD95E8E26615DF83860D9EC9130C7E9BCF40EC78EB8648"
+  },
+  {
+    "source": "C:\\tuhai-validation-candidate",
+    "destination": "F:\\tuhai-validation\\ssd-old-run-archive-20260906-0925\\tuhai-validation-candidate",
+    "executable_sha256": "B77E34E3083AEB5F4C419EFE2A613C0A28070B56687A2078BA8DC4531BCA480D"
+  },
+  {
+    "source": "C:\\tuhai-qa-ssd",
+    "destination": "F:\\tuhai-validation\\ssd-old-run-archive-20260906-0925\\tuhai-qa-ssd",
+    "executable_sha256": "37DBD753191426EED86CFB6D9754FE62EB1E77D022F40E83CEE8E6167EB5B380"
+  }
+]

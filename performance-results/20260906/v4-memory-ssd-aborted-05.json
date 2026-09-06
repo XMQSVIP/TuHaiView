@@ -1,0 +1,139 @@
+{
+  "run": 5,
+  "pid": 11656,
+  "started": "2026-09-06T08:59:14.6440425+08:00",
+  "exit_code": -1,
+  "seconds": 1439.3141865,
+  "timed_out": false,
+  "executable": "C:\\tuhai-validation-v4\\TuHaiView.exe",
+  "sha256": "4507D93F1BD9C484065FA3710E1C89C59B7E7E45A7631ED4526A44597C1225EA",
+  "root": "C:\\tuhai-fixtures-20260905\\catalog",
+  "scenario": "soak",
+  "present": "mailbox",
+  "repaint_ms": 0,
+  "display": [
+    {
+      "Name": "OrayIddDriver Device",
+      "DriverVersion": "17.50.19.949",
+      "CurrentRefreshRate": null,
+      "CurrentHorizontalResolution": null,
+      "CurrentVerticalResolution": null
+    },
+    {
+      "Name": "GameViewer Virtual Display Adapter",
+      "DriverVersion": "15.6.5.199",
+      "CurrentRefreshRate": null,
+      "CurrentHorizontalResolution": null,
+      "CurrentVerticalResolution": null
+    },
+    {
+      "Name": "Todesk Virtual Display Adapter",
+      "DriverVersion": "16.44.2.509",
+      "CurrentRefreshRate": null,
+      "CurrentHorizontalResolution": null,
+      "CurrentVerticalResolution": null
+    },
+    {
+      "Name": "Intel(R) UHD Graphics 630",
+      "DriverVersion": "31.0.101.2140",
+      "CurrentRefreshRate": 59,
+      "CurrentHorizontalResolution": 2560,
+      "CurrentVerticalResolution": 1440
+    }
+  ],
+  "dwm": {
+    "hresult": "0x0",
+    "size": 292,
+    "refresh_n": 60,
+    "refresh_d": 1,
+    "compose_n": 60,
+    "compose_d": 1,
+    "refresh_period_ms": 16.6666,
+    "remote_session": false
+  },
+  "system_cache": "unknown",
+  "application_cache": "preserved; GPU empty at process start",
+  "logs": [
+    "F:\\tuhai-validation\\memory-v4\\synthetic-50k-ssd-memory-full\\20260906-085914-5-performance-1788656354907.jsonl"
+  ],
+  "presentmon": "F:\\tuhai-validation\\memory-v4\\synthetic-50k-ssd-memory-full\\20260906-085914-5-presentmon.csv",
+  "presentmon_sha256": "9BEC3083069F58F911E6A512F4806DB51A27BD096103087BC1D05EF54C80A191",
+  "presentmon_exit": 0,
+  "dataset_manifest": {
+    "sha256": "ECF1DFDC5BC6997AC7527E34E57DC6E2BD7931C53B46F21208039408E9DB05C2",
+    "path": "C:\\tuhai-fixtures-20260905\\manifest.json"
+  },
+  "expected_records": 50000,
+  "require_scan_completion": false,
+  "requested_seconds": 1800,
+  "source_disk": {
+    "Number": 0,
+    "FriendlyName": "Colorful CN600 256GB",
+    "BusType": "NVMe"
+  },
+  "active_display_paths": {
+    "active_paths": [
+      {
+        "source_name": "\\\\.\\DISPLAY1",
+        "source_name_error": 0,
+        "target_name": "",
+        "target_name_error": 0,
+        "target_name_flags": 2,
+        "target_available": true,
+        "forced_without_detected_monitor": true,
+        "edid_ids_valid": false,
+        "output_technology": 5,
+        "target_status_flags": 1,
+        "path_flags": 1,
+        "refresh": {
+          "n": 311827000,
+          "d": 5197120,
+          "hz": 59.99996151714796
+        },
+        "signal": {
+          "pixel_rate": 311827000,
+          "v_sync": {
+            "n": 311827000,
+            "d": 5197120,
+            "hz": 59.99996151714796
+          },
+          "active": [
+            2560,
+            1440
+          ],
+          "total": [
+            3488,
+            1490
+          ]
+        }
+      }
+    ],
+    "read_only": true,
+    "api": "QueryDisplayConfig(QDC_ONLY_ACTIVE_PATHS)"
+  },
+  "log_output_directory": "F:\\tuhai-validation\\memory-v4\\synthetic-50k-ssd-memory-full",
+  "allocator_diagnostics": false,
+  "timer_ms": 0,
+  "presentmon_arguments": [
+    "--process_id",
+    "11656",
+    "--output_file",
+    "\"F:\\tuhai-validation\\memory-v4\\synthetic-50k-ssd-memory-full\\20260906-085914-5-presentmon.csv\"",
+    "--qpc_time",
+    "--timed",
+    "1830",
+    "--terminate_after_timed",
+    "--terminate_on_proc_exit",
+    "--no_console_stats",
+    "--session_name",
+    "tuhai-20260906-085914-5"
+  ],
+  "presentmon_stop_exit": 0,
+  "wgpu_environment": {
+    "discard_hal_labels": null,
+    "debug": null,
+    "validation": null
+  },
+  "display_awake_request": "ES_DISPLAY_REQUIRED | ES_SYSTEM_REQUIRED; periodic, no persistent power-plan change",
+  "abort_reason": "Stopped invalid run to preserve 2 GiB free on C"
+}
