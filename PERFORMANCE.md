@@ -31,8 +31,8 @@
 | 实际临时读取权限失败 | 拒绝访问时保留索引，恢复后更新；测试访问规则恢复 | 独立副本、本机通过 |
 | 原生文件夹对话框取消 | 原始帧 22,750.95 ms，模态等待 22,749.92 ms，处理 1.03 ms；返回后偏移 0 | 计时修正通过；非五轮输入到显示验收 |
 | 呈现设置对照 | Mailbox／8 ms 测试节流／FIFO 各五轮有效，P95 约 32 ms | 15 轮均未达到 60 Hz P95；维持 Mailbox |
-| 最终 EXE 30 分钟矩阵 | SSD 五轮全部有效且内存通过：斜率 0.208～0.299 MiB/min，增长 3.125～5.051 MiB；HDD 五轮正在执行 | SSD 通过，HDD 尚未完成；详见 [内存报告](performance-results/20260906/MEMORY-V4.md) |
-| 最终 EXE 完整短矩阵 | 合成与真实数据的 8 个磁盘／数据组合 | 待重跑；旧 EXE 的 80 轮只作历史对照 |
+| 最终 EXE 30 分钟矩阵 | SSD/HDD 各五轮全部有效且内存通过；十轮斜率 0.048～0.377 MiB/min，末段增长 −0.012～9.984 MiB，预算及回收全部通过 | 本轮工程内存标准通过；详见 [内存报告](performance-results/20260906/MEMORY-V4.md) |
+| 最终 EXE 完整短矩阵 | 合成与真实数据的 8 个磁盘／数据组合，80 次测量 | 已开始复测；旧 EXE 的 80 轮只作历史对照 |
 | 单 EXE 静态依赖 | 17,414,656 字节，x64 GUI，只发现已核对系统 DLL | 静态检查通过；干净 Windows 10/11 启动未验证 |
 
 逐轮数据：[原生基准](performance-results/20260906/native-v4-summary.json)、[呈现对照](performance-results/20260906/PRESENTATION-V4.md)、[权限回归](performance-results/20260906/permission-v4.json)、[输入验证](performance-results/20260906/INPUT-ATTEMPT.md)、[依赖检查](performance-results/20260906/portable-v4.json)。原始输出在对应 JSON 的本地路径；真实网络图片不进入仓库或发布包。

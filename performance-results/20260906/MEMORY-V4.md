@@ -12,6 +12,14 @@
 
 v4-memory-ssd：实际 5 轮；五轮有效：True；五轮全部内存通过：True。
 
+| v4-memory-hdd / 1 | True / True | 0.2091 | 8.0000 | 通过 | 通过 | 通过 |
+| v4-memory-hdd / 2 | True / True | 0.2709 | 6.5156 | 通过 | 通过 | 通过 |
+| v4-memory-hdd / 3 | True / True | 0.3774 | 9.9844 | 通过 | 通过 | 通过 |
+| v4-memory-hdd / 4 | True / True | 0.0477 | -0.0117 | 通过 | 通过 | 通过 |
+| v4-memory-hdd / 5 | True / True | 0.1950 | 5.0430 | 通过 | 通过 | 通过 |
+
+v4-memory-hdd：实际 5 轮；五轮有效：True；五轮全部内存通过：True。
+
 ## 判定边界
 
 稳态使用分钟 5～28 的 private bytes 中位数，斜率 ≤1 MiB/min；末三分钟中位数相对稳态前三分钟中位数增长 ≤32 MiB。
