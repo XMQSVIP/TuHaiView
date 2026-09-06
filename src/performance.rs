@@ -84,6 +84,48 @@ struct Sample {
     name: &'static str,
     value: f64,
     frame_known: bool,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    render: Option<RenderTimings>,
+}
+#[derive(Serialize)]
+struct RenderTimings {
+    start_qpc: u64,
+    end_qpc: i64,
+    presented: bool,
+    total_ms: f64,
+    stages_ms: [f64; 14],
+}
+pub fn install_render_observer() {
+    if !enabled() {
+        return;
+    }
+    eframe::egui_wgpu::install_native_frame_observer(eframe::egui_wgpu::NativeFrameObserver {
+        begin: || {
+            let frame = frame_context();
+            [frame.frame_id, frame.scenario, qpc() as u64]
+        },
+        end: |context, timing| {
+            RENDERED_FRAME.set(FrameContext {
+                frame_id: context[0],
+                scenario: context[1],
+                known: context[0] != 0,
+            });
+            let mut sample = event("render_frame_ms", timing.total_ms);
+            sample.set_frame(FrameContext {
+                frame_id: context[0],
+                scenario: context[1],
+                known: context[0] != 0,
+            });
+            sample.render = Some(RenderTimings {
+                start_qpc: context[2],
+                end_qpc: sample.qpc,
+                presented: timing.presented,
+                total_ms: timing.total_ms,
+                stages_ms: timing.phases_ms,
+            });
+            logger().push(sample);
+        },
+    });
 }
 static ENABLED: OnceLock<bool> = OnceLock::new();
 static LOGGER: OnceLock<logging::Logger> = OnceLock::new();
@@ -121,13 +163,14 @@ pub struct FrameContext {
 thread_local! {
     static FRAME_CONTEXT: Cell<FrameContext> = Cell::new(FrameContext::default());
     static PREVIOUS_FRAME: Cell<FrameContext> = Cell::new(FrameContext::default());
+    static RENDERED_FRAME: Cell<FrameContext> = Cell::new(FrameContext::default());
 }
 thread_local! { static REQUEST: Cell<(u64, u64)> = const { Cell::new((0, 0)) }; }
 
 pub fn begin_frame(scenario: u64) {
     if enabled() {
         SCENARIO.store(scenario, Ordering::Relaxed);
-        PREVIOUS_FRAME.set(FRAME_CONTEXT.get());
+        PREVIOUS_FRAME.set(RENDERED_FRAME.replace(FrameContext::default()));
         FRAME_CONTEXT.set(FrameContext {
             frame_id: FRAME.fetch_add(1, Ordering::Relaxed) + 1,
             scenario,
@@ -180,6 +223,7 @@ fn event(name: &'static str, value: f64) -> Sample {
         name,
         value,
         frame_known: frame.known,
+        render: None,
     }
 }
 #[cfg(windows)]

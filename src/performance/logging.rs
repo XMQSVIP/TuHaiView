@@ -2,7 +2,10 @@
 use super::{Sample, event};
 use crossbeam_channel::{Receiver, Sender, bounded};
 use parking_lot::Mutex;
-use serde::Serialize;
+use serde::{
+    Serialize,
+    ser::{SerializeSeq, SerializeStruct},
+};
 use std::{
     io::{self, Write},
     path::PathBuf,
@@ -106,7 +109,7 @@ impl Logger {
                 },
                 Ok,
             );
-        Self::spawn(directory, 4096, DEADLINE, Arc::new(|_| Ok(())))
+        Self::spawn(directory, 4032, DEADLINE, Arc::new(|_| Ok(())))
     }
     fn spawn(
         directory: io::Result<PathBuf>,
@@ -233,6 +236,39 @@ impl Logger {
         value
     }
 }
+// Tuple rows avoid repeating JSON property names. The queue (4032) plus this
+// worker batch (64) retains at most the original 4096 samples in production.
+struct CompactSamples<'a>(&'a [Sample]);
+impl Serialize for CompactSamples<'_> {
+    fn serialize<S: serde::Serializer>(&self, serializer: S) -> Result<S::Ok, S::Error> {
+        struct Rows<'a>(&'a [Sample]);
+        impl Serialize for Rows<'_> {
+            fn serialize<S: serde::Serializer>(&self, serializer: S) -> Result<S::Ok, S::Error> {
+                let mut rows = serializer.serialize_seq(Some(self.0.len()))?;
+                for s in self.0 {
+                    rows.serialize_element(&(
+                        s.monotonic_us,
+                        s.qpc,
+                        s.frame_id,
+                        s.scenario,
+                        s.request_id,
+                        s.generation,
+                        s.name,
+                        s.value,
+                        s.frame_known,
+                        &s.render,
+                        s.time_ms,
+                    ))?;
+                }
+                rows.end()
+            }
+        }
+        let mut record = serializer.serialize_struct("SampleBatch", 2)?;
+        record.serialize_field("kind", "sample_batch")?;
+        record.serialize_field("rows", &Rows(self.0))?;
+        record.end()
+    }
+}
 struct Writer {
     stage: Arc<AtomicU8>,
     hook: Hook,
@@ -299,17 +335,21 @@ impl Writer {
             std::fs::File::create(&path)
         })?;
         let mut file = io::BufWriter::new(raw);
-        self.line(&mut file, &serde_json::json!({"schema":4,"kind":"run_header","run_id":stamp,"pid":std::process::id(),"executable":std::env::current_exe().ok(),"scenario_name":std::env::var("TUHAI_PERF_SCENARIO").unwrap_or_else(|_|"trajectory".into()),"system_cache":"unknown"}))?;
+        self.line(&mut file, &serde_json::json!({"schema":4,"render_stage_names":eframe::egui_wgpu::NATIVE_PHASES,"sample_batch_columns":["monotonic_us","qpc","frame_id","scenario","request_id","generation","name","value","frame_known","render","time_ms"],"kind":"run_header","run_id":stamp,"pid":std::process::id(),"executable":std::env::current_exe().ok(),"scenario_name":std::env::var("TUHAI_PERF_SCENARIO").unwrap_or_else(|_|"trajectory".into()),"system_cache":"unknown"}))?;
         let mut last_flush = Instant::now();
         let mut written = 0u64;
+        let mut batch = Vec::with_capacity(64);
         let finish = loop {
             self.stage.store(Stage::Receiving as u8, Ordering::Release);
             crossbeam_channel::select_biased! {
                 recv(stop) -> finish => break finish.map_err(|_| io::Error::other("shutdown channel disconnected"))?,
                 recv(samples) -> sample => {
                     let sample = sample.map_err(|_| io::Error::other("sample channel disconnected"))?;
-                    self.line(&mut file, &sample)?;
-                    written += 1;
+                    batch.push(sample);
+                    batch.extend(samples.try_iter().take(63));
+                    self.line(&mut file, &CompactSamples(&batch))?;
+                    written += batch.len() as u64;
+                    batch.clear();
                 }
                 default(Duration::from_millis(100)) => {}
             }
@@ -366,16 +406,14 @@ mod tests {
     struct Fixture(PathBuf);
     impl Fixture {
         fn new() -> Self {
-            Self(
-                std::env::temp_dir().join(format!(
+            Self(std::env::temp_dir().join(format!(
                     "tuhai-logger-{}-{}",
                     std::process::id(),
                     SystemTime::now()
                         .duration_since(UNIX_EPOCH)
                         .unwrap()
                         .as_nanos()
-                )),
-            )
+                )))
         }
         fn log(&self) -> PathBuf {
             std::fs::read_dir(&self.0)
@@ -389,6 +427,20 @@ mod tests {
         fn drop(&mut self) {
             let _ = std::fs::remove_dir_all(&self.0);
         }
+    }
+    fn read_samples(path: &std::path::Path) -> Vec<serde_json::Value> {
+        let mut result = Vec::new();
+        for line in std::fs::read_to_string(path).unwrap().lines() {
+            let record: serde_json::Value = serde_json::from_str(line).unwrap();
+            if record["kind"] == "sample_batch" {
+                for row in record["rows"].as_array().unwrap() {
+                    result.push(serde_json::json!({"name":row[6],"value":row[7]}));
+                }
+            } else {
+                result.push(record);
+            }
+        }
+        result
     }
     fn normal() -> Hook {
         Arc::new(|_| Ok(()))
@@ -424,11 +476,7 @@ mod tests {
             }
         ));
         let path = fixture.log();
-        let lines: Vec<serde_json::Value> = std::fs::read_to_string(&path)
-            .unwrap()
-            .lines()
-            .map(|s| serde_json::from_str(s).unwrap())
-            .collect();
+        let lines = read_samples(&path);
         assert_eq!(lines.last().unwrap()["name"], "log_flush");
         assert!(!lines.iter().any(|s| s["name"] == "late"));
         let cert: serde_json::Value =
@@ -472,12 +520,9 @@ mod tests {
         else {
             panic!("{outcome:?}")
         };
-        let lines = std::fs::read_to_string(fixture.log()).unwrap();
+        let lines = read_samples(&fixture.log());
         assert_eq!(
-            lines
-                .lines()
-                .filter(|s| s.contains("\"name\":\"test\""))
-                .count() as u64,
+            lines.iter().filter(|s| s["name"] == "test").count() as u64,
             accepted
         );
         assert_eq!(dropped, 0);

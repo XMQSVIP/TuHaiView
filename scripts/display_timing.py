@@ -14,6 +14,6 @@ def timing():
     t=Timing(); t.cbSize=c.sizeof(t)
     result=c.windll.dwmapi.DwmGetCompositionTimingInfo(None,c.byref(t))
     frequency=c.c_int64(); c.windll.kernel32.QueryPerformanceFrequency(c.byref(frequency))
-    return dict(hresult=hex(result&0xffffffff),size=t.cbSize,refresh_n=t.rateRefresh.numerator,refresh_d=t.rateRefresh.denominator,compose_n=t.rateCompose.numerator,compose_d=t.rateCompose.denominator,refresh_period_ms=t.qpcRefreshPeriod/frequency.value*1000,remote_session=bool(c.windll.user32.GetSystemMetrics(0x1000)))
+    return dict(qpc_frequency=frequency.value,hresult=hex(result&0xffffffff),size=t.cbSize,refresh_n=t.rateRefresh.numerator,refresh_d=t.rateRefresh.denominator,compose_n=t.rateCompose.numerator,compose_d=t.rateCompose.denominator,refresh_period_ms=t.qpcRefreshPeriod/frequency.value*1000,remote_session=bool(c.windll.user32.GetSystemMetrics(0x1000)))
 
 if __name__=='__main__': print(json.dumps(timing()))

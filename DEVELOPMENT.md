@@ -178,3 +178,13 @@ git diff --check
 诊断采样队列保持 4096 条，结束信号通过独立通道发送。关闭窗口只关闭生产者入口并请求排空；窗口事件循环返回后最多等待 5 秒完成日志同步和凭据发布。成功、超时及具体 I/O 阶段错误写入脚本收集的 `TUHAI_FINALIZE` 标准错误记录；诊断失败或丢样返回非零退出码。临时凭据保留，禁止补签。正常启动不启用此流程。
 
 `eframe_cpu_ms` 使用上一更新周期的 FrameContext，未知来源使用 frame_known=false；不再归到当前场景。后台资源计量保留采样时的场景，frame_known=false，不能作为逐帧归因。schema v4 的完成凭据额外验证接收与写入数量，以及终止标记之后没有记录。schema v2/v3 仍可读取。
+
+
+带渲染阶段计时的候选只在 TUHAI_PERF=1 时安装原生 root viewport 观察器。FrameContext 在 paint 入口固定，一次 paint 结束只提交一条包含 14 段 CPU 耗时的记录。上一帧 CPU 样本使用最近完成的 paint 上下文；多次 update 而没有完成 paint 时标为未知，避免猜测帧号。
+
+`python scripts/diagnose_stalls.py <run.json>` 生成超过 50 ms 显示间隔附近的帧和阶段数据。关联窗口为显示区间之前 250 ms、之后 50 ms，包含排队工作；只能证明时间邻近，不能自动证明根因。记录 QPC frequency 后才可换算时长。旧格式使用 TimeInQPC + MsUntilDisplayed，新格式使用 CPUStartQPC + DisplayLatency，依据 [PresentMon 2.5.1 列定义](https://github.com/GameTechDev/PresentMon/blob/v2.5.1/README-ConsoleApplication.md#csv-columns)。
+
+`run_quick_validation.ps1 -Stage warmup|reproduce|compare|memory` 针对 SSD 合成 50k 和 HDD 真实 50k。对照交替运行旧/新二进制，每组五轮；每组至多补采两轮无效采集，原始文件及标准错误保留。short memory 仅三分钟及回收检查，不计为 30 分钟长期通过。
+
+
+HDD 真实集首次带阶段计时采集发生 2,582 条丢样，运行已判无效并保留。随后将诊断样本改为最多 64 条的紧凑元组批次，队列 4,032 + 工作批次 64 保持合计 4,096 条上限。每条样本的时间、帧/请求/会话及数值完整保留；所有本地分析器通过 `perf_log.py` 展开，终止标记仍是单独 JSON 记录。尚未用最终五轮证明之前，不宣称该改动解决全部采样压力。

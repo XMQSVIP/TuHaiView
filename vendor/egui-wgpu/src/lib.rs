@@ -20,8 +20,12 @@
 
 pub use wgpu;
 
+mod native_timing;
 /// Low-level painting of [`egui`](https://github.com/emilk/egui) on [`wgpu`].
 mod renderer;
+pub use native_timing::{
+    install_native_frame_observer, NativeFrameObserver, NativeFrameTimings, NATIVE_PHASES,
+};
 
 mod setup;
 

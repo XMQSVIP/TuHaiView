@@ -3,6 +3,7 @@ import argparse
 import json
 import sqlite3
 from pathlib import Path
+from perf_log import read_samples
 
 
 def verify(database, protected, log, stage):
@@ -17,8 +18,7 @@ def verify(database, protected, log, stage):
     metrics = {}
     header = None
     with log.open(encoding='utf-8-sig') as source:
-        for line in source:
-            row = json.loads(line)
+        for row in read_samples(source):
             if row.get('kind') == 'run_header':
                 header = row
             elif row.get('name') in ('scan_visited_files', 'scan_elapsed_ms', 'log_flush', 'log_dropped', 'soak_completed_seconds'):

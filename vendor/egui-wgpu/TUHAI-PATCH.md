@@ -4,7 +4,7 @@ Based on crates.io `egui-wgpu` 0.31.1, egui commit
 `1669e52a7ccfc3489c1b0999b9ed48894a0b3887`, directory `crates/egui-wgpu`.
 Original source and licenses: https://github.com/emilk/egui/tree/0.31.1
 
-Changes are confined to `src/renderer.rs` and `src/winit.rs`:
+The mesh reuse change is confined to `src/renderer.rs` and `src/winit.rs`:
 
 - The native winit painter enables a 256 KiB wgpu staging belt for vertex and
   index writes. Mapped memory is filled directly, without an extra CPU copy.
@@ -33,3 +33,13 @@ to repeated queue buffer uploads. An empty painter stayed stable; adding only
 queue uploads reproduced growth; reusing staging buffers removed that growth
 in the short diagnostic. These experiments motivate this patch but do not
 substitute for final product acceptance. See `performance-results/20260906`.
+
+
+Opt-in native frame diagnostics additionally use `src/native_timing.rs` and an
+export in `src/lib.rs`. The root viewport captures caller context once on paint
+entry, times 14 sequential CPU phases, and emits one completion callback on
+scope exit, after renderer locks are released (including surface-error paths).
+No observer is installed during ordinary product use, and the timing scope
+performs no clock reads in that case. This does not measure GPU execution time;
+PresentMon remains the independent display/GPU source. The diagnostic does not
+change render order, shaders, submission, texture ownership, or pacing.

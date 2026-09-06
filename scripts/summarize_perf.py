@@ -1,6 +1,7 @@
 """Summarize correlated app samples and optional PresentMon 2.5 CSV. No validity by omission."""
 import argparse, collections, csv, json, math, statistics
 from pathlib import Path
+from perf_log import expand
 
 def summary(values):
     v=sorted(values)
@@ -8,24 +9,34 @@ def summary(values):
     return dict(n=len(v),median=statistics.median(v),p95=v[math.ceil(len(v)*.95)-1],p99=v[math.ceil(len(v)*.99)-1],maximum=max(v),over_50ms=sum(x>50 for x in v),over_100ms=sum(x>100 for x in v))
 
 def analyze(log, presentmon=None, refresh_hz=60):
-    d=collections.defaultdict(list); phases=collections.defaultdict(list); per_phase=collections.defaultdict(lambda: collections.defaultdict(list)); memory=[]; frames=[]; legacy_phase=None; header=None; malformed=0; terminal=False; after_terminal=False
+    d=collections.defaultdict(list); phases=collections.defaultdict(list); per_phase=collections.defaultdict(lambda: collections.defaultdict(list)); memory=[]; frames=[]; legacy_phase=None; header=None; malformed=0; render_malformed=0; observed_accepted=0; sample_count=0; terminal=False; after_terminal=False
     with log.open(encoding="utf-8-sig") as source:
         for line in source:
-            try: sample=json.loads(line)
-            except json.JSONDecodeError: malformed+=1; continue
-            if sample.get("kind")=="run_header": header=sample; continue
-            if terminal: after_terminal=True
-            name=sample.get("name"); value=sample.get("value")
-            if name=='log_flush': terminal=True
-            if name is None or not isinstance(value,(int,float)): continue
-            d[name].append(value)
-            per_phase[sample.get('scenario',8)][name].append(value)
-            if name=="trajectory_phase": legacy_phase=int(value)
-            if name=="frame_interval_ms":
-                phase=sample.get("scenario",legacy_phase)
-                if phase is not None: phases[phase].append(value)
-                if "qpc" in sample: frames.append((sample["qpc"],sample.get("scenario",8)))
-            if name=="process_private_bytes": memory.append((sample.get("monotonic_us",sample.get("time_ms",0)*1000)/1000,value))
+            try: records=list(expand(json.loads(line)))
+            except (ValueError,TypeError): malformed+=1; continue
+            for sample in records:
+                if sample.get("kind")=="run_header": header=sample; continue
+                if terminal: after_terminal=True
+                name=sample.get("name"); value=sample.get("value")
+                if name not in (None,'log_accepted','log_dropped','log_flush','process_private_bytes','process_working_set_bytes'):
+                    observed_accepted+=1
+                if name=='log_flush': terminal=True
+                if name is None or not isinstance(value,(int,float)): continue
+                sample_count+=1
+                render=sample.get('render')
+                if render:
+                    if len(render.get('stages_ms',[]))!=len((header or {}).get('render_stage_names',[])):render_malformed+=1
+                    for stage,duration in zip((header or {}).get('render_stage_names',[]),render.get('stages_ms',[])):
+                        d['render_'+stage].append(duration)
+                        per_phase[sample.get('scenario',8)]['render_'+stage].append(duration)
+                d[name].append(value)
+                per_phase[sample.get('scenario',8)][name].append(value)
+                if name=="trajectory_phase": legacy_phase=int(value)
+                if name=="frame_interval_ms":
+                    phase=sample.get("scenario",legacy_phase)
+                    if phase is not None: phases[phase].append(value)
+                    if "qpc" in sample: frames.append((sample["qpc"],sample.get("scenario",8)))
+                if name=="process_private_bytes": memory.append((sample.get("monotonic_us",sample.get("time_ms",0)*1000)/1000,value))
     reasons=[]
     if not header: reasons.append("legacy_log_without_correlated_frames")
     if not d["soak_completed_seconds"]: reasons.append("missing_scenario_completion")
@@ -40,10 +51,12 @@ def analyze(log, presentmon=None, refresh_hz=60):
             if header.get('schema',0)>=4:
                 if certificate.get('accepted')!=certificate.get('written') or certificate.get('dropped')!=0:
                     reasons.append('invalid_final_sample_counts')
-                if not d['log_accepted'] or certificate.get('accepted')!=d['log_accepted'][-1]:
+                if not d['log_accepted'] or certificate.get('accepted')!=d['log_accepted'][-1] or certificate.get('accepted')!=observed_accepted:
                     reasons.append('missing_or_mismatched_accepted_count')
         except (OSError,ValueError): reasons.append('missing_flush_certificate')
     if header and header.get('schema',0)>=4:
+        if header.get('render_stage_names') and not d['render_frame_ms']: reasons.append('missing_render_timings')
+        if render_malformed: reasons.append('malformed_render_timings')
         if after_terminal: reasons.append('samples_after_terminal_marker')
         if len(d['log_flush'])!=1 or d['log_flush'][-1:]!=[1]: reasons.append('invalid_terminal_marker')
     if max(d['window_minimized'],default=0)>0: reasons.append('window_was_minimized')
@@ -53,6 +66,7 @@ def analyze(log, presentmon=None, refresh_hz=60):
         for key in ['window_minimized','window_width','window_height','pixels_per_point']:
             if not d[key]: reasons.append('missing_'+key)
     out=dict(log=str(log),header=header,metrics={k:summary(v) for k,v in d.items() if v},frame_intervals_by_phase={str(k):summary(v) for k,v in phases.items()},invalid_reasons=reasons)
+    out['sample_storage']=dict(bytes=log.stat().st_size,samples=sample_count,bytes_per_sample=log.stat().st_size/sample_count if sample_count else None)
     out['metrics_by_phase']={str(p):{k:summary(v) for k,v in metrics.items()} for p,metrics in per_phase.items()}
     out['native_dialog'] = dict(count=len(d['native_dialog_open']), wait_ms=summary(d['native_dialog_wait_ms']),
         interpretation='User/modal wait is preserved separately; input processing excludes this wait only when input_frame_wall_ms is present.')
@@ -116,12 +130,13 @@ def analyze(log, presentmon=None, refresh_hz=60):
         out["scroll_acceptance"]=dict(applicable=applicable,refresh_hz=refresh_hz,p95_limit_ms=period+.5,p99_limit_ms=2*period+.5,passed=bool(scroll and scroll["n"]>=300 and scroll["p95"]<=period+.5 and scroll["p99"]<=2*period+.5 and out['scroll_cache_evidence']['fully_resident'] and not reasons) if applicable else None)
     else: out["display_acceptance"]="unverified_without_presentmon"
     out["log_valid"]=not reasons
-    if 'memory_stability' in out:
+    if per_phase.get(7):
         idle=per_phase[7]
         reclaim_keys=['image_queued_count','image_inflight_count','image_ready_count','decode_budget_bytes','ready_budget_bytes','cache_queue_bytes','gpu_retired_bytes','cpu_retired_count','deferred_pixel_bytes']
         idle_last={k:idle[k][-1] if idle.get(k) else None for k in reclaim_keys}
         out['idle_reclamation']=dict(last=idle_last,passed=all(v==0 for v in idle_last.values()))
-        out['memory_stability']['passed']=out['memory_stability']['full_30_minutes'] and out['memory_stability']['steady_window_sample_coverage'] and out['memory_stability']['threshold_passed'] and out['idle_reclamation']['passed'] and all(v['passed'] for v in out['managed_budgets'].values()) and presentmon is not None and not reasons
+    if 'memory_stability' in out:
+        out['memory_stability']['passed']=out['memory_stability']['full_30_minutes'] and out['memory_stability']['steady_window_sample_coverage'] and out['memory_stability']['threshold_passed'] and out.get('idle_reclamation',{}).get('passed',False) and all(v['passed'] for v in out['managed_budgets'].values()) and presentmon is not None and not reasons
     return out
 
 if __name__ == "__main__":

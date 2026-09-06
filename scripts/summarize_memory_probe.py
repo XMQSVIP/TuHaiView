@@ -5,6 +5,7 @@ import hashlib
 import json
 import statistics
 from pathlib import Path
+from perf_log import expand
 
 METRICS = {
     'process_private_bytes', 'process_working_set_bytes', 'rust_live_bytes',
@@ -27,20 +28,21 @@ def analyze(path):
         for line in source:
             digest.update(line)
             try:
-                sample = json.loads(line)
+                records = list(expand(json.loads(line)))
             except (ValueError, UnicodeDecodeError):
                 malformed += 1
                 continue
-            if sample.get('kind') == 'run_header':
-                header = sample
-            name = sample.get('name')
-            duration = max(duration, sample.get('monotonic_us', 0) / 1e6)
-            if name == 'soak_completed_seconds':
-                completed = True
-            if name == 'log_dropped':
-                dropped = sample['value']
-            if name in METRICS:
-                minutes[int(sample['monotonic_us'] // 60000000)][name].append(sample['value'])
+            for sample in records:
+                if sample.get('kind') == 'run_header':
+                    header = sample
+                name = sample.get('name')
+                duration = max(duration, sample.get('monotonic_us', 0) / 1e6)
+                if name == 'soak_completed_seconds':
+                    completed = True
+                if name == 'log_dropped':
+                    dropped = sample['value']
+                if name in METRICS:
+                    minutes[int(sample['monotonic_us'] // 60000000)][name].append(sample['value'])
     medians = {m: {k: statistics.median(v) for k, v in metrics.items()}
                for m, metrics in minutes.items()}
     # Same workload recurs every four minutes in the alternating-root soak.

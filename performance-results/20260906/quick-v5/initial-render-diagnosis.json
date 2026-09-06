@@ -1,0 +1,3701 @@
+[
+  {
+    "sha256": "5283E1A417C799E0B1579D7F8C5EBE5A31CE3EA2C298E6E44C26CD8BD4224FB0",
+    "metadata": "F:\\tuhai-validation\\quick-v5\\hdd-real50k-new-reproduce-memory\\20260906-162334-1-run.json",
+    "stage_names": [
+      "encoder_create_ms",
+      "upload_lock_ms",
+      "mesh_recall_ms",
+      "egui_texture_upload_ms",
+      "mesh_upload_ms",
+      "surface_acquire_ms",
+      "render_lock_ms",
+      "render_encode_ms",
+      "encoder_finish_ms",
+      "queue_submit_ms",
+      "release_lock_ms",
+      "egui_texture_free_ms",
+      "capture_ms",
+      "present_ms"
+    ],
+    "native_phase_metrics": {
+      "mesh_upload_ms": {
+        "n": 52524,
+        "median": 0.08035,
+        "p95": 0.24659999999999999,
+        "p99": 0.354,
+        "maximum": 1.9342000000000001,
+        "over_50ms": 0,
+        "over_100ms": 0
+      },
+      "surface_acquire_ms": {
+        "n": 52524,
+        "median": 0.49475,
+        "p95": 6.6379,
+        "p99": 9.043199999999999,
+        "maximum": 30.518,
+        "over_50ms": 0,
+        "over_100ms": 0
+      },
+      "render_encode_ms": {
+        "n": 52524,
+        "median": 0.18009999999999998,
+        "p95": 0.4501,
+        "p99": 0.6388,
+        "maximum": 3.4724,
+        "over_50ms": 0,
+        "over_100ms": 0
+      },
+      "queue_submit_ms": {
+        "n": 52524,
+        "median": 0.1484,
+        "p95": 0.3215,
+        "p99": 0.4322,
+        "maximum": 1.6682000000000001,
+        "over_50ms": 0,
+        "over_100ms": 0
+      }
+    },
+    "stalls": [
+      {
+        "cpu_start_qpc": 1414651739114,
+        "display_start_qpc": 1414652163076.0,
+        "display_end_qpc": 1414653254989.0,
+        "interval_ms": 109.1913,
+        "scenario": 0,
+        "nearby_frames": [
+          {
+            "frame_id": 5,
+            "scenario": 0,
+            "samples": {
+              "ui_events_ms": 0.006,
+              "gpu_poll_ms": 0.0049,
+              "gpu_reclaim_count": 0.0,
+              "gpu_reclaim_ms": 0.0059,
+              "upload_bytes": 0.0,
+              "upload_submit_ms": 0.0062,
+              "ui_update_ms": 0.3226,
+              "eframe_cpu_ms": 3.280399367213249
+            },
+            "qpc": 1414652991195,
+            "render": {
+              "start_qpc": 1414652997261,
+              "end_qpc": 1414653238640,
+              "presented": true,
+              "total_ms": 24.137,
+              "stages_ms": [
+                0.1141,
+                0.0007999999999999999,
+                0.013900000000000001,
+                0.00019999999999999998,
+                1.3063,
+                20.937399999999997,
+                0.00039999999999999996,
+                1.1408,
+                0.0015,
+                0.5305000000000001,
+                0.00019999999999999998,
+                0.00019999999999999998,
+                9.999999999999999e-05,
+                0.09040000000000001
+              ]
+            }
+          },
+          {
+            "frame_id": 14,
+            "scenario": 0,
+            "samples": {
+              "ui_events_ms": 0.0037,
+              "gpu_poll_ms": 0.0017000000000000001,
+              "gpu_reclaim_count": 0.0,
+              "gpu_reclaim_ms": 0.0026,
+              "upload_bytes": 0.0,
+              "upload_submit_ms": 0.0056,
+              "ui_update_ms": 0.1376,
+              "eframe_cpu_ms": 0.7885992527008057
+            },
+            "qpc": 1414653601607,
+            "render": {
+              "start_qpc": 1414653603670,
+              "end_qpc": 1414653830434,
+              "presented": true,
+              "total_ms": 22.6749,
+              "stages_ms": [
+                0.0015,
+                9.999999999999999e-05,
+                0.0025,
+                9.999999999999999e-05,
+                0.044,
+                21.798499999999997,
+                0.00039999999999999996,
+                0.4753,
+                0.0022,
+                0.24449999999999997,
+                9.999999999999999e-05,
+                0.0007999999999999999,
+                0.00019999999999999998,
+                0.1046
+              ]
+            }
+          },
+          {
+            "frame_id": 9,
+            "scenario": 0,
+            "samples": {
+              "ui_events_ms": 0.0046,
+              "gpu_poll_ms": 0.0021,
+              "gpu_reclaim_count": 0.0,
+              "gpu_reclaim_ms": 0.0033,
+              "upload_bytes": 0.0,
+              "upload_submit_ms": 0.0058000000000000005,
+              "ui_update_ms": 0.15410000000000001,
+              "eframe_cpu_ms": 2.0514987409114838
+            },
+            "qpc": 1414653330169,
+            "render": {
+              "start_qpc": 1414653332722,
+              "end_qpc": 1414653526033,
+              "presented": true,
+              "total_ms": 19.33,
+              "stages_ms": [
+                0.0017000000000000001,
+                9.999999999999999e-05,
+                0.0046,
+                9.999999999999999e-05,
+                0.7163,
+                16.9285,
+                0.0003,
+                1.0112999999999999,
+                0.0015999999999999999,
+                0.5811,
+                9.999999999999999e-05,
+                0.0003,
+                0.00019999999999999998,
+                0.0838
+              ]
+            }
+          },
+          {
+            "frame_id": 7,
+            "scenario": 0,
+            "samples": {
+              "ui_events_ms": 0.0027,
+              "gpu_poll_ms": 0.0022,
+              "gpu_reclaim_count": 0.0,
+              "gpu_reclaim_ms": 0.003,
+              "upload_bytes": 0.0,
+              "upload_submit_ms": 0.0034000000000000002,
+              "ui_update_ms": 0.1338,
+              "eframe_cpu_ms": 3.365699667483568
+            },
+            "qpc": 1414653249144,
+            "render": {
+              "start_qpc": 1414653251629,
+              "end_qpc": 1414653313456,
+              "presented": true,
+              "total_ms": 6.180899999999999,
+              "stages_ms": [
+                0.0013,
+                9.999999999999999e-05,
+                0.0035,
+                9.999999999999999e-05,
+                0.0487,
+                2.1783,
+                0.0003,
+                2.9516999999999998,
+                0.0018,
+                0.8545999999999999,
+                0.0003,
+                0.0003,
+                0.00019999999999999998,
+                0.1396
+              ]
+            }
+          },
+          {
+            "frame_id": 4,
+            "scenario": 0,
+            "samples": {
+              "ui_events_ms": 0.0072,
+              "gpu_poll_ms": 0.0034000000000000002,
+              "gpu_reclaim_count": 0.0,
+              "gpu_reclaim_ms": 0.0047,
+              "upload_bytes": 0.0,
+              "upload_submit_ms": 0.0067,
+              "ui_update_ms": 0.2496,
+              "eframe_cpu_ms": 4.62420005351305
+            },
+            "qpc": 1414652921332,
+            "render": {
+              "start_qpc": 1414652931397,
+              "end_qpc": 1414652985739,
+              "presented": true,
+              "total_ms": 5.430199999999999,
+              "stages_ms": [
+                0.0069,
+                0.0005,
+                0.0126,
+                9.999999999999999e-05,
+                1.2845,
+                0.0324,
+                0.00039999999999999996,
+                2.1989,
+                0.0034000000000000002,
+                1.6682000000000001,
+                0.00039999999999999996,
+                0.00019999999999999998,
+                0.00039999999999999996,
+                0.2205
+              ]
+            }
+          },
+          {
+            "frame_id": 1,
+            "scenario": 0,
+            "samples": {
+              "ui_events_ms": 0.0147,
+              "gpu_poll_ms": 0.006,
+              "gpu_reclaim_count": 0.0,
+              "gpu_reclaim_ms": 0.0085,
+              "gpu_retired_bytes": 0.0,
+              "texture_retired_count": 0.0,
+              "cpu_retired_count": 1.0,
+              "cpu_retired_estimated_bytes": 0.0,
+              "upload_bytes": 0.0,
+              "upload_submit_ms": 0.0083,
+              "ui_update_ms": 0.6572,
+              "eframe_cpu_ms": 49.76699873805046
+            },
+            "qpc": 1414651655720,
+            "render": {
+              "start_qpc": 1414651688244,
+              "end_qpc": 1414651739149,
+              "presented": true,
+              "total_ms": 5.0897,
+              "stages_ms": [
+                0.028399999999999998,
+                9.999999999999999e-05,
+                0.0045000000000000005,
+                2.8455,
+                0.539,
+                0.017900000000000003,
+                0.0014,
+                0.8934000000000001,
+                0.0043,
+                0.4692,
+                9.999999999999999e-05,
+                0.00019999999999999998,
+                0.0,
+                0.2856
+              ]
+            }
+          },
+          {
+            "frame_id": 2,
+            "scenario": 0,
+            "samples": {
+              "ui_events_ms": 0.0049,
+              "gpu_poll_ms": 0.0058000000000000005,
+              "gpu_reclaim_count": 0.0,
+              "gpu_reclaim_ms": 0.0070999999999999995,
+              "cpu_retired_count": 0.0,
+              "upload_bytes": 0.0,
+              "upload_submit_ms": 0.0055,
+              "ui_update_ms": 0.216,
+              "eframe_cpu_ms": 6.12299982458353
+            },
+            "qpc": 1414652481058,
+            "render": {
+              "start_qpc": 1414652484629,
+              "end_qpc": 1414652525501,
+              "presented": true,
+              "total_ms": 4.0856,
+              "stages_ms": [
+                0.0026,
+                0.00019999999999999998,
+                0.0129,
+                0.0,
+                1.0828,
+                0.0276,
+                0.0003,
+                1.5273,
+                0.0019,
+                0.9763999999999999,
+                0.00039999999999999996,
+                0.0003,
+                0.0005,
+                0.4523
+              ]
+            }
+          },
+          {
+            "frame_id": 12,
+            "scenario": 0,
+            "samples": {
+              "ui_events_ms": 0.0035,
+              "gpu_poll_ms": 0.0013,
+              "gpu_reclaim_count": 0.0,
+              "gpu_reclaim_ms": 0.0019,
+              "upload_bytes": 0.0,
+              "upload_submit_ms": 0.0055,
+              "ui_update_ms": 0.1234,
+              "eframe_cpu_ms": 0.8863001130521297
+            },
+            "qpc": 1414653557155,
+            "render": {
+              "start_qpc": 1414653559480,
+              "end_qpc": 1414653585248,
+              "presented": true,
+              "total_ms": 2.5747,
+              "stages_ms": [
+                0.002,
+                9.999999999999999e-05,
+                0.0025,
+                9.999999999999999e-05,
+                0.0393,
+                1.6017,
+                0.0003,
+                0.5463,
+                0.0045000000000000005,
+                0.22139999999999999,
+                0.00019999999999999998,
+                0.0007999999999999999,
+                0.00039999999999999996,
+                0.15510000000000002
+              ]
+            }
+          }
+        ],
+        "largest_native_phase": [
+          "surface_acquire_ms",
+          21.798499999999997
+        ],
+        "nearby_frame_count": 14
+      },
+      {
+        "cpu_start_qpc": 1414652917693,
+        "display_start_qpc": 1414653254989.0,
+        "display_end_qpc": 1414653877646.0,
+        "interval_ms": 62.2657,
+        "scenario": 0,
+        "nearby_frames": [
+          {
+            "frame_id": 5,
+            "scenario": 0,
+            "samples": {
+              "ui_events_ms": 0.006,
+              "gpu_poll_ms": 0.0049,
+              "gpu_reclaim_count": 0.0,
+              "gpu_reclaim_ms": 0.0059,
+              "upload_bytes": 0.0,
+              "upload_submit_ms": 0.0062,
+              "ui_update_ms": 0.3226,
+              "eframe_cpu_ms": 3.280399367213249
+            },
+            "qpc": 1414652991195,
+            "render": {
+              "start_qpc": 1414652997261,
+              "end_qpc": 1414653238640,
+              "presented": true,
+              "total_ms": 24.137,
+              "stages_ms": [
+                0.1141,
+                0.0007999999999999999,
+                0.013900000000000001,
+                0.00019999999999999998,
+                1.3063,
+                20.937399999999997,
+                0.00039999999999999996,
+                1.1408,
+                0.0015,
+                0.5305000000000001,
+                0.00019999999999999998,
+                0.00019999999999999998,
+                9.999999999999999e-05,
+                0.09040000000000001
+              ]
+            }
+          },
+          {
+            "frame_id": 14,
+            "scenario": 0,
+            "samples": {
+              "ui_events_ms": 0.0037,
+              "gpu_poll_ms": 0.0017000000000000001,
+              "gpu_reclaim_count": 0.0,
+              "gpu_reclaim_ms": 0.0026,
+              "upload_bytes": 0.0,
+              "upload_submit_ms": 0.0056,
+              "ui_update_ms": 0.1376,
+              "eframe_cpu_ms": 0.7885992527008057
+            },
+            "qpc": 1414653601607,
+            "render": {
+              "start_qpc": 1414653603670,
+              "end_qpc": 1414653830434,
+              "presented": true,
+              "total_ms": 22.6749,
+              "stages_ms": [
+                0.0015,
+                9.999999999999999e-05,
+                0.0025,
+                9.999999999999999e-05,
+                0.044,
+                21.798499999999997,
+                0.00039999999999999996,
+                0.4753,
+                0.0022,
+                0.24449999999999997,
+                9.999999999999999e-05,
+                0.0007999999999999999,
+                0.00019999999999999998,
+                0.1046
+              ]
+            }
+          },
+          {
+            "frame_id": 19,
+            "scenario": 0,
+            "samples": {
+              "ui_events_ms": 0.0058000000000000005,
+              "gpu_poll_ms": 0.0022,
+              "gpu_reclaim_count": 0.0,
+              "gpu_reclaim_ms": 0.0035,
+              "upload_bytes": 0.0,
+              "upload_submit_ms": 0.0067,
+              "ui_update_ms": 0.1829,
+              "eframe_cpu_ms": 0.702299177646637
+            },
+            "qpc": 1414653919937,
+            "render": {
+              "start_qpc": 1414653923214,
+              "end_qpc": 1414654137953,
+              "presented": true,
+              "total_ms": 21.4716,
+              "stages_ms": [
+                0.0021,
+                0.00039999999999999996,
+                0.005,
+                0.0,
+                0.0772,
+                20.638900000000003,
+                0.0005,
+                0.2042,
+                0.0028,
+                0.3502,
+                9.999999999999999e-05,
+                0.00039999999999999996,
+                0.00019999999999999998,
+                0.1896
+              ]
+            }
+          },
+          {
+            "frame_id": 9,
+            "scenario": 0,
+            "samples": {
+              "ui_events_ms": 0.0046,
+              "gpu_poll_ms": 0.0021,
+              "gpu_reclaim_count": 0.0,
+              "gpu_reclaim_ms": 0.0033,
+              "upload_bytes": 0.0,
+              "upload_submit_ms": 0.0058000000000000005,
+              "ui_update_ms": 0.15410000000000001,
+              "eframe_cpu_ms": 2.0514987409114838
+            },
+            "qpc": 1414653330169,
+            "render": {
+              "start_qpc": 1414653332722,
+              "end_qpc": 1414653526033,
+              "presented": true,
+              "total_ms": 19.33,
+              "stages_ms": [
+                0.0017000000000000001,
+                9.999999999999999e-05,
+                0.0046,
+                9.999999999999999e-05,
+                0.7163,
+                16.9285,
+                0.0003,
+                1.0112999999999999,
+                0.0015999999999999999,
+                0.5811,
+                9.999999999999999e-05,
+                0.0003,
+                0.00019999999999999998,
+                0.0838
+              ]
+            }
+          },
+          {
+            "frame_id": 25,
+            "scenario": 0,
+            "samples": {
+              "ui_events_ms": 0.008,
+              "gpu_poll_ms": 0.0098,
+              "gpu_reclaim_count": 0.0,
+              "gpu_reclaim_ms": 0.011399999999999999,
+              "upload_bytes": 0.0,
+              "upload_submit_ms": 0.0097,
+              "ui_update_ms": 0.3871,
+              "eframe_cpu_ms": 1.32719986140728
+            },
+            "qpc": 1414654243127,
+            "render": {
+              "start_qpc": 1414654250511,
+              "end_qpc": 1414654407233,
+              "presented": true,
+              "total_ms": 15.670900000000001,
+              "stages_ms": [
+                0.008,
+                0.0013,
+                0.011300000000000001,
+                9.999999999999999e-05,
+                0.1933,
+                14.9467,
+                0.00039999999999999996,
+                0.2537,
+                0.0024,
+                0.18080000000000002,
+                9.999999999999999e-05,
+                9.999999999999999e-05,
+                9.999999999999999e-05,
+                0.0726
+              ]
+            }
+          },
+          {
+            "frame_id": 7,
+            "scenario": 0,
+            "samples": {
+              "ui_events_ms": 0.0027,
+              "gpu_poll_ms": 0.0022,
+              "gpu_reclaim_count": 0.0,
+              "gpu_reclaim_ms": 0.003,
+              "upload_bytes": 0.0,
+              "upload_submit_ms": 0.0034000000000000002,
+              "ui_update_ms": 0.1338,
+              "eframe_cpu_ms": 3.365699667483568
+            },
+            "qpc": 1414653249144,
+            "render": {
+              "start_qpc": 1414653251629,
+              "end_qpc": 1414653313456,
+              "presented": true,
+              "total_ms": 6.180899999999999,
+              "stages_ms": [
+                0.0013,
+                9.999999999999999e-05,
+                0.0035,
+                9.999999999999999e-05,
+                0.0487,
+                2.1783,
+                0.0003,
+                2.9516999999999998,
+                0.0018,
+                0.8545999999999999,
+                0.0003,
+                0.0003,
+                0.00019999999999999998,
+                0.1396
+              ]
+            }
+          },
+          {
+            "frame_id": 4,
+            "scenario": 0,
+            "samples": {
+              "ui_events_ms": 0.0072,
+              "gpu_poll_ms": 0.0034000000000000002,
+              "gpu_reclaim_count": 0.0,
+              "gpu_reclaim_ms": 0.0047,
+              "upload_bytes": 0.0,
+              "upload_submit_ms": 0.0067,
+              "ui_update_ms": 0.2496,
+              "eframe_cpu_ms": 4.62420005351305
+            },
+            "qpc": 1414652921332,
+            "render": {
+              "start_qpc": 1414652931397,
+              "end_qpc": 1414652985739,
+              "presented": true,
+              "total_ms": 5.430199999999999,
+              "stages_ms": [
+                0.0069,
+                0.0005,
+                0.0126,
+                9.999999999999999e-05,
+                1.2845,
+                0.0324,
+                0.00039999999999999996,
+                2.1989,
+                0.0034000000000000002,
+                1.6682000000000001,
+                0.00039999999999999996,
+                0.00019999999999999998,
+                0.00039999999999999996,
+                0.2205
+              ]
+            }
+          },
+          {
+            "frame_id": 1,
+            "scenario": 0,
+            "samples": {
+              "ui_events_ms": 0.0147,
+              "gpu_poll_ms": 0.006,
+              "gpu_reclaim_count": 0.0,
+              "gpu_reclaim_ms": 0.0085,
+              "gpu_retired_bytes": 0.0,
+              "texture_retired_count": 0.0,
+              "cpu_retired_count": 1.0,
+              "cpu_retired_estimated_bytes": 0.0,
+              "upload_bytes": 0.0,
+              "upload_submit_ms": 0.0083,
+              "ui_update_ms": 0.6572,
+              "eframe_cpu_ms": 49.76699873805046
+            },
+            "qpc": 1414651655720,
+            "render": {
+              "start_qpc": 1414651688244,
+              "end_qpc": 1414651739149,
+              "presented": true,
+              "total_ms": 5.0897,
+              "stages_ms": [
+                0.028399999999999998,
+                9.999999999999999e-05,
+                0.0045000000000000005,
+                2.8455,
+                0.539,
+                0.017900000000000003,
+                0.0014,
+                0.8934000000000001,
+                0.0043,
+                0.4692,
+                9.999999999999999e-05,
+                0.00019999999999999998,
+                0.0,
+                0.2856
+              ]
+            }
+          }
+        ],
+        "largest_native_phase": [
+          "surface_acquire_ms",
+          21.798499999999997
+        ],
+        "nearby_frame_count": 25
+      }
+    ],
+    "interpretation": "QPC neighborhood: 250ms before to 50ms after each display interval; correlation only, not proof of causation. Legacy logs have no fixed frame/render context.",
+    "intervals_by_scenario": {
+      "0": 2,
+      "5": 1,
+      "7": 349
+    }
+  },
+  {
+    "sha256": "5283E1A417C799E0B1579D7F8C5EBE5A31CE3EA2C298E6E44C26CD8BD4224FB0",
+    "metadata": "F:\\tuhai-validation\\quick-v5\\hdd-real50k-new-reproduce-scroll\\20260906-162227-1-run.json",
+    "stage_names": [
+      "encoder_create_ms",
+      "upload_lock_ms",
+      "mesh_recall_ms",
+      "egui_texture_upload_ms",
+      "mesh_upload_ms",
+      "surface_acquire_ms",
+      "render_lock_ms",
+      "render_encode_ms",
+      "encoder_finish_ms",
+      "queue_submit_ms",
+      "release_lock_ms",
+      "egui_texture_free_ms",
+      "capture_ms",
+      "present_ms"
+    ],
+    "native_phase_metrics": {
+      "mesh_upload_ms": {
+        "n": 13831,
+        "median": 0.1924,
+        "p95": 0.3885,
+        "p99": 0.48979999999999996,
+        "maximum": 1.7994,
+        "over_50ms": 0,
+        "over_100ms": 0
+      },
+      "surface_acquire_ms": {
+        "n": 13831,
+        "median": 0.0451,
+        "p95": 6.356,
+        "p99": 9.0633,
+        "maximum": 31.966,
+        "over_50ms": 0,
+        "over_100ms": 0
+      },
+      "render_encode_ms": {
+        "n": 13831,
+        "median": 0.3188,
+        "p95": 0.6546,
+        "p99": 0.829,
+        "maximum": 3.579,
+        "over_50ms": 0,
+        "over_100ms": 0
+      },
+      "queue_submit_ms": {
+        "n": 13831,
+        "median": 0.2226,
+        "p95": 0.4188,
+        "p99": 0.5383,
+        "maximum": 2.4129,
+        "over_50ms": 0,
+        "over_100ms": 0
+      }
+    },
+    "stalls": [
+      {
+        "cpu_start_qpc": 1413988034369,
+        "display_start_qpc": 1413988661397.0,
+        "display_end_qpc": 1413989451144.0,
+        "interval_ms": 78.9747,
+        "scenario": 0,
+        "nearby_frames": [
+          {
+            "frame_id": 8,
+            "scenario": 0,
+            "samples": {
+              "ui_events_ms": 0.0209,
+              "gpu_poll_ms": 0.0248,
+              "gpu_reclaim_count": 0.0,
+              "gpu_reclaim_ms": 0.027100000000000003,
+              "upload_bytes": 0.0,
+              "upload_submit_ms": 0.013699999999999999,
+              "ui_update_ms": 0.5817,
+              "eframe_cpu_ms": 5.401600152254105
+            },
+            "qpc": 1413989687009,
+            "render": {
+              "start_qpc": 1413989703067,
+              "end_qpc": 1413989962412,
+              "presented": true,
+              "total_ms": 25.9329,
+              "stages_ms": [
+                0.0039,
+                0.00019999999999999998,
+                0.0068000000000000005,
+                0.0003,
+                0.7127,
+                21.249,
+                0.0021,
+                2.6944,
+                0.0022,
+                1.1199999999999999,
+                0.0006,
+                0.0006,
+                0.0007,
+                0.1393
+              ]
+            }
+          },
+          {
+            "frame_id": 5,
+            "scenario": 0,
+            "samples": {
+              "ui_events_ms": 0.0117,
+              "gpu_poll_ms": 0.0188,
+              "gpu_reclaim_count": 0.0,
+              "gpu_reclaim_ms": 0.020999999999999998,
+              "upload_bytes": 0.0,
+              "upload_submit_ms": 0.0135,
+              "ui_update_ms": 0.43600000000000005,
+              "eframe_cpu_ms": 6.190699525177479
+            },
+            "qpc": 1413989314914,
+            "render": {
+              "start_qpc": 1413989323395,
+              "end_qpc": 1413989524640,
+              "presented": true,
+              "total_ms": 20.1199,
+              "stages_ms": [
+                0.2434,
+                0.00039999999999999996,
+                0.012,
+                0.0014,
+                1.3281,
+                12.0832,
+                0.001,
+                3.579,
+                0.0017000000000000001,
+                2.4129,
+                0.0006,
+                0.0003,
+                0.00019999999999999998,
+                0.4547
+              ]
+            }
+          },
+          {
+            "frame_id": 7,
+            "scenario": 0,
+            "samples": {
+              "ui_events_ms": 0.0092,
+              "gpu_poll_ms": 0.007500000000000001,
+              "gpu_reclaim_count": 0.0,
+              "gpu_reclaim_ms": 0.0099,
+              "upload_bytes": 0.0,
+              "upload_submit_ms": 0.0086,
+              "ui_update_ms": 0.5894,
+              "eframe_cpu_ms": 2.165399957448244
+            },
+            "qpc": 1413989589460,
+            "render": {
+              "start_qpc": 1413989601453,
+              "end_qpc": 1413989674315,
+              "presented": true,
+              "total_ms": 7.2797,
+              "stages_ms": [
+                0.011899999999999999,
+                0.0007999999999999999,
+                0.0318,
+                0.0009,
+                0.3501,
+                5.7089,
+                0.0009,
+                0.39599999999999996,
+                0.0033,
+                0.3605,
+                0.00039999999999999996,
+                0.0007,
+                9.999999999999999e-05,
+                0.4129
+              ]
+            }
+          },
+          {
+            "frame_id": 2,
+            "scenario": 0,
+            "samples": {
+              "ui_events_ms": 0.0061,
+              "gpu_poll_ms": 0.0104,
+              "gpu_reclaim_count": 0.0,
+              "gpu_reclaim_ms": 0.011399999999999999,
+              "cpu_retired_count": 0.0,
+              "upload_bytes": 0.0,
+              "upload_submit_ms": 0.0046,
+              "ui_update_ms": 0.27599999999999997,
+              "eframe_cpu_ms": 8.994000032544136
+            },
+            "qpc": 1413988741494,
+            "render": {
+              "start_qpc": 1413988746301,
+              "end_qpc": 1413988813686,
+              "presented": true,
+              "total_ms": 6.7349000000000006,
+              "stages_ms": [
+                0.0073,
+                0.00039999999999999996,
+                0.0389,
+                0.0005,
+                1.5042,
+                0.0467,
+                0.00019999999999999998,
+                2.4949999999999997,
+                0.0065,
+                1.1958,
+                0.0014,
+                0.0005,
+                0.0003,
+                1.4368
+              ]
+            }
+          },
+          {
+            "frame_id": 1,
+            "scenario": 0,
+            "samples": {
+              "ui_events_ms": 0.016399999999999998,
+              "gpu_poll_ms": 0.006,
+              "gpu_reclaim_count": 0.0,
+              "gpu_reclaim_ms": 0.0065,
+              "gpu_retired_bytes": 0.0,
+              "texture_retired_count": 0.0,
+              "cpu_retired_count": 1.0,
+              "cpu_retired_estimated_bytes": 0.0,
+              "upload_bytes": 0.0,
+              "upload_submit_ms": 0.008199999999999999,
+              "ui_update_ms": 0.6717,
+              "eframe_cpu_ms": 43.94390061497688
+            },
+            "qpc": 1413987936963,
+            "render": {
+              "start_qpc": 1413987970508,
+              "end_qpc": 1413988034426,
+              "presented": true,
+              "total_ms": 6.3905,
+              "stages_ms": [
+                0.034100000000000005,
+                9.999999999999999e-05,
+                0.0048,
+                2.8177,
+                1.1665,
+                0.020999999999999998,
+                0.0015,
+                1.4941,
+                0.004,
+                0.5214,
+                9.999999999999999e-05,
+                0.00019999999999999998,
+                9.999999999999999e-05,
+                0.3248
+              ]
+            }
+          },
+          {
+            "frame_id": 4,
+            "scenario": 0,
+            "samples": {
+              "ui_events_ms": 0.008,
+              "gpu_poll_ms": 0.0039,
+              "gpu_reclaim_count": 0.0,
+              "gpu_reclaim_ms": 0.0053,
+              "upload_bytes": 0.0,
+              "upload_submit_ms": 0.007700000000000001,
+              "ui_update_ms": 0.3008,
+              "eframe_cpu_ms": 4.891799762845039
+            },
+            "qpc": 1413989247366,
+            "render": {
+              "start_qpc": 1413989260015,
+              "end_qpc": 1413989307865,
+              "presented": true,
+              "total_ms": 4.782,
+              "stages_ms": [
+                0.0073,
+                0.0006,
+                0.0129,
+                0.0005,
+                1.7994,
+                0.0327,
+                0.0011,
+                1.6963,
+                0.0012,
+                1.0004,
+                0.0003,
+                0.0007999999999999999,
+                0.0,
+                0.2283
+              ]
+            }
+          },
+          {
+            "frame_id": 6,
+            "scenario": 0,
+            "samples": {
+              "ui_events_ms": 0.007500000000000001,
+              "gpu_poll_ms": 0.013,
+              "gpu_reclaim_count": 0.0,
+              "gpu_reclaim_ms": 0.0155,
+              "upload_bytes": 0.0,
+              "upload_submit_ms": 0.0095,
+              "ui_update_ms": 0.4376,
+              "eframe_cpu_ms": 3.2734996639192104
+            },
+            "qpc": 1413989533936,
+            "render": {
+              "start_qpc": 1413989545488,
+              "end_qpc": 1413989586646,
+              "presented": true,
+              "total_ms": 4.1141,
+              "stages_ms": [
+                0.007700000000000001,
+                0.0003,
+                0.0124,
+                0.00019999999999999998,
+                0.1769,
+                0.021500000000000002,
+                0.00019999999999999998,
+                1.7419,
+                0.0029000000000000002,
+                1.9526000000000001,
+                0.0006,
+                0.0003,
+                0.00039999999999999996,
+                0.1958
+              ]
+            }
+          },
+          {
+            "frame_id": 3,
+            "scenario": 0,
+            "samples": {
+              "ui_events_ms": 0.0131,
+              "gpu_poll_ms": 0.0122,
+              "gpu_reclaim_count": 0.0,
+              "gpu_reclaim_ms": 0.0155,
+              "upload_bytes": 0.0,
+              "upload_submit_ms": 0.0135,
+              "ui_update_ms": 0.3297,
+              "eframe_cpu_ms": 1.2486999621614814
+            },
+            "qpc": 1413989231050,
+            "render": {
+              "start_qpc": 1413989238325,
+              "end_qpc": 1413989243513,
+              "presented": true,
+              "total_ms": 0.5178,
+              "stages_ms": [
+                0.0025,
+                0.00019999999999999998,
+                0.0043,
+                9.999999999999999e-05,
+                0.1182,
+                0.0217,
+                0.00019999999999999998,
+                0.1726,
+                0.0007999999999999999,
+                0.0825,
+                0.0,
+                9.999999999999999e-05,
+                9.999999999999999e-05,
+                0.1145
+              ]
+            }
+          }
+        ],
+        "largest_native_phase": [
+          "surface_acquire_ms",
+          21.249
+        ],
+        "nearby_frame_count": 8
+      }
+    ],
+    "interpretation": "QPC neighborhood: 250ms before to 50ms after each display interval; correlation only, not proof of causation. Legacy logs have no fixed frame/render context.",
+    "intervals_by_scenario": {
+      "0": 1
+    }
+  },
+  {
+    "sha256": "5283E1A417C799E0B1579D7F8C5EBE5A31CE3EA2C298E6E44C26CD8BD4224FB0",
+    "metadata": "F:\\tuhai-validation\\quick-v5\\ssd-synthetic50k-new-reproduce-memory\\20260906-161811-1-run.json",
+    "stage_names": [
+      "encoder_create_ms",
+      "upload_lock_ms",
+      "mesh_recall_ms",
+      "egui_texture_upload_ms",
+      "mesh_upload_ms",
+      "surface_acquire_ms",
+      "render_lock_ms",
+      "render_encode_ms",
+      "encoder_finish_ms",
+      "queue_submit_ms",
+      "release_lock_ms",
+      "egui_texture_free_ms",
+      "capture_ms",
+      "present_ms"
+    ],
+    "native_phase_metrics": {
+      "mesh_upload_ms": {
+        "n": 56870,
+        "median": 0.07229999999999999,
+        "p95": 0.24620000000000003,
+        "p99": 0.3968,
+        "maximum": 13.7803,
+        "over_50ms": 0,
+        "over_100ms": 0
+      },
+      "surface_acquire_ms": {
+        "n": 56870,
+        "median": 0.4128,
+        "p95": 5.9734,
+        "p99": 8.529399999999999,
+        "maximum": 27.4483,
+        "over_50ms": 0,
+        "over_100ms": 0
+      },
+      "render_encode_ms": {
+        "n": 56870,
+        "median": 0.16440000000000002,
+        "p95": 0.47550000000000003,
+        "p99": 0.7246,
+        "maximum": 22.8013,
+        "over_50ms": 0,
+        "over_100ms": 0
+      },
+      "queue_submit_ms": {
+        "n": 56870,
+        "median": 0.1452,
+        "p95": 0.3345,
+        "p99": 0.46799999999999997,
+        "maximum": 30.4557,
+        "over_50ms": 0,
+        "over_100ms": 0
+      }
+    },
+    "stalls": [
+      {
+        "cpu_start_qpc": 1411424803917,
+        "display_start_qpc": 1411425037180.0,
+        "display_end_qpc": 1411425959420.0,
+        "interval_ms": 92.224,
+        "scenario": 0,
+        "nearby_frames": [
+          {
+            "frame_id": 8,
+            "scenario": 0,
+            "samples": {
+              "ui_events_ms": 0.0193,
+              "gpu_poll_ms": 0.0172,
+              "gpu_reclaim_count": 0.0,
+              "gpu_reclaim_ms": 0.0205,
+              "upload_bytes": 0.0,
+              "upload_submit_ms": 0.016,
+              "ui_update_ms": 0.32449999999999996,
+              "eframe_cpu_ms": 5.573499947786331
+            },
+            "qpc": 1411426270815,
+            "render": {
+              "start_qpc": 1411426276376,
+              "end_qpc": 1411426606352,
+              "presented": true,
+              "total_ms": 32.995999999999995,
+              "stages_ms": [
+                0.003,
+                0.00019999999999999998,
+                0.0063999999999999994,
+                9.999999999999999e-05,
+                2.6685,
+                27.4483,
+                0.001,
+                2.1451000000000002,
+                0.0017000000000000001,
+                0.641,
+                0.0003,
+                0.00019999999999999998,
+                0.0,
+                0.0802
+              ]
+            }
+          },
+          {
+            "frame_id": 1,
+            "scenario": 0,
+            "samples": {
+              "ui_events_ms": 0.0155,
+              "gpu_poll_ms": 0.0065,
+              "gpu_reclaim_count": 0.0,
+              "gpu_reclaim_ms": 0.0092,
+              "gpu_retired_bytes": 0.0,
+              "texture_retired_count": 0.0,
+              "cpu_retired_count": 0.0,
+              "cpu_retired_estimated_bytes": 0.0,
+              "upload_bytes": 0.0,
+              "upload_submit_ms": 0.009300000000000001,
+              "ui_update_ms": 0.7121000000000001,
+              "eframe_cpu_ms": 62.196895480155945
+            },
+            "qpc": 1411424695744,
+            "render": {
+              "start_qpc": 1411424732785,
+              "end_qpc": 1411424803963,
+              "presented": true,
+              "total_ms": 7.1166,
+              "stages_ms": [
+                0.0349,
+                0.00019999999999999998,
+                0.006,
+                4.354399999999999,
+                0.794,
+                0.0187,
+                0.0015999999999999999,
+                1.1139999999999999,
+                0.0045000000000000005,
+                0.49240000000000006,
+                9.999999999999999e-05,
+                0.00019999999999999998,
+                9.999999999999999e-05,
+                0.29540000000000005
+              ]
+            }
+          },
+          {
+            "frame_id": 5,
+            "scenario": 0,
+            "samples": {
+              "ui_events_ms": 0.0088,
+              "gpu_poll_ms": 0.013900000000000001,
+              "gpu_reclaim_count": 0.0,
+              "gpu_reclaim_ms": 0.0157,
+              "upload_bytes": 0.0,
+              "upload_submit_ms": 0.0107,
+              "ui_update_ms": 0.4119,
+              "eframe_cpu_ms": 3.672999795526266
+            },
+            "qpc": 1411426099525,
+            "render": {
+              "start_qpc": 1411426106506,
+              "end_qpc": 1411426176082,
+              "presented": true,
+              "total_ms": 6.9563999999999995,
+              "stages_ms": [
+                0.14229999999999998,
+                0.0005,
+                0.017499999999999998,
+                0.00019999999999999998,
+                1.4095,
+                3.4289,
+                0.0007999999999999999,
+                1.3029000000000002,
+                0.0014,
+                0.5433,
+                9.999999999999999e-05,
+                0.00019999999999999998,
+                0.0,
+                0.1087
+              ]
+            }
+          },
+          {
+            "frame_id": 4,
+            "scenario": 0,
+            "samples": {
+              "ui_events_ms": 0.005,
+              "gpu_poll_ms": 0.0024,
+              "gpu_reclaim_count": 0.0,
+              "gpu_reclaim_ms": 0.0034000000000000002,
+              "upload_bytes": 0.0,
+              "upload_submit_ms": 0.0061,
+              "ui_update_ms": 0.2396,
+              "eframe_cpu_ms": 4.769999533891678
+            },
+            "qpc": 1411426017962,
+            "render": {
+              "start_qpc": 1411426032805,
+              "end_qpc": 1411426080441,
+              "presented": true,
+              "total_ms": 4.7604,
+              "stages_ms": [
+                0.0073,
+                9.999999999999999e-05,
+                0.0097,
+                0.0005,
+                1.0642,
+                0.046900000000000004,
+                0.0006,
+                2.1139,
+                0.0042,
+                1.3173,
+                0.00039999999999999996,
+                0.0003,
+                0.0,
+                0.195
+              ]
+            }
+          },
+          {
+            "frame_id": 6,
+            "scenario": 0,
+            "samples": {
+              "ui_events_ms": 0.0092,
+              "gpu_poll_ms": 0.0337,
+              "gpu_reclaim_count": 0.0,
+              "gpu_reclaim_ms": 0.0375,
+              "upload_bytes": 0.0,
+              "upload_submit_ms": 0.0109,
+              "ui_update_ms": 0.2793,
+              "eframe_cpu_ms": 2.9571999330073595
+            },
+            "qpc": 1411426181399,
+            "render": {
+              "start_qpc": 1411426186566,
+              "end_qpc": 1411426225269,
+              "presented": true,
+              "total_ms": 3.8677,
+              "stages_ms": [
+                0.0055,
+                0.0003,
+                0.0088,
+                9.999999999999999e-05,
+                0.1858,
+                0.0404,
+                0.00019999999999999998,
+                1.8571,
+                0.1193,
+                1.5238,
+                0.0003,
+                0.00019999999999999998,
+                0.0,
+                0.1258
+              ]
+            }
+          },
+          {
+            "frame_id": 7,
+            "scenario": 0,
+            "samples": {
+              "ui_events_ms": 0.0099,
+              "gpu_poll_ms": 0.0058000000000000005,
+              "gpu_reclaim_count": 0.0,
+              "gpu_reclaim_ms": 0.0074,
+              "upload_bytes": 0.0,
+              "upload_submit_ms": 0.0092,
+              "ui_update_ms": 0.2789,
+              "eframe_cpu_ms": 1.0646998416632414
+            },
+            "qpc": 1411426229004,
+            "render": {
+              "start_qpc": 1411426233484,
+              "end_qpc": 1411426266363,
+              "presented": true,
+              "total_ms": 3.2857,
+              "stages_ms": [
+                0.0044,
+                0.00019999999999999998,
+                0.007500000000000001,
+                0.0,
+                0.2056,
+                2.3770000000000002,
+                0.0005,
+                0.29050000000000004,
+                0.0025,
+                0.232,
+                9.999999999999999e-05,
+                0.0003,
+                0.0003,
+                0.1646
+              ]
+            }
+          },
+          {
+            "frame_id": 2,
+            "scenario": 0,
+            "samples": {
+              "ui_events_ms": 0.0045000000000000005,
+              "gpu_poll_ms": 0.0053,
+              "gpu_reclaim_count": 0.0,
+              "gpu_reclaim_ms": 0.0062,
+              "upload_bytes": 0.0,
+              "upload_submit_ms": 0.0038,
+              "ui_update_ms": 0.1471,
+              "eframe_cpu_ms": 4.635699559003115
+            },
+            "qpc": 1411425603356,
+            "render": {
+              "start_qpc": 1411425605582,
+              "end_qpc": 1411425625888,
+              "presented": true,
+              "total_ms": 2.0296,
+              "stages_ms": [
+                0.0021,
+                0.00019999999999999998,
+                0.0109,
+                0.0,
+                0.48919999999999997,
+                0.014,
+                9.999999999999999e-05,
+                0.7391,
+                0.0009,
+                0.4584,
+                9.999999999999999e-05,
+                0.00019999999999999998,
+                0.0,
+                0.3143
+              ]
+            }
+          },
+          {
+            "frame_id": 3,
+            "scenario": 0,
+            "samples": {
+              "ui_events_ms": 0.0062,
+              "gpu_poll_ms": 0.0067,
+              "gpu_reclaim_count": 0.0,
+              "gpu_reclaim_ms": 0.0076,
+              "upload_bytes": 0.0,
+              "upload_submit_ms": 0.0054,
+              "ui_update_ms": 0.1933,
+              "eframe_cpu_ms": 0.8287999662570655
+            },
+            "qpc": 1411426005035,
+            "render": {
+              "start_qpc": 1411426009446,
+              "end_qpc": 1411426014750,
+              "presented": true,
+              "total_ms": 0.5295,
+              "stages_ms": [
+                0.0031999999999999997,
+                0.00019999999999999998,
+                0.0063999999999999994,
+                9.999999999999999e-05,
+                0.10840000000000001,
+                0.0213,
+                0.0003,
+                0.1561,
+                0.0017000000000000001,
+                0.1289,
+                9.999999999999999e-05,
+                9.999999999999999e-05,
+                9.999999999999999e-05,
+                0.1025
+              ]
+            }
+          }
+        ],
+        "largest_native_phase": [
+          "surface_acquire_ms",
+          27.4483
+        ],
+        "nearby_frame_count": 8
+      },
+      {
+        "cpu_start_qpc": 1411426014711,
+        "display_start_qpc": 1411425959420.0,
+        "display_end_qpc": 1411426574719.0,
+        "interval_ms": 61.5299,
+        "scenario": 0,
+        "nearby_frames": [
+          {
+            "frame_id": 8,
+            "scenario": 0,
+            "samples": {
+              "ui_events_ms": 0.0193,
+              "gpu_poll_ms": 0.0172,
+              "gpu_reclaim_count": 0.0,
+              "gpu_reclaim_ms": 0.0205,
+              "upload_bytes": 0.0,
+              "upload_submit_ms": 0.016,
+              "ui_update_ms": 0.32449999999999996,
+              "eframe_cpu_ms": 5.573499947786331
+            },
+            "qpc": 1411426270815,
+            "render": {
+              "start_qpc": 1411426276376,
+              "end_qpc": 1411426606352,
+              "presented": true,
+              "total_ms": 32.995999999999995,
+              "stages_ms": [
+                0.003,
+                0.00019999999999999998,
+                0.0063999999999999994,
+                9.999999999999999e-05,
+                2.6685,
+                27.4483,
+                0.001,
+                2.1451000000000002,
+                0.0017000000000000001,
+                0.641,
+                0.0003,
+                0.00019999999999999998,
+                0.0,
+                0.0802
+              ]
+            }
+          },
+          {
+            "frame_id": 10,
+            "scenario": 0,
+            "samples": {
+              "ui_events_ms": 0.0094,
+              "gpu_poll_ms": 0.0067,
+              "gpu_reclaim_count": 0.0,
+              "gpu_reclaim_ms": 0.009300000000000001,
+              "upload_bytes": 0.0,
+              "upload_submit_ms": 0.0087,
+              "ui_update_ms": 0.3819,
+              "eframe_cpu_ms": 2.402897924184799
+            },
+            "qpc": 1411426640826,
+            "render": {
+              "start_qpc": 1411426646681,
+              "end_qpc": 1411426869215,
+              "presented": true,
+              "total_ms": 22.252299999999998,
+              "stages_ms": [
+                0.0281,
+                9.999999999999999e-05,
+                0.0042,
+                9.999999999999999e-05,
+                0.5843,
+                19.9454,
+                0.0005,
+                1.099,
+                0.0009,
+                0.4847,
+                9.999999999999999e-05,
+                0.00019999999999999998,
+                9.999999999999999e-05,
+                0.10450000000000001
+              ]
+            }
+          },
+          {
+            "frame_id": 13,
+            "scenario": 0,
+            "samples": {
+              "ui_events_ms": 0.0049,
+              "gpu_poll_ms": 0.007,
+              "gpu_reclaim_count": 0.0,
+              "gpu_reclaim_ms": 0.008,
+              "upload_bytes": 1376256.0,
+              "upload_submit_ms": 2.4708,
+              "ui_update_ms": 3.8535000000000004,
+              "eframe_cpu_ms": 8.15920066088438
+            },
+            "qpc": 1411426992524,
+            "render": {
+              "start_qpc": 1411427035305,
+              "end_qpc": 1411427174846,
+              "presented": true,
+              "total_ms": 13.9524,
+              "stages_ms": [
+                0.003,
+                0.00019999999999999998,
+                0.0040999999999999995,
+                9.999999999999999e-05,
+                2.028,
+                8.8228,
+                0.0005,
+                1.6598,
+                0.0015,
+                1.1479000000000001,
+                0.0003,
+                0.0007,
+                0.00039999999999999996,
+                0.2827
+              ]
+            }
+          },
+          {
+            "frame_id": 1,
+            "scenario": 0,
+            "samples": {
+              "ui_events_ms": 0.0155,
+              "gpu_poll_ms": 0.0065,
+              "gpu_reclaim_count": 0.0,
+              "gpu_reclaim_ms": 0.0092,
+              "gpu_retired_bytes": 0.0,
+              "texture_retired_count": 0.0,
+              "cpu_retired_count": 0.0,
+              "cpu_retired_estimated_bytes": 0.0,
+              "upload_bytes": 0.0,
+              "upload_submit_ms": 0.009300000000000001,
+              "ui_update_ms": 0.7121000000000001,
+              "eframe_cpu_ms": 62.196895480155945
+            },
+            "qpc": 1411424695744,
+            "render": {
+              "start_qpc": 1411424732785,
+              "end_qpc": 1411424803963,
+              "presented": true,
+              "total_ms": 7.1166,
+              "stages_ms": [
+                0.0349,
+                0.00019999999999999998,
+                0.006,
+                4.354399999999999,
+                0.794,
+                0.0187,
+                0.0015999999999999999,
+                1.1139999999999999,
+                0.0045000000000000005,
+                0.49240000000000006,
+                9.999999999999999e-05,
+                0.00019999999999999998,
+                9.999999999999999e-05,
+                0.29540000000000005
+              ]
+            }
+          },
+          {
+            "frame_id": 5,
+            "scenario": 0,
+            "samples": {
+              "ui_events_ms": 0.0088,
+              "gpu_poll_ms": 0.013900000000000001,
+              "gpu_reclaim_count": 0.0,
+              "gpu_reclaim_ms": 0.0157,
+              "upload_bytes": 0.0,
+              "upload_submit_ms": 0.0107,
+              "ui_update_ms": 0.4119,
+              "eframe_cpu_ms": 3.672999795526266
+            },
+            "qpc": 1411426099525,
+            "render": {
+              "start_qpc": 1411426106506,
+              "end_qpc": 1411426176082,
+              "presented": true,
+              "total_ms": 6.9563999999999995,
+              "stages_ms": [
+                0.14229999999999998,
+                0.0005,
+                0.017499999999999998,
+                0.00019999999999999998,
+                1.4095,
+                3.4289,
+                0.0007999999999999999,
+                1.3029000000000002,
+                0.0014,
+                0.5433,
+                9.999999999999999e-05,
+                0.00019999999999999998,
+                0.0,
+                0.1087
+              ]
+            }
+          },
+          {
+            "frame_id": 4,
+            "scenario": 0,
+            "samples": {
+              "ui_events_ms": 0.005,
+              "gpu_poll_ms": 0.0024,
+              "gpu_reclaim_count": 0.0,
+              "gpu_reclaim_ms": 0.0034000000000000002,
+              "upload_bytes": 0.0,
+              "upload_submit_ms": 0.0061,
+              "ui_update_ms": 0.2396,
+              "eframe_cpu_ms": 4.769999533891678
+            },
+            "qpc": 1411426017962,
+            "render": {
+              "start_qpc": 1411426032805,
+              "end_qpc": 1411426080441,
+              "presented": true,
+              "total_ms": 4.7604,
+              "stages_ms": [
+                0.0073,
+                9.999999999999999e-05,
+                0.0097,
+                0.0005,
+                1.0642,
+                0.046900000000000004,
+                0.0006,
+                2.1139,
+                0.0042,
+                1.3173,
+                0.00039999999999999996,
+                0.0003,
+                0.0,
+                0.195
+              ]
+            }
+          },
+          {
+            "frame_id": 6,
+            "scenario": 0,
+            "samples": {
+              "ui_events_ms": 0.0092,
+              "gpu_poll_ms": 0.0337,
+              "gpu_reclaim_count": 0.0,
+              "gpu_reclaim_ms": 0.0375,
+              "upload_bytes": 0.0,
+              "upload_submit_ms": 0.0109,
+              "ui_update_ms": 0.2793,
+              "eframe_cpu_ms": 2.9571999330073595
+            },
+            "qpc": 1411426181399,
+            "render": {
+              "start_qpc": 1411426186566,
+              "end_qpc": 1411426225269,
+              "presented": true,
+              "total_ms": 3.8677,
+              "stages_ms": [
+                0.0055,
+                0.0003,
+                0.0088,
+                9.999999999999999e-05,
+                0.1858,
+                0.0404,
+                0.00019999999999999998,
+                1.8571,
+                0.1193,
+                1.5238,
+                0.0003,
+                0.00019999999999999998,
+                0.0,
+                0.1258
+              ]
+            }
+          },
+          {
+            "frame_id": 12,
+            "scenario": 0,
+            "samples": {
+              "ui_events_ms": 0.0083,
+              "gpu_poll_ms": 0.0096,
+              "gpu_reclaim_count": 0.0,
+              "gpu_reclaim_ms": 0.0145,
+              "upload_bytes": 589824.0,
+              "upload_submit_ms": 2.0223,
+              "ui_update_ms": 2.9977,
+              "eframe_cpu_ms": 5.903199780732393
+            },
+            "qpc": 1411426915033,
+            "render": {
+              "start_qpc": 1411426950324,
+              "end_qpc": 1411426987092,
+              "presented": true,
+              "total_ms": 3.6748000000000003,
+              "stages_ms": [
+                0.0085,
+                0.0003,
+                0.011600000000000001,
+                9.999999999999999e-05,
+                1.1469,
+                0.0152,
+                0.00019999999999999998,
+                1.009,
+                0.0025,
+                1.0984,
+                0.0014,
+                0.0015999999999999999,
+                0.0,
+                0.3789
+              ]
+            }
+          }
+        ],
+        "largest_native_phase": [
+          "surface_acquire_ms",
+          27.4483
+        ],
+        "nearby_frame_count": 13
+      },
+      {
+        "cpu_start_qpc": 1411516881634,
+        "display_start_qpc": 1411516675823.0,
+        "display_end_qpc": 1411517293251.0,
+        "interval_ms": 61.7428,
+        "scenario": 0,
+        "nearby_frames": [
+          {
+            "frame_id": 2164,
+            "scenario": 0,
+            "samples": {
+              "ui_events_ms": 0.0118,
+              "gpu_poll_ms": 0.0167,
+              "gpu_reclaim_count": 0.0,
+              "gpu_reclaim_ms": 0.0188,
+              "upload_bytes": 0.0,
+              "upload_submit_ms": 0.0144,
+              "ui_update_ms": 1.3783,
+              "eframe_cpu_ms": 3.3050989732146263
+            },
+            "qpc": 1411517428429,
+            "render": {
+              "start_qpc": 1411517448207,
+              "end_qpc": 1411517575825,
+              "presented": true,
+              "total_ms": 12.76,
+              "stages_ms": [
+                0.0053,
+                0.00039999999999999996,
+                0.0079,
+                9.999999999999999e-05,
+                0.16190000000000002,
+                10.879700000000001,
+                0.0005,
+                0.9436,
+                0.0059,
+                0.5446,
+                0.00039999999999999996,
+                0.00019999999999999998,
+                0.0003,
+                0.2089
+              ]
+            }
+          },
+          {
+            "frame_id": 2124,
+            "scenario": 0,
+            "samples": {
+              "ui_events_ms": 0.0135,
+              "gpu_poll_ms": 0.0192,
+              "gpu_reclaim_count": 0.0,
+              "gpu_reclaim_ms": 0.0214,
+              "upload_bytes": 0.0,
+              "upload_submit_ms": 0.012,
+              "ui_update_ms": 1.9207,
+              "eframe_cpu_ms": 3.7859994918107986
+            },
+            "qpc": 1411514821357,
+            "render": {
+              "start_qpc": 1411514848123,
+              "end_qpc": 1411514938368,
+              "presented": true,
+              "total_ms": 9.0197,
+              "stages_ms": [
+                0.0037,
+                0.0005,
+                0.0052,
+                0.00019999999999999998,
+                0.1434,
+                3.9144,
+                0.00039999999999999996,
+                0.7404999999999999,
+                0.0031999999999999997,
+                3.5231,
+                0.0003,
+                0.00019999999999999998,
+                0.00019999999999999998,
+                0.6839
+              ]
+            }
+          },
+          {
+            "frame_id": 2151,
+            "scenario": 0,
+            "samples": {
+              "ui_events_ms": 0.0188,
+              "gpu_poll_ms": 0.0279,
+              "gpu_reclaim_count": 0.0,
+              "gpu_reclaim_ms": 0.0316,
+              "upload_bytes": 0.0,
+              "upload_submit_ms": 0.036699999999999997,
+              "ui_update_ms": 2.2761,
+              "eframe_cpu_ms": 4.59199957549572
+            },
+            "qpc": 1411516603952,
+            "render": {
+              "start_qpc": 1411516636938,
+              "end_qpc": 1411516721875,
+              "presented": true,
+              "total_ms": 8.489500000000001,
+              "stages_ms": [
+                0.0037,
+                0.00039999999999999996,
+                0.0054,
+                9.999999999999999e-05,
+                0.363,
+                6.6880999999999995,
+                0.0007,
+                0.6323,
+                0.005,
+                0.4887,
+                0.00019999999999999998,
+                0.0007999999999999999,
+                0.0005,
+                0.3001
+              ]
+            }
+          },
+          {
+            "frame_id": 2165,
+            "scenario": 0,
+            "samples": {
+              "ui_events_ms": 0.0063999999999999994,
+              "gpu_poll_ms": 0.0063,
+              "gpu_reclaim_count": 0.0,
+              "gpu_reclaim_ms": 0.007700000000000001,
+              "upload_bytes": 0.0,
+              "upload_submit_ms": 0.006,
+              "ui_update_ms": 1.2315,
+              "eframe_cpu_ms": 3.052299376577139
+            },
+            "qpc": 1411517582789,
+            "render": {
+              "start_qpc": 1411517601706,
+              "end_qpc": 1411517666580,
+              "presented": true,
+              "total_ms": 6.4837,
+              "stages_ms": [
+                0.0047,
+                0.0003,
+                0.0047,
+                0.00019999999999999998,
+                0.2155,
+                4.690899999999999,
+                0.0013,
+                0.8051,
+                0.0037,
+                0.44270000000000004,
+                0.00019999999999999998,
+                0.00039999999999999996,
+                0.00039999999999999996,
+                0.3135
+              ]
+            }
+          },
+          {
+            "frame_id": 2142,
+            "scenario": 0,
+            "samples": {
+              "ui_events_ms": 0.0058000000000000005,
+              "gpu_poll_ms": 0.007,
+              "gpu_reclaim_count": 0.0,
+              "gpu_reclaim_ms": 0.011300000000000001,
+              "upload_bytes": 0.0,
+              "upload_submit_ms": 0.0042,
+              "ui_update_ms": 1.9277,
+              "eframe_cpu_ms": 3.5532996989786625
+            },
+            "qpc": 1411516012064,
+            "render": {
+              "start_qpc": 1411516039689,
+              "end_qpc": 1411516103670,
+              "presented": true,
+              "total_ms": 6.3944,
+              "stages_ms": [
+                0.0037,
+                0.00039999999999999996,
+                0.005,
+                0.00019999999999999998,
+                0.1338,
+                4.9757,
+                0.00039999999999999996,
+                0.5232,
+                0.0043,
+                0.4625,
+                9.999999999999999e-05,
+                0.0011,
+                0.0003,
+                0.2831
+              ]
+            }
+          },
+          {
+            "frame_id": 2159,
+            "scenario": 0,
+            "samples": {
+              "ui_events_ms": 0.0218,
+              "gpu_poll_ms": 0.027100000000000003,
+              "gpu_reclaim_count": 0.0,
+              "gpu_reclaim_ms": 0.0303,
+              "upload_bytes": 0.0,
+              "upload_submit_ms": 0.026699999999999998,
+              "ui_update_ms": 2.7792,
+              "eframe_cpu_ms": 5.7807001285254955
+            },
+            "qpc": 1411517086810,
+            "render": {
+              "start_qpc": 1411517128889,
+              "end_qpc": 1411517191090,
+              "presented": true,
+              "total_ms": 6.2156,
+              "stages_ms": [
+                0.005,
+                0.0003,
+                0.0063,
+                0.0,
+                0.4505,
+                4.323300000000001,
+                0.0012,
+                0.6386999999999999,
+                0.0042,
+                0.49160000000000004,
+                0.00019999999999999998,
+                0.0005,
+                0.00019999999999999998,
+                0.29329999999999995
+              ]
+            }
+          },
+          {
+            "frame_id": 2138,
+            "scenario": 0,
+            "samples": {
+              "ui_events_ms": 0.0051,
+              "gpu_poll_ms": 0.0094,
+              "gpu_reclaim_count": 0.0,
+              "gpu_reclaim_ms": 0.0135,
+              "upload_bytes": 0.0,
+              "upload_submit_ms": 0.005699999999999999,
+              "ui_update_ms": 2.0353,
+              "eframe_cpu_ms": 4.228400066494942
+            },
+            "qpc": 1411515731714,
+            "render": {
+              "start_qpc": 1411515762190,
+              "end_qpc": 1411515823845,
+              "presented": true,
+              "total_ms": 6.159000000000001,
+              "stages_ms": [
+                0.0135,
+                0.0015,
+                0.0206,
+                0.0007999999999999999,
+                0.21259999999999998,
+                4.4051,
+                0.0011,
+                0.6848,
+                0.0044,
+                0.479,
+                0.0003,
+                0.0006,
+                0.00039999999999999996,
+                0.3341
+              ]
+            }
+          },
+          {
+            "frame_id": 2133,
+            "scenario": 0,
+            "samples": {
+              "ui_events_ms": 0.0045000000000000005,
+              "gpu_poll_ms": 0.0024,
+              "gpu_reclaim_count": 0.0,
+              "gpu_reclaim_ms": 0.0037,
+              "upload_bytes": 0.0,
+              "upload_submit_ms": 0.007500000000000001,
+              "ui_update_ms": 1.0211000000000001,
+              "eframe_cpu_ms": 2.9485998675227165
+            },
+            "qpc": 1411515447783,
+            "render": {
+              "start_qpc": 1411515466180,
+              "end_qpc": 1411515522804,
+              "presented": true,
+              "total_ms": 5.660100000000001,
+              "stages_ms": [
+                0.0052,
+                0.00019999999999999998,
+                0.0084,
+                0.00019999999999999998,
+                0.16870000000000002,
+                3.9414000000000002,
+                0.0021,
+                0.8243,
+                0.0039,
+                0.41869999999999996,
+                9.999999999999999e-05,
+                0.0006,
+                0.0009,
+                0.2852
+              ]
+            }
+          }
+        ],
+        "largest_native_phase": [
+          "surface_acquire_ms",
+          10.879700000000001
+        ],
+        "nearby_frame_count": 55
+      }
+    ],
+    "interpretation": "QPC neighborhood: 250ms before to 50ms after each display interval; correlation only, not proof of causation. Legacy logs have no fixed frame/render context.",
+    "intervals_by_scenario": {
+      "0": 3,
+      "7": 348
+    }
+  },
+  {
+    "sha256": "5283E1A417C799E0B1579D7F8C5EBE5A31CE3EA2C298E6E44C26CD8BD4224FB0",
+    "metadata": "F:\\tuhai-validation\\quick-v5\\ssd-synthetic50k-new-reproduce-scroll\\20260906-161707-1-run.json",
+    "stage_names": [
+      "encoder_create_ms",
+      "upload_lock_ms",
+      "mesh_recall_ms",
+      "egui_texture_upload_ms",
+      "mesh_upload_ms",
+      "surface_acquire_ms",
+      "render_lock_ms",
+      "render_encode_ms",
+      "encoder_finish_ms",
+      "queue_submit_ms",
+      "release_lock_ms",
+      "egui_texture_free_ms",
+      "capture_ms",
+      "present_ms"
+    ],
+    "native_phase_metrics": {
+      "mesh_upload_ms": {
+        "n": 8896,
+        "median": 0.19235,
+        "p95": 0.4414,
+        "p99": 0.5662,
+        "maximum": 1.468,
+        "over_50ms": 0,
+        "over_100ms": 0
+      },
+      "surface_acquire_ms": {
+        "n": 8896,
+        "median": 0.0708,
+        "p95": 13.922199999999998,
+        "p99": 16.591,
+        "maximum": 63.703300000000006,
+        "over_50ms": 1,
+        "over_100ms": 0
+      },
+      "render_encode_ms": {
+        "n": 8896,
+        "median": 0.34714999999999996,
+        "p95": 0.8276,
+        "p99": 1.0820999999999998,
+        "maximum": 3.4398,
+        "over_50ms": 0,
+        "over_100ms": 0
+      },
+      "queue_submit_ms": {
+        "n": 8896,
+        "median": 0.24469999999999997,
+        "p95": 0.5034,
+        "p99": 0.6958,
+        "maximum": 2.0815,
+        "over_50ms": 0,
+        "over_100ms": 0
+      }
+    },
+    "stalls": [
+      {
+        "cpu_start_qpc": 1410785918002,
+        "display_start_qpc": 1410786544884.0,
+        "display_end_qpc": 1410787175009.0,
+        "interval_ms": 63.0125,
+        "scenario": 0,
+        "nearby_frames": [
+          {
+            "frame_id": 8,
+            "scenario": 0,
+            "samples": {
+              "ui_events_ms": 0.0087,
+              "gpu_poll_ms": 0.0108,
+              "gpu_reclaim_count": 0.0,
+              "gpu_reclaim_ms": 0.0161,
+              "upload_bytes": 0.0,
+              "upload_submit_ms": 0.0109,
+              "ui_update_ms": 0.3467,
+              "eframe_cpu_ms": 4.023998975753784
+            },
+            "qpc": 1410787612649,
+            "render": {
+              "start_qpc": 1410787618530,
+              "end_qpc": 1410787811289,
+              "presented": true,
+              "total_ms": 19.274199999999997,
+              "stages_ms": [
+                0.0056,
+                0.00039999999999999996,
+                0.0089,
+                9.999999999999999e-05,
+                1.3239,
+                14.9416,
+                0.0006,
+                1.9414,
+                0.0018,
+                0.9032,
+                0.0007,
+                0.00019999999999999998,
+                0.00019999999999999998,
+                0.1454
+              ]
+            }
+          },
+          {
+            "frame_id": 5,
+            "scenario": 0,
+            "samples": {
+              "ui_events_ms": 0.0118,
+              "gpu_poll_ms": 0.0163,
+              "gpu_reclaim_count": 0.0,
+              "gpu_reclaim_ms": 0.017900000000000003,
+              "upload_bytes": 0.0,
+              "upload_submit_ms": 0.0115,
+              "ui_update_ms": 0.4776,
+              "eframe_cpu_ms": 5.12359943240881
+            },
+            "qpc": 1410787323382,
+            "render": {
+              "start_qpc": 1410787332388,
+              "end_qpc": 1410787463727,
+              "presented": true,
+              "total_ms": 13.1318,
+              "stages_ms": [
+                0.081,
+                0.0007999999999999999,
+                0.009300000000000001,
+                0.00019999999999999998,
+                1.4387,
+                7.0448,
+                0.00039999999999999996,
+                2.4952,
+                0.003,
+                1.7859,
+                0.0006,
+                0.0009,
+                0.0,
+                0.27090000000000003
+              ]
+            }
+          },
+          {
+            "frame_id": 6,
+            "scenario": 0,
+            "samples": {
+              "ui_events_ms": 0.0063,
+              "gpu_poll_ms": 0.0058000000000000005,
+              "gpu_reclaim_count": 0.0,
+              "gpu_reclaim_ms": 0.0072,
+              "upload_bytes": 0.0,
+              "upload_submit_ms": 0.0073,
+              "ui_update_ms": 0.2364,
+              "eframe_cpu_ms": 1.525199506431818
+            },
+            "qpc": 1410787467055,
+            "render": {
+              "start_qpc": 1410787473151,
+              "end_qpc": 1410787552019,
+              "presented": true,
+              "total_ms": 7.8847,
+              "stages_ms": [
+                0.011600000000000001,
+                0.0012,
+                0.0161,
+                0.0003,
+                0.2043,
+                6.6886,
+                0.0021,
+                0.5719,
+                0.0029000000000000002,
+                0.2253,
+                0.00019999999999999998,
+                0.0007999999999999999,
+                0.00039999999999999996,
+                0.1589
+              ]
+            }
+          },
+          {
+            "frame_id": 1,
+            "scenario": 0,
+            "samples": {
+              "ui_events_ms": 0.0222,
+              "gpu_poll_ms": 0.0085,
+              "gpu_reclaim_count": 0.0,
+              "gpu_reclaim_ms": 0.0106,
+              "gpu_retired_bytes": 0.0,
+              "texture_retired_count": 0.0,
+              "cpu_retired_count": 0.0,
+              "cpu_retired_estimated_bytes": 0.0,
+              "upload_bytes": 0.0,
+              "upload_submit_ms": 0.0218,
+              "ui_update_ms": 1.1278,
+              "eframe_cpu_ms": 51.34729668498039
+            },
+            "qpc": 1410785808904,
+            "render": {
+              "start_qpc": 1410785857768,
+              "end_qpc": 1410785918082,
+              "presented": true,
+              "total_ms": 6.029299999999999,
+              "stages_ms": [
+                0.0409,
+                0.00039999999999999996,
+                0.0063999999999999994,
+                3.0376000000000003,
+                0.7741,
+                0.0257,
+                0.0049,
+                1.129,
+                0.0042,
+                0.6206999999999999,
+                0.0003,
+                0.00019999999999999998,
+                0.00019999999999999998,
+                0.3845
+              ]
+            }
+          },
+          {
+            "frame_id": 2,
+            "scenario": 0,
+            "samples": {
+              "ui_events_ms": 0.0049,
+              "gpu_poll_ms": 0.0067,
+              "gpu_reclaim_count": 0.0,
+              "gpu_reclaim_ms": 0.0076,
+              "upload_bytes": 0.0,
+              "upload_submit_ms": 0.0049,
+              "ui_update_ms": 0.1825,
+              "eframe_cpu_ms": 5.532099865376949
+            },
+            "qpc": 1410786756057,
+            "render": {
+              "start_qpc": 1410786758784,
+              "end_qpc": 1410786804458,
+              "presented": true,
+              "total_ms": 4.561,
+              "stages_ms": [
+                0.0021,
+                0.00019999999999999998,
+                0.013,
+                9.999999999999999e-05,
+                0.6650999999999999,
+                0.0211,
+                0.00019999999999999998,
+                1.0943,
+                0.005699999999999999,
+                1.7654,
+                0.0019,
+                0.0005,
+                0.0003,
+                0.9898000000000001
+              ]
+            }
+          },
+          {
+            "frame_id": 7,
+            "scenario": 0,
+            "samples": {
+              "ui_events_ms": 0.0112,
+              "gpu_poll_ms": 0.0040999999999999995,
+              "gpu_reclaim_count": 0.0,
+              "gpu_reclaim_ms": 0.0073,
+              "upload_bytes": 0.0,
+              "upload_submit_ms": 0.0126,
+              "ui_update_ms": 0.39580000000000004,
+              "eframe_cpu_ms": 2.7236000169068575
+            },
+            "qpc": 1410787556646,
+            "render": {
+              "start_qpc": 1410787563637,
+              "end_qpc": 1410787607019,
+              "presented": true,
+              "total_ms": 4.3325000000000005,
+              "stages_ms": [
+                0.003,
+                0.00019999999999999998,
+                0.0054,
+                9.999999999999999e-05,
+                0.1054,
+                0.0203,
+                0.0003,
+                1.7408000000000001,
+                0.0029000000000000002,
+                2.0815,
+                0.0007999999999999999,
+                0.0013,
+                0.0006,
+                0.3699
+              ]
+            }
+          },
+          {
+            "frame_id": 4,
+            "scenario": 0,
+            "samples": {
+              "ui_events_ms": 0.0035,
+              "gpu_poll_ms": 0.0024,
+              "gpu_reclaim_count": 0.0,
+              "gpu_reclaim_ms": 0.0035,
+              "upload_bytes": 0.0,
+              "upload_submit_ms": 0.004,
+              "ui_update_ms": 0.46959999999999996,
+              "eframe_cpu_ms": 4.901399835944176
+            },
+            "qpc": 1410787243691,
+            "render": {
+              "start_qpc": 1410787259492,
+              "end_qpc": 1410787301771,
+              "presented": true,
+              "total_ms": 4.225,
+              "stages_ms": [
+                0.0051,
+                0.0009,
+                0.0112,
+                9.999999999999999e-05,
+                1.1389,
+                0.0378,
+                0.0005,
+                2.0868,
+                0.0015,
+                0.7775,
+                0.0005,
+                0.0003,
+                9.999999999999999e-05,
+                0.16369999999999998
+              ]
+            }
+          },
+          {
+            "frame_id": 3,
+            "scenario": 0,
+            "samples": {
+              "ui_events_ms": 0.0044,
+              "gpu_poll_ms": 0.005,
+              "gpu_reclaim_count": 0.0,
+              "gpu_reclaim_ms": 0.0058000000000000005,
+              "upload_bytes": 0.0,
+              "upload_submit_ms": 0.0045000000000000005,
+              "ui_update_ms": 0.1601,
+              "eframe_cpu_ms": 0.5402999231591821
+            },
+            "qpc": 1410787234063,
+            "render": {
+              "start_qpc": 1410787236587,
+              "end_qpc": 1410787240785,
+              "presented": true,
+              "total_ms": 0.4191,
+              "stages_ms": [
+                0.0024,
+                0.00019999999999999998,
+                0.0042,
+                9.999999999999999e-05,
+                0.0847,
+                0.0167,
+                0.0006,
+                0.1217,
+                0.0013,
+                0.0953,
+                9.999999999999999e-05,
+                9.999999999999999e-05,
+                0.00039999999999999996,
+                0.09129999999999999
+              ]
+            }
+          }
+        ],
+        "largest_native_phase": [
+          "surface_acquire_ms",
+          14.9416
+        ],
+        "nearby_frame_count": 8
+      },
+      {
+        "cpu_start_qpc": 1410786804142,
+        "display_start_qpc": 1410787175009.0,
+        "display_end_qpc": 1410787812760.0,
+        "interval_ms": 63.7751,
+        "scenario": 0,
+        "nearby_frames": [
+          {
+            "frame_id": 9,
+            "scenario": 0,
+            "samples": {
+              "ui_events_ms": 0.0067,
+              "gpu_poll_ms": 0.011,
+              "gpu_reclaim_count": 0.0,
+              "gpu_reclaim_ms": 0.0126,
+              "upload_bytes": 0.0,
+              "upload_submit_ms": 0.0083,
+              "ui_update_ms": 0.3164,
+              "eframe_cpu_ms": 1.3440009206533432
+            },
+            "qpc": 1410787826626,
+            "render": {
+              "start_qpc": 1410787831794,
+              "end_qpc": 1410788028758,
+              "presented": true,
+              "total_ms": 19.6918,
+              "stages_ms": [
+                0.0046,
+                0.0005,
+                0.0063,
+                0.0,
+                0.1164,
+                18.6542,
+                0.00019999999999999998,
+                0.1461,
+                0.0019,
+                0.3037,
+                0.0007,
+                0.0007,
+                9.999999999999999e-05,
+                0.4559
+              ]
+            }
+          },
+          {
+            "frame_id": 8,
+            "scenario": 0,
+            "samples": {
+              "ui_events_ms": 0.0087,
+              "gpu_poll_ms": 0.0108,
+              "gpu_reclaim_count": 0.0,
+              "gpu_reclaim_ms": 0.0161,
+              "upload_bytes": 0.0,
+              "upload_submit_ms": 0.0109,
+              "ui_update_ms": 0.3467,
+              "eframe_cpu_ms": 4.023998975753784
+            },
+            "qpc": 1410787612649,
+            "render": {
+              "start_qpc": 1410787618530,
+              "end_qpc": 1410787811289,
+              "presented": true,
+              "total_ms": 19.274199999999997,
+              "stages_ms": [
+                0.0056,
+                0.00039999999999999996,
+                0.0089,
+                9.999999999999999e-05,
+                1.3239,
+                14.9416,
+                0.0006,
+                1.9414,
+                0.0018,
+                0.9032,
+                0.0007,
+                0.00019999999999999998,
+                0.00019999999999999998,
+                0.1454
+              ]
+            }
+          },
+          {
+            "frame_id": 12,
+            "scenario": 0,
+            "samples": {
+              "ui_events_ms": 0.0851,
+              "gpu_poll_ms": 0.0185,
+              "gpu_reclaim_count": 0.0,
+              "gpu_reclaim_ms": 0.027299999999999998,
+              "upload_bytes": 0.0,
+              "upload_submit_ms": 0.0122,
+              "ui_update_ms": 2.7144,
+              "eframe_cpu_ms": 7.958299480378628
+            },
+            "qpc": 1410788207967,
+            "render": {
+              "start_qpc": 1410788253146,
+              "end_qpc": 1410788421053,
+              "presented": true,
+              "total_ms": 16.7897,
+              "stages_ms": [
+                0.0099,
+                0.0003,
+                0.0129,
+                1.9881,
+                1.0032,
+                12.9774,
+                0.0006,
+                0.1861,
+                0.0015999999999999999,
+                0.49229999999999996,
+                9.999999999999999e-05,
+                0.00019999999999999998,
+                9.999999999999999e-05,
+                0.1168
+              ]
+            }
+          },
+          {
+            "frame_id": 5,
+            "scenario": 0,
+            "samples": {
+              "ui_events_ms": 0.0118,
+              "gpu_poll_ms": 0.0163,
+              "gpu_reclaim_count": 0.0,
+              "gpu_reclaim_ms": 0.017900000000000003,
+              "upload_bytes": 0.0,
+              "upload_submit_ms": 0.0115,
+              "ui_update_ms": 0.4776,
+              "eframe_cpu_ms": 5.12359943240881
+            },
+            "qpc": 1410787323382,
+            "render": {
+              "start_qpc": 1410787332388,
+              "end_qpc": 1410787463727,
+              "presented": true,
+              "total_ms": 13.1318,
+              "stages_ms": [
+                0.081,
+                0.0007999999999999999,
+                0.009300000000000001,
+                0.00019999999999999998,
+                1.4387,
+                7.0448,
+                0.00039999999999999996,
+                2.4952,
+                0.003,
+                1.7859,
+                0.0006,
+                0.0009,
+                0.0,
+                0.27090000000000003
+              ]
+            }
+          },
+          {
+            "frame_id": 10,
+            "scenario": 0,
+            "samples": {
+              "ui_events_ms": 0.0133,
+              "gpu_poll_ms": 0.008,
+              "gpu_reclaim_count": 0.0,
+              "gpu_reclaim_ms": 0.0096,
+              "upload_bytes": 0.0,
+              "upload_submit_ms": 0.0065,
+              "ui_update_ms": 0.3143,
+              "eframe_cpu_ms": 3.714899532496929
+            },
+            "qpc": 1410788035732,
+            "render": {
+              "start_qpc": 1410788043876,
+              "end_qpc": 1410788161358,
+              "presented": true,
+              "total_ms": 11.745099999999999,
+              "stages_ms": [
+                0.0098,
+                0.001,
+                0.0121,
+                1.9507999999999999,
+                0.0995,
+                8.0672,
+                0.0049,
+                0.6011000000000001,
+                0.0042,
+                0.7141,
+                0.0006,
+                0.0007999999999999999,
+                0.0006,
+                0.2783
+              ]
+            }
+          },
+          {
+            "frame_id": 6,
+            "scenario": 0,
+            "samples": {
+              "ui_events_ms": 0.0063,
+              "gpu_poll_ms": 0.0058000000000000005,
+              "gpu_reclaim_count": 0.0,
+              "gpu_reclaim_ms": 0.0072,
+              "upload_bytes": 0.0,
+              "upload_submit_ms": 0.0073,
+              "ui_update_ms": 0.2364,
+              "eframe_cpu_ms": 1.525199506431818
+            },
+            "qpc": 1410787467055,
+            "render": {
+              "start_qpc": 1410787473151,
+              "end_qpc": 1410787552019,
+              "presented": true,
+              "total_ms": 7.8847,
+              "stages_ms": [
+                0.011600000000000001,
+                0.0012,
+                0.0161,
+                0.0003,
+                0.2043,
+                6.6886,
+                0.0021,
+                0.5719,
+                0.0029000000000000002,
+                0.2253,
+                0.00019999999999999998,
+                0.0007999999999999999,
+                0.00039999999999999996,
+                0.1589
+              ]
+            }
+          },
+          {
+            "frame_id": 1,
+            "scenario": 0,
+            "samples": {
+              "ui_events_ms": 0.0222,
+              "gpu_poll_ms": 0.0085,
+              "gpu_reclaim_count": 0.0,
+              "gpu_reclaim_ms": 0.0106,
+              "gpu_retired_bytes": 0.0,
+              "texture_retired_count": 0.0,
+              "cpu_retired_count": 0.0,
+              "cpu_retired_estimated_bytes": 0.0,
+              "upload_bytes": 0.0,
+              "upload_submit_ms": 0.0218,
+              "ui_update_ms": 1.1278,
+              "eframe_cpu_ms": 51.34729668498039
+            },
+            "qpc": 1410785808904,
+            "render": {
+              "start_qpc": 1410785857768,
+              "end_qpc": 1410785918082,
+              "presented": true,
+              "total_ms": 6.029299999999999,
+              "stages_ms": [
+                0.0409,
+                0.00039999999999999996,
+                0.0063999999999999994,
+                3.0376000000000003,
+                0.7741,
+                0.0257,
+                0.0049,
+                1.129,
+                0.0042,
+                0.6206999999999999,
+                0.0003,
+                0.00019999999999999998,
+                0.00019999999999999998,
+                0.3845
+              ]
+            }
+          },
+          {
+            "frame_id": 2,
+            "scenario": 0,
+            "samples": {
+              "ui_events_ms": 0.0049,
+              "gpu_poll_ms": 0.0067,
+              "gpu_reclaim_count": 0.0,
+              "gpu_reclaim_ms": 0.0076,
+              "upload_bytes": 0.0,
+              "upload_submit_ms": 0.0049,
+              "ui_update_ms": 0.1825,
+              "eframe_cpu_ms": 5.532099865376949
+            },
+            "qpc": 1410786756057,
+            "render": {
+              "start_qpc": 1410786758784,
+              "end_qpc": 1410786804458,
+              "presented": true,
+              "total_ms": 4.561,
+              "stages_ms": [
+                0.0021,
+                0.00019999999999999998,
+                0.013,
+                9.999999999999999e-05,
+                0.6650999999999999,
+                0.0211,
+                0.00019999999999999998,
+                1.0943,
+                0.005699999999999999,
+                1.7654,
+                0.0019,
+                0.0005,
+                0.0003,
+                0.9898000000000001
+              ]
+            }
+          }
+        ],
+        "largest_native_phase": [
+          "surface_acquire_ms",
+          18.6542
+        ],
+        "nearby_frame_count": 12
+      },
+      {
+        "cpu_start_qpc": 1410853065400,
+        "display_start_qpc": 1410853261893.0,
+        "display_end_qpc": 1410853869278.0,
+        "interval_ms": 60.7385,
+        "scenario": 0,
+        "nearby_frames": [
+          {
+            "frame_id": 1349,
+            "scenario": 0,
+            "samples": {
+              "ui_events_ms": 0.009099999999999999,
+              "gpu_poll_ms": 0.0037,
+              "gpu_reclaim_count": 0.0,
+              "gpu_reclaim_ms": 0.0054,
+              "upload_bytes": 0.0,
+              "upload_submit_ms": 0.0088,
+              "ui_update_ms": 1.1724,
+              "eframe_cpu_ms": 3.023497760295868
+            },
+            "qpc": 1410853406336,
+            "render": {
+              "start_qpc": 1410853426585,
+              "end_qpc": 1410854082964,
+              "presented": true,
+              "total_ms": 65.63080000000001,
+              "stages_ms": [
+                0.005699999999999999,
+                0.0005,
+                0.0070999999999999995,
+                9.999999999999999e-05,
+                0.17220000000000002,
+                63.703300000000006,
+                0.00039999999999999996,
+                0.6602,
+                0.0040999999999999995,
+                0.5493,
+                0.0007999999999999999,
+                0.001,
+                0.0005,
+                0.525
+              ]
+            }
+          },
+          {
+            "frame_id": 1336,
+            "scenario": 0,
+            "samples": {
+              "ui_events_ms": 0.015000000000000001,
+              "gpu_poll_ms": 0.020999999999999998,
+              "gpu_reclaim_count": 0.0,
+              "gpu_reclaim_ms": 0.0269,
+              "upload_bytes": 0.0,
+              "upload_submit_ms": 0.0138,
+              "ui_update_ms": 2.6599000000000004,
+              "eframe_cpu_ms": 4.920998588204384
+            },
+            "qpc": 1410852334826,
+            "render": {
+              "start_qpc": 1410852370786,
+              "end_qpc": 1410852502507,
+              "presented": true,
+              "total_ms": 13.1675,
+              "stages_ms": [
+                0.0058000000000000005,
+                0.0005,
+                0.0135,
+                0.00019999999999999998,
+                0.1709,
+                11.2121,
+                0.0006,
+                0.8936999999999999,
+                0.0051,
+                0.5352,
+                0.0007,
+                0.0009,
+                0.0006,
+                0.3272
+              ]
+            }
+          },
+          {
+            "frame_id": 1352,
+            "scenario": 0,
+            "samples": {
+              "ui_events_ms": 0.0101,
+              "gpu_poll_ms": 0.011899999999999999,
+              "gpu_reclaim_count": 0.0,
+              "gpu_reclaim_ms": 0.0134,
+              "upload_bytes": 0.0,
+              "upload_submit_ms": 0.0096,
+              "ui_update_ms": 1.8541,
+              "eframe_cpu_ms": 4.270800389349461
+            },
+            "qpc": 1410854286724,
+            "render": {
+              "start_qpc": 1410854317527,
+              "end_qpc": 1410854404769,
+              "presented": true,
+              "total_ms": 8.722900000000001,
+              "stages_ms": [
+                0.0062,
+                0.00039999999999999996,
+                0.008199999999999999,
+                0.00019999999999999998,
+                0.289,
+                6.6689,
+                0.00039999999999999996,
+                0.7427999999999999,
+                0.0092,
+                0.8184,
+                0.00019999999999999998,
+                0.0003,
+                0.00019999999999999998,
+                0.1784
+              ]
+            }
+          },
+          {
+            "frame_id": 1350,
+            "scenario": 0,
+            "samples": {
+              "ui_events_ms": 0.0051,
+              "gpu_poll_ms": 0.0058000000000000005,
+              "gpu_reclaim_count": 0.0,
+              "gpu_reclaim_ms": 0.0070999999999999995,
+              "upload_bytes": 0.0,
+              "upload_submit_ms": 0.0052,
+              "ui_update_ms": 1.1309,
+              "eframe_cpu_ms": 2.8007994405925274
+            },
+            "qpc": 1410854089359,
+            "render": {
+              "start_qpc": 1410854107459,
+              "end_qpc": 1410854180055,
+              "presented": true,
+              "total_ms": 7.256399999999999,
+              "stages_ms": [
+                0.0053,
+                0.0005,
+                0.0069,
+                0.00019999999999999998,
+                0.12129999999999999,
+                5.2667,
+                0.0007,
+                0.7265,
+                0.0076,
+                0.38989999999999997,
+                9.999999999999999e-05,
+                0.0007999999999999999,
+                0.0003,
+                0.7295
+              ]
+            }
+          },
+          {
+            "frame_id": 1328,
+            "scenario": 0,
+            "samples": {
+              "ui_events_ms": 0.0189,
+              "gpu_poll_ms": 0.0294,
+              "gpu_reclaim_count": 0.0,
+              "gpu_reclaim_ms": 0.0332,
+              "upload_bytes": 0.0,
+              "upload_submit_ms": 0.0184,
+              "ui_update_ms": 2.2738,
+              "eframe_cpu_ms": 5.585399456322193
+            },
+            "qpc": 1410851676271,
+            "render": {
+              "start_qpc": 1410851719626,
+              "end_qpc": 1410851790765,
+              "presented": true,
+              "total_ms": 7.1084,
+              "stages_ms": [
+                0.0073,
+                0.0007999999999999999,
+                0.007500000000000001,
+                9.999999999999999e-05,
+                0.1895,
+                5.4856,
+                0.0006,
+                0.6315000000000001,
+                0.0039,
+                0.4798,
+                0.00039999999999999996,
+                0.0006,
+                0.0003,
+                0.3005
+              ]
+            }
+          },
+          {
+            "frame_id": 1323,
+            "scenario": 0,
+            "samples": {
+              "ui_events_ms": 0.005,
+              "gpu_poll_ms": 0.0079,
+              "gpu_reclaim_count": 0.0,
+              "gpu_reclaim_ms": 0.0092,
+              "upload_bytes": 0.0,
+              "upload_submit_ms": 0.0045000000000000005,
+              "ui_update_ms": 2.0074,
+              "eframe_cpu_ms": 4.129399545490742
+            },
+            "qpc": 1410851372457,
+            "render": {
+              "start_qpc": 1410851402991,
+              "end_qpc": 1410851461211,
+              "presented": true,
+              "total_ms": 5.8166,
+              "stages_ms": [
+                0.0046,
+                0.0003,
+                0.0149,
+                9.999999999999999e-05,
+                0.4379,
+                4.056299999999999,
+                0.00039999999999999996,
+                0.4837,
+                0.0024,
+                0.48660000000000003,
+                0.0014,
+                0.0005,
+                0.00039999999999999996,
+                0.32699999999999996
+              ]
+            }
+          },
+          {
+            "frame_id": 1318,
+            "scenario": 0,
+            "samples": {
+              "ui_events_ms": 0.0158,
+              "gpu_poll_ms": 0.022600000000000002,
+              "gpu_reclaim_count": 0.0,
+              "gpu_reclaim_ms": 0.025,
+              "upload_bytes": 0.0,
+              "upload_submit_ms": 0.011,
+              "ui_update_ms": 2.2616,
+              "eframe_cpu_ms": 4.654799588024616
+            },
+            "qpc": 1410851052997,
+            "render": {
+              "start_qpc": 1410851086842,
+              "end_qpc": 1410851144360,
+              "presented": true,
+              "total_ms": 5.7472,
+              "stages_ms": [
+                0.0045000000000000005,
+                0.0005,
+                0.0043,
+                0.0006,
+                0.1177,
+                4.0074000000000005,
+                0.0005,
+                0.8360000000000001,
+                0.0037,
+                0.43360000000000004,
+                0.0007999999999999999,
+                0.0006,
+                0.00039999999999999996,
+                0.3366
+              ]
+            }
+          },
+          {
+            "frame_id": 1332,
+            "scenario": 0,
+            "samples": {
+              "ui_events_ms": 0.022799999999999997,
+              "gpu_poll_ms": 0.0288,
+              "gpu_reclaim_count": 0.0,
+              "gpu_reclaim_ms": 0.0326,
+              "upload_bytes": 0.0,
+              "upload_submit_ms": 0.0165,
+              "ui_update_ms": 4.2321,
+              "eframe_cpu_ms": 6.70279935002327
+            },
+            "qpc": 1410851994479,
+            "render": {
+              "start_qpc": 1410852049535,
+              "end_qpc": 1410852106815,
+              "presented": true,
+              "total_ms": 5.7225,
+              "stages_ms": [
+                0.0044,
+                0.00039999999999999996,
+                0.0063,
+                9.999999999999999e-05,
+                0.1922,
+                4.1083,
+                0.0005,
+                0.6719999999999999,
+                0.0038,
+                0.4109,
+                9.999999999999999e-05,
+                0.0014,
+                0.00019999999999999998,
+                0.32180000000000003
+              ]
+            }
+          }
+        ],
+        "largest_native_phase": [
+          "surface_acquire_ms",
+          63.703300000000006
+        ],
+        "nearby_frame_count": 40
+      },
+      {
+        "cpu_start_qpc": 1410853369037,
+        "display_start_qpc": 1410854173452.0,
+        "display_end_qpc": 1410854785576.0,
+        "interval_ms": 61.2124,
+        "scenario": 0,
+        "nearby_frames": [
+          {
+            "frame_id": 1349,
+            "scenario": 0,
+            "samples": {
+              "ui_events_ms": 0.009099999999999999,
+              "gpu_poll_ms": 0.0037,
+              "gpu_reclaim_count": 0.0,
+              "gpu_reclaim_ms": 0.0054,
+              "upload_bytes": 0.0,
+              "upload_submit_ms": 0.0088,
+              "ui_update_ms": 1.1724,
+              "eframe_cpu_ms": 3.023497760295868
+            },
+            "qpc": 1410853406336,
+            "render": {
+              "start_qpc": 1410853426585,
+              "end_qpc": 1410854082964,
+              "presented": true,
+              "total_ms": 65.63080000000001,
+              "stages_ms": [
+                0.005699999999999999,
+                0.0005,
+                0.0070999999999999995,
+                9.999999999999999e-05,
+                0.17220000000000002,
+                63.703300000000006,
+                0.00039999999999999996,
+                0.6602,
+                0.0040999999999999995,
+                0.5493,
+                0.0007999999999999999,
+                0.001,
+                0.0005,
+                0.525
+              ]
+            }
+          },
+          {
+            "frame_id": 1353,
+            "scenario": 0,
+            "samples": {
+              "ui_events_ms": 0.014199999999999999,
+              "gpu_poll_ms": 0.0174,
+              "gpu_reclaim_count": 0.0,
+              "gpu_reclaim_ms": 0.0207,
+              "upload_bytes": 983040.0,
+              "upload_submit_ms": 2.0309999999999997,
+              "ui_update_ms": 3.0349,
+              "eframe_cpu_ms": 5.730099976062775
+            },
+            "qpc": 1410854409858,
+            "render": {
+              "start_qpc": 1410854447658,
+              "end_qpc": 1410854703826,
+              "presented": true,
+              "total_ms": 25.6153,
+              "stages_ms": [
+                0.009099999999999999,
+                0.0007,
+                0.013600000000000001,
+                0.001,
+                0.38180000000000003,
+                23.349700000000002,
+                0.0007999999999999999,
+                1.342,
+                0.0089,
+                0.3687,
+                9.999999999999999e-05,
+                0.0003,
+                0.00019999999999999998,
+                0.1382
+              ]
+            }
+          },
+          {
+            "frame_id": 1356,
+            "scenario": 0,
+            "samples": {
+              "ui_events_ms": 0.0062,
+              "gpu_poll_ms": 0.0068000000000000005,
+              "gpu_reclaim_count": 0.0,
+              "gpu_reclaim_ms": 0.0081,
+              "upload_bytes": 0.0,
+              "upload_submit_ms": 0.0054,
+              "ui_update_ms": 1.5875,
+              "eframe_cpu_ms": 4.828300327062607
+            },
+            "qpc": 1410854899846,
+            "render": {
+              "start_qpc": 1410854930870,
+              "end_qpc": 1410855134448,
+              "presented": true,
+              "total_ms": 20.352999999999998,
+              "stages_ms": [
+                0.0163,
+                0.0012,
+                0.0216,
+                0.0006,
+                0.5095,
+                17.9859,
+                0.0007,
+                0.9369,
+                0.0031,
+                0.5637,
+                0.00019999999999999998,
+                0.001,
+                0.0011,
+                0.311
+              ]
+            }
+          },
+          {
+            "frame_id": 1358,
+            "scenario": 0,
+            "samples": {
+              "ui_events_ms": 0.0184,
+              "gpu_poll_ms": 0.0229,
+              "gpu_reclaim_count": 0.0,
+              "gpu_reclaim_ms": 0.025599999999999998,
+              "upload_bytes": 0.0,
+              "upload_submit_ms": 0.12530000000000002,
+              "ui_update_ms": 3.0284,
+              "eframe_cpu_ms": 7.096598856151104
+            },
+            "qpc": 1410855223386,
+            "render": {
+              "start_qpc": 1410855279846,
+              "end_qpc": 1410855428973,
+              "presented": true,
+              "total_ms": 14.909600000000001,
+              "stages_ms": [
+                0.015000000000000001,
+                0.0011,
+                0.02,
+                0.0003,
+                0.4095,
+                13.062000000000001,
+                0.0007,
+                0.7324,
+                0.0040999999999999995,
+                0.3936,
+                0.00019999999999999998,
+                0.0005,
+                0.00039999999999999996,
+                0.2697
+              ]
+            }
+          },
+          {
+            "frame_id": 1336,
+            "scenario": 0,
+            "samples": {
+              "ui_events_ms": 0.015000000000000001,
+              "gpu_poll_ms": 0.020999999999999998,
+              "gpu_reclaim_count": 0.0,
+              "gpu_reclaim_ms": 0.0269,
+              "upload_bytes": 0.0,
+              "upload_submit_ms": 0.0138,
+              "ui_update_ms": 2.6599000000000004,
+              "eframe_cpu_ms": 4.920998588204384
+            },
+            "qpc": 1410852334826,
+            "render": {
+              "start_qpc": 1410852370786,
+              "end_qpc": 1410852502507,
+              "presented": true,
+              "total_ms": 13.1675,
+              "stages_ms": [
+                0.0058000000000000005,
+                0.0005,
+                0.0135,
+                0.00019999999999999998,
+                0.1709,
+                11.2121,
+                0.0006,
+                0.8936999999999999,
+                0.0051,
+                0.5352,
+                0.0007,
+                0.0009,
+                0.0006,
+                0.3272
+              ]
+            }
+          },
+          {
+            "frame_id": 1352,
+            "scenario": 0,
+            "samples": {
+              "ui_events_ms": 0.0101,
+              "gpu_poll_ms": 0.011899999999999999,
+              "gpu_reclaim_count": 0.0,
+              "gpu_reclaim_ms": 0.0134,
+              "upload_bytes": 0.0,
+              "upload_submit_ms": 0.0096,
+              "ui_update_ms": 1.8541,
+              "eframe_cpu_ms": 4.270800389349461
+            },
+            "qpc": 1410854286724,
+            "render": {
+              "start_qpc": 1410854317527,
+              "end_qpc": 1410854404769,
+              "presented": true,
+              "total_ms": 8.722900000000001,
+              "stages_ms": [
+                0.0062,
+                0.00039999999999999996,
+                0.008199999999999999,
+                0.00019999999999999998,
+                0.289,
+                6.6689,
+                0.00039999999999999996,
+                0.7427999999999999,
+                0.0092,
+                0.8184,
+                0.00019999999999999998,
+                0.0003,
+                0.00019999999999999998,
+                0.1784
+              ]
+            }
+          },
+          {
+            "frame_id": 1354,
+            "scenario": 0,
+            "samples": {
+              "ui_events_ms": 0.0185,
+              "gpu_poll_ms": 0.0189,
+              "gpu_reclaim_count": 0.0,
+              "gpu_reclaim_ms": 0.023,
+              "upload_bytes": 393216.0,
+              "upload_submit_ms": 1.5103,
+              "ui_update_ms": 2.6673,
+              "eframe_cpu_ms": 4.632299765944481
+            },
+            "qpc": 1410854710226,
+            "render": {
+              "start_qpc": 1410854743724,
+              "end_qpc": 1410854817559,
+              "presented": true,
+              "total_ms": 7.3772,
+              "stages_ms": [
+                0.0055,
+                0.0005,
+                0.0068000000000000005,
+                0.00019999999999999998,
+                0.1623,
+                5.241,
+                0.0007999999999999999,
+                0.8434999999999999,
+                0.0054,
+                0.725,
+                0.0006,
+                0.0009,
+                0.00019999999999999998,
+                0.3844
+              ]
+            }
+          },
+          {
+            "frame_id": 1350,
+            "scenario": 0,
+            "samples": {
+              "ui_events_ms": 0.0051,
+              "gpu_poll_ms": 0.0058000000000000005,
+              "gpu_reclaim_count": 0.0,
+              "gpu_reclaim_ms": 0.0070999999999999995,
+              "upload_bytes": 0.0,
+              "upload_submit_ms": 0.0052,
+              "ui_update_ms": 1.1309,
+              "eframe_cpu_ms": 2.8007994405925274
+            },
+            "qpc": 1410854089359,
+            "render": {
+              "start_qpc": 1410854107459,
+              "end_qpc": 1410854180055,
+              "presented": true,
+              "total_ms": 7.256399999999999,
+              "stages_ms": [
+                0.0053,
+                0.0005,
+                0.0069,
+                0.00019999999999999998,
+                0.12129999999999999,
+                5.2667,
+                0.0007,
+                0.7265,
+                0.0076,
+                0.38989999999999997,
+                9.999999999999999e-05,
+                0.0007999999999999999,
+                0.0003,
+                0.7295
+              ]
+            }
+          }
+        ],
+        "largest_native_phase": [
+          "surface_acquire_ms",
+          63.703300000000006
+        ],
+        "nearby_frame_count": 31
+      },
+      {
+        "cpu_start_qpc": 1410937993887,
+        "display_start_qpc": 1410938077708.0,
+        "display_end_qpc": 1410938705047.0,
+        "interval_ms": 62.73390000000001,
+        "scenario": 0,
+        "nearby_frames": [
+          {
+            "frame_id": 2449,
+            "scenario": 0,
+            "samples": {
+              "ui_events_ms": 0.0036,
+              "gpu_poll_ms": 0.0046,
+              "gpu_reclaim_count": 0.0,
+              "gpu_reclaim_ms": 0.005699999999999999,
+              "upload_bytes": 0.0,
+              "upload_submit_ms": 0.0063,
+              "ui_update_ms": 0.6787,
+              "eframe_cpu_ms": 2.134399488568306
+            },
+            "qpc": 1410937590281,
+            "render": {
+              "start_qpc": 1410937603696,
+              "end_qpc": 1410937848830,
+              "presented": true,
+              "total_ms": 24.5097,
+              "stages_ms": [
+                0.0037,
+                0.0005,
+                0.0063,
+                0.00019999999999999998,
+                0.195,
+                23.219199999999997,
+                0.0005,
+                0.4879,
+                0.0043,
+                0.3685,
+                9.999999999999999e-05,
+                0.0017000000000000001,
+                0.0,
+                0.2215
+              ]
+            }
+          },
+          {
+            "frame_id": 2442,
+            "scenario": 0,
+            "samples": {
+              "ui_events_ms": 0.0109,
+              "gpu_poll_ms": 0.0059,
+              "gpu_reclaim_count": 0.0,
+              "gpu_reclaim_ms": 0.0089,
+              "upload_bytes": 0.0,
+              "upload_submit_ms": 0.013699999999999999,
+              "ui_update_ms": 2.5942000000000003,
+              "eframe_cpu_ms": 5.104897543787956
+            },
+            "qpc": 1410936888646,
+            "render": {
+              "start_qpc": 1410936928835,
+              "end_qpc": 1410937154133,
+              "presented": true,
+              "total_ms": 22.5245,
+              "stages_ms": [
+                0.0171,
+                0.0013,
+                0.02,
+                0.0006,
+                0.5109999999999999,
+                21.070800000000002,
+                0.0007999999999999999,
+                0.35169999999999996,
+                0.0018,
+                0.2679,
+                0.0003,
+                0.0005,
+                0.00019999999999999998,
+                0.27999999999999997
+              ]
+            }
+          },
+          {
+            "frame_id": 2462,
+            "scenario": 0,
+            "samples": {
+              "ui_events_ms": 0.0088,
+              "gpu_poll_ms": 0.008199999999999999,
+              "gpu_reclaim_count": 0.0,
+              "gpu_reclaim_ms": 0.0099,
+              "upload_bytes": 0.0,
+              "upload_submit_ms": 0.0053,
+              "ui_update_ms": 1.1881000000000002,
+              "eframe_cpu_ms": 2.972599118947983
+            },
+            "qpc": 1410938436311,
+            "render": {
+              "start_qpc": 1410938456061,
+              "end_qpc": 1410938626919,
+              "presented": true,
+              "total_ms": 17.080000000000002,
+              "stages_ms": [
+                0.0124,
+                0.00039999999999999996,
+                0.011,
+                0.0003,
+                0.26239999999999997,
+                15.4773,
+                0.0006,
+                0.5262,
+                0.0035,
+                0.4713,
+                0.001,
+                0.0005,
+                0.0003,
+                0.31270000000000003
+              ]
+            }
+          },
+          {
+            "frame_id": 2447,
+            "scenario": 0,
+            "samples": {
+              "ui_events_ms": 0.0083,
+              "gpu_poll_ms": 0.005,
+              "gpu_reclaim_count": 0.0,
+              "gpu_reclaim_ms": 0.007,
+              "upload_bytes": 0.0,
+              "upload_submit_ms": 0.0101,
+              "ui_update_ms": 0.9875,
+              "eframe_cpu_ms": 2.7796998620033264
+            },
+            "qpc": 1410937375114,
+            "render": {
+              "start_qpc": 1410937389975,
+              "end_qpc": 1410937543701,
+              "presented": true,
+              "total_ms": 15.3697,
+              "stages_ms": [
+                0.006,
+                0.0005,
+                0.0089,
+                0.0,
+                0.2796,
+                13.6148,
+                0.0017000000000000001,
+                0.8288,
+                0.0035,
+                0.3872,
+                0.0,
+                0.00039999999999999996,
+                0.0003,
+                0.2376
+              ]
+            }
+          },
+          {
+            "frame_id": 2458,
+            "scenario": 0,
+            "samples": {
+              "ui_events_ms": 0.0078,
+              "gpu_poll_ms": 0.0096,
+              "gpu_reclaim_count": 0.0,
+              "gpu_reclaim_ms": 0.0111,
+              "upload_bytes": 0.0,
+              "upload_submit_ms": 0.0101,
+              "ui_update_ms": 1.2853,
+              "eframe_cpu_ms": 3.5405997186899185
+            },
+            "qpc": 1410938153301,
+            "render": {
+              "start_qpc": 1410938180446,
+              "end_qpc": 1410938322007,
+              "presented": true,
+              "total_ms": 14.154200000000001,
+              "stages_ms": [
+                0.0095,
+                0.0013,
+                0.0115,
+                0.00019999999999999998,
+                0.2786,
+                13.0067,
+                0.0005,
+                0.3687,
+                0.0024,
+                0.2952,
+                9.999999999999999e-05,
+                0.0003,
+                9.999999999999999e-05,
+                0.1789
+              ]
+            }
+          },
+          {
+            "frame_id": 2438,
+            "scenario": 0,
+            "samples": {
+              "ui_events_ms": 0.0146,
+              "gpu_poll_ms": 0.0157,
+              "gpu_reclaim_count": 0.0,
+              "gpu_reclaim_ms": 0.0194,
+              "upload_bytes": 0.0,
+              "upload_submit_ms": 0.0165,
+              "ui_update_ms": 1.8982,
+              "eframe_cpu_ms": 3.3281994983553886
+            },
+            "qpc": 1410936570170,
+            "render": {
+              "start_qpc": 1410936596243,
+              "end_qpc": 1410936728537,
+              "presented": true,
+              "total_ms": 13.2258,
+              "stages_ms": [
+                0.0099,
+                0.0006,
+                0.0132,
+                9.999999999999999e-05,
+                0.2405,
+                12.155600000000002,
+                0.0005,
+                0.2701,
+                0.0012,
+                0.32,
+                9.999999999999999e-05,
+                0.0007,
+                0.0,
+                0.21330000000000002
+              ]
+            }
+          },
+          {
+            "frame_id": 2467,
+            "scenario": 0,
+            "samples": {
+              "ui_events_ms": 0.011899999999999999,
+              "gpu_poll_ms": 0.0122,
+              "gpu_reclaim_count": 0.0,
+              "gpu_reclaim_ms": 0.015099999999999999,
+              "upload_bytes": 0.0,
+              "upload_submit_ms": 0.0101,
+              "ui_update_ms": 0.9848999999999999,
+              "eframe_cpu_ms": 2.147199586033821
+            },
+            "qpc": 1410938793264,
+            "render": {
+              "start_qpc": 1410938809823,
+              "end_qpc": 1410938929785,
+              "presented": true,
+              "total_ms": 11.991200000000001,
+              "stages_ms": [
+                0.0086,
+                0.0007999999999999999,
+                0.0121,
+                9.999999999999999e-05,
+                0.11689999999999999,
+                11.2319,
+                0.00039999999999999996,
+                0.20729999999999998,
+                0.0012,
+                0.18239999999999998,
+                0.0,
+                0.0006,
+                0.00019999999999999998,
+                0.2286
+              ]
+            }
+          },
+          {
+            "frame_id": 2472,
+            "scenario": 0,
+            "samples": {
+              "ui_events_ms": 0.0076,
+              "gpu_poll_ms": 0.0022,
+              "gpu_reclaim_count": 0.0,
+              "gpu_reclaim_ms": 0.0052,
+              "upload_bytes": 0.0,
+              "upload_submit_ms": 0.008,
+              "ui_update_ms": 0.7456,
+              "eframe_cpu_ms": 2.05020047724247
+            },
+            "qpc": 1410939088679,
+            "render": {
+              "start_qpc": 1410939103624,
+              "end_qpc": 1410939219850,
+              "presented": true,
+              "total_ms": 11.6195,
+              "stages_ms": [
+                0.0123,
+                0.0017000000000000001,
+                0.014,
+                0.00019999999999999998,
+                0.23399999999999999,
+                10.841,
+                0.0005,
+                0.1948,
+                0.0009,
+                0.1682,
+                0.00019999999999999998,
+                0.0003,
+                0.0,
+                0.1513
+              ]
+            }
+          }
+        ],
+        "largest_native_phase": [
+          "surface_acquire_ms",
+          23.219199999999997
+        ],
+        "nearby_frame_count": 47
+      }
+    ],
+    "interpretation": "QPC neighborhood: 250ms before to 50ms after each display interval; correlation only, not proof of causation. Legacy logs have no fixed frame/render context.",
+    "intervals_by_scenario": {
+      "0": 5
+    }
+  }
+]

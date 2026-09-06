@@ -9,6 +9,48 @@ from summarize_runs import collect
 from validate_ui_run import validate, validate_result
 
 class ReportTests(unittest.TestCase):
+    def test_compact_samples_preserve_context_and_terminal_validation(self):
+        from perf_log import COLUMNS,expand
+        sample=dict(zip(COLUMNS,[100,200,7,1,11,2,'ui_update_ms',1.5,True,None,300]))
+        batch=dict(kind='sample_batch',rows=[[sample[k] for k in COLUMNS]])
+        self.assertEqual(list(expand(batch)),[sample])
+        with self.assertRaises(ValueError):list(expand(dict(kind='sample_batch',rows=[[1]])))
+        with tempfile.TemporaryDirectory() as root:
+            path=Path(root)/'log.jsonl'
+            records=[dict(kind='run_header',schema=2,scenario_name='open'),batch]
+            for name in ['soak_completed_seconds','log_dropped','log_flush']:
+                records.append(dict(name=name,value=0))
+            path.write_text(''.join(json.dumps(r)+'\n' for r in records))
+            result=analyze(path)
+            self.assertEqual(result['metrics_by_phase']['1']['ui_update_ms']['maximum'],1.5)
+
+    def test_render_context_survives_out_of_order_previous_cpu_event(self):
+        from diagnose_stalls import diagnose
+        with tempfile.TemporaryDirectory() as root:
+            root=Path(root);log=root/'log.jsonl';capture=root/'display.csv';meta=root/'run.json'
+            rows=[dict(kind='run_header',render_stage_names=['submit']),
+                dict(name='frame_interval_ms',value=1,qpc=1000,frame_id=7,scenario=1,frame_known=True),
+                dict(name='render_frame_ms',value=65,qpc=1065,frame_id=7,scenario=1,frame_known=True,render=dict(stages_ms=[65],total_ms=65)),
+                dict(name='frame_interval_ms',value=80,qpc=1080,frame_id=8,scenario=2,frame_known=True),
+                dict(name='eframe_cpu_ms',value=70,qpc=1081,frame_id=7,scenario=1,frame_known=True)]
+            log.write_text(''.join(json.dumps(r)+'\n' for r in rows))
+            capture.write_text('ProcessID,CPUStartQPC,TimeInQPC,MsBetweenDisplayChange,MsUntilDisplayed\n7,1000,1065,80,35\n')
+            meta.write_text(json.dumps(dict(pid=7,sha256='binary',logs=[str(log)],presentmon=str(capture),dwm=dict(qpc_frequency=1000))))
+            result=diagnose(meta);frames=result['stalls'][0]['nearby_frames']
+            first=next(f for f in frames if f['frame_id']==7)
+            self.assertEqual(first['samples']['eframe_cpu_ms'],70)
+            self.assertEqual(first['scenario'],1)
+            self.assertEqual(result['stalls'][0]['largest_native_phase'],('submit',65))
+
+    def test_stall_windows_handle_both_presentmon_time_conventions(self):
+        from diagnose_stalls import displayed_stalls
+        rows=[dict(ProcessID='7',CPUStartQPC='900',TimeInQPC='1000',MsBetweenDisplayChange='80',MsUntilDisplayed='100'),dict(ProcessID='8',CPUStartQPC='1000',MsBetweenDisplayChange='200',MsUntilDisplayed='100')]
+        stalls=displayed_stalls(rows,7,1000)
+        self.assertEqual(len(stalls),1)
+        self.assertEqual((stalls[0]['display_start_qpc'],stalls[0]['display_end_qpc']),(1020,1100))
+        stalls=displayed_stalls([dict(ProcessID='7',CPUStartQPC='1000',DisplayedTime='80',DisplayLatency='100')],7,1000)
+        self.assertEqual((stalls[0]['display_start_qpc'],stalls[0]['display_end_qpc']),(1100,1180))
+
     def test_v4_terminal_barrier_and_sample_counts(self):
         with tempfile.TemporaryDirectory() as root:
             path=Path(root)/'samples.jsonl'

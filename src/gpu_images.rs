@@ -108,6 +108,7 @@ impl Uploads {
                 GPU_RETIRED.fetch_sub(bytes, Ordering::AcqRel);
             });
         }
+        let mut released = 0;
         for _ in 0..8 {
             if started.elapsed() >= Duration::from_millis(performance::EVENT_BUDGET_MS) {
                 break;
@@ -116,8 +117,13 @@ impl Uploads {
                 break;
             };
             drop(image);
+            released += 1;
         }
+        let poll_start = Instant::now();
         let _ = self.state.device.poll(wgpu::Maintain::Poll);
+        performance::elapsed("gpu_poll_ms", poll_start);
+        performance::sample("gpu_reclaim_count", released as f64);
+        performance::elapsed("gpu_reclaim_ms", started);
         if self.allocator_diagnostics && Instant::now() >= self.allocator_report_due {
             self.allocator_report_due = Instant::now() + Duration::from_secs(5);
             let start = Instant::now();

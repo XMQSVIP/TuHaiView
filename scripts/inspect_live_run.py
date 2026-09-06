@@ -7,6 +7,7 @@ import argparse
 import json
 import shutil
 from pathlib import Path
+from perf_log import expand
 
 
 def inspect(directory):
@@ -35,13 +36,14 @@ def inspect(directory):
     phase = None
     for line in rows:
         try:
-            item = json.loads(line)
+            records=list(expand(json.loads(line)))
         except (ValueError, UnicodeDecodeError):
             continue
-        timestamp = item.get('monotonic_us', timestamp)
-        phase = item.get('scenario', phase)
-        if 'name' in item and 'value' in item:
-            latest[item['name']] = item['value']
+        for item in records:
+            timestamp = item.get('monotonic_us', timestamp)
+            phase = item.get('scenario', phase)
+            if 'name' in item and 'value' in item:
+                latest[item['name']] = item['value']
     wanted = ['process_private_bytes', 'catalog_displayed_records', 'decode_budget_bytes',
               'ready_budget_bytes', 'cache_queue_bytes', 'gpu_allocated_bytes',
               'cpu_retired_count', 'image_inflight_count', 'gpu_retired_bytes', 'log_dropped']

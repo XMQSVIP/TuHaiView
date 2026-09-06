@@ -1,0 +1,313 @@
+{
+  "runs": [
+    {
+      "metadata": "F:\\tuhai-validation\\quick-v5b\\hdd-real50k-new-reproduce-memory\\20260906-163843-1-run.json",
+      "sha256": "1DFEC8C229022481A52339CC12B1BFA396FD6E2ECEB79C719440058641FE4832",
+      "errors": [],
+      "finalize": {
+        "status": "complete",
+        "elapsed_ms": 122.03070000000001,
+        "accepted": 743661,
+        "dropped": 0,
+        "stages_ms": [
+          [
+            "log_write",
+            0.0017
+          ],
+          [
+            "log_flush",
+            0.0184
+          ],
+          [
+            "log_sync",
+            38.5612
+          ],
+          [
+            "certificate_write",
+            0.20479999999999998
+          ],
+          [
+            "certificate_sync",
+            82.79129999999999
+          ],
+          [
+            "rename",
+            0.22039999999999998
+          ]
+        ]
+      },
+      "resources": {
+        "decode_budget_bytes": {
+          "limit_bytes": 536870912,
+          "peak_bytes": 282159303.0,
+          "passed": true
+        },
+        "ready_budget_bytes": {
+          "limit_bytes": 100663296,
+          "peak_bytes": 14596096.0,
+          "passed": true
+        },
+        "cache_queue_bytes": {
+          "limit_bytes": 33554432,
+          "peak_bytes": 524288.0,
+          "passed": true
+        },
+        "gpu_allocated_bytes": {
+          "limit_bytes": 268435456,
+          "peak_bytes": 268434560.0,
+          "passed": true
+        }
+      },
+      "idle": {
+        "last": {
+          "image_queued_count": 0.0,
+          "image_inflight_count": 0.0,
+          "image_ready_count": 0.0,
+          "decode_budget_bytes": 0.0,
+          "ready_budget_bytes": 0.0,
+          "cache_queue_bytes": 0.0,
+          "gpu_retired_bytes": 0.0,
+          "cpu_retired_count": 0.0,
+          "deferred_pixel_bytes": 0.0
+        },
+        "passed": true
+      },
+      "display": {
+        "n": 1000,
+        "median": 30.92605,
+        "p95": 31.8193,
+        "p99": 32.1026,
+        "maximum": 32.2944,
+        "over_50ms": 0,
+        "over_100ms": 0
+      }
+    },
+    {
+      "metadata": "F:\\tuhai-validation\\quick-v5b\\hdd-real50k-new-reproduce-scroll\\20260906-163738-1-run.json",
+      "sha256": "1DFEC8C229022481A52339CC12B1BFA396FD6E2ECEB79C719440058641FE4832",
+      "errors": [],
+      "finalize": {
+        "status": "complete",
+        "elapsed_ms": 77.742,
+        "accepted": 191587,
+        "dropped": 0,
+        "stages_ms": [
+          [
+            "log_write",
+            0.010600000000000002
+          ],
+          [
+            "log_flush",
+            0.0678
+          ],
+          [
+            "log_sync",
+            23.3054
+          ],
+          [
+            "certificate_write",
+            0.2424
+          ],
+          [
+            "certificate_sync",
+            53.3472
+          ],
+          [
+            "rename",
+            0.4785
+          ]
+        ]
+      },
+      "resources": {
+        "decode_budget_bytes": {
+          "limit_bytes": 536870912,
+          "peak_bytes": 0.0,
+          "passed": true
+        },
+        "ready_budget_bytes": {
+          "limit_bytes": 100663296,
+          "peak_bytes": 12145664.0,
+          "passed": true
+        },
+        "cache_queue_bytes": {
+          "limit_bytes": 33554432,
+          "peak_bytes": 0.0,
+          "passed": true
+        },
+        "gpu_allocated_bytes": {
+          "limit_bytes": 268435456,
+          "peak_bytes": 68892672.0,
+          "passed": true
+        }
+      },
+      "idle": null,
+      "display": {
+        "n": 324,
+        "median": 31.0459,
+        "p95": 32.0173,
+        "p99": 32.1064,
+        "maximum": 32.2156,
+        "over_50ms": 0,
+        "over_100ms": 0
+      }
+    },
+    {
+      "metadata": "F:\\tuhai-validation\\quick-v5b\\ssd-synthetic50k-new-reproduce-memory\\20260906-163321-1-run.json",
+      "sha256": "1DFEC8C229022481A52339CC12B1BFA396FD6E2ECEB79C719440058641FE4832",
+      "errors": [],
+      "finalize": {
+        "status": "complete",
+        "elapsed_ms": 66.9291,
+        "accepted": 710425,
+        "dropped": 0,
+        "stages_ms": [
+          [
+            "log_write",
+            0.0034999999999999996
+          ],
+          [
+            "log_flush",
+            0.033800000000000004
+          ],
+          [
+            "log_sync",
+            37.73350000000001
+          ],
+          [
+            "certificate_write",
+            0.27940000000000004
+          ],
+          [
+            "certificate_sync",
+            28.398400000000002
+          ],
+          [
+            "rename",
+            0.2251
+          ]
+        ]
+      },
+      "resources": {
+        "decode_budget_bytes": {
+          "limit_bytes": 536870912,
+          "peak_bytes": 282159303.0,
+          "passed": true
+        },
+        "ready_budget_bytes": {
+          "limit_bytes": 100663296,
+          "peak_bytes": 9633792.0,
+          "passed": true
+        },
+        "cache_queue_bytes": {
+          "limit_bytes": 33554432,
+          "peak_bytes": 0.0,
+          "passed": true
+        },
+        "gpu_allocated_bytes": {
+          "limit_bytes": 268435456,
+          "peak_bytes": 217055232.0,
+          "passed": true
+        }
+      },
+      "idle": {
+        "last": {
+          "image_queued_count": 0.0,
+          "image_inflight_count": 0.0,
+          "image_ready_count": 0.0,
+          "decode_budget_bytes": 0.0,
+          "ready_budget_bytes": 0.0,
+          "cache_queue_bytes": 0.0,
+          "gpu_retired_bytes": 0.0,
+          "cpu_retired_count": 0.0,
+          "deferred_pixel_bytes": 0.0
+        },
+        "passed": true
+      },
+      "display": {
+        "n": 992,
+        "median": 30.9974,
+        "p95": 31.8491,
+        "p99": 32.1349,
+        "maximum": 32.4465,
+        "over_50ms": 0,
+        "over_100ms": 0
+      }
+    },
+    {
+      "metadata": "F:\\tuhai-validation\\quick-v5b\\ssd-synthetic50k-new-reproduce-scroll\\20260906-163216-1-run.json",
+      "sha256": "1DFEC8C229022481A52339CC12B1BFA396FD6E2ECEB79C719440058641FE4832",
+      "errors": [],
+      "finalize": {
+        "status": "complete",
+        "elapsed_ms": 753.3801,
+        "accepted": 205589,
+        "dropped": 0,
+        "stages_ms": [
+          [
+            "log_write",
+            0.0028
+          ],
+          [
+            "log_flush",
+            0.047599999999999996
+          ],
+          [
+            "log_sync",
+            450.5765
+          ],
+          [
+            "certificate_write",
+            0.228
+          ],
+          [
+            "certificate_sync",
+            302.0919
+          ],
+          [
+            "rename",
+            0.2088
+          ]
+        ]
+      },
+      "resources": {
+        "decode_budget_bytes": {
+          "limit_bytes": 536870912,
+          "peak_bytes": 0.0,
+          "passed": true
+        },
+        "ready_budget_bytes": {
+          "limit_bytes": 100663296,
+          "peak_bytes": 7667712.0,
+          "passed": true
+        },
+        "cache_queue_bytes": {
+          "limit_bytes": 33554432,
+          "peak_bytes": 0.0,
+          "passed": true
+        },
+        "gpu_allocated_bytes": {
+          "limit_bytes": 268435456,
+          "peak_bytes": 52297728.0,
+          "passed": true
+        }
+      },
+      "idle": null,
+      "display": {
+        "n": 1288,
+        "median": 31.059150000000002,
+        "p95": 31.993,
+        "p99": 32.1332,
+        "maximum": 63.0655,
+        "over_50ms": 2,
+        "over_100ms": 0
+      }
+    }
+  ],
+  "invalid_attempts": [
+    "F:\\tuhai-validation\\quick-v5b\\hdd-real50k-new-reproduce-scroll\\invalid-attempts\\20260906-163630-1-run.json"
+  ],
+  "functional_tests": 47,
+  "python_tests": 18,
+  "gpu_readbacks": "image and 32-frame mesh passed before logging-only compact encoding change",
+  "full_acceptance": false
+}

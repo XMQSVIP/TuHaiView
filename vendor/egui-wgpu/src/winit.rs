@@ -365,6 +365,7 @@ impl Painter {
     ) -> f32 {
         profiling::function_scope!();
 
+        let mut timing = crate::native_timing::FrameScope::new(viewport_id == ViewportId::ROOT);
         let capture = !capture_data.is_empty();
         let mut vsync_sec = 0.0;
 
@@ -382,6 +383,7 @@ impl Painter {
                     label: Some("encoder"),
                 });
 
+        timing.lap(0);
         // Upload all resources for the GPU.
         let screen_descriptor = renderer::ScreenDescriptor {
             size_in_pixels: [surface_state.width, surface_state.height],
@@ -390,8 +392,10 @@ impl Painter {
 
         let user_cmd_bufs = {
             let mut renderer = render_state.renderer.write();
+            timing.lap(1);
             // TuHaiView: reuse completed mesh uploads; no wait on the UI thread.
             renderer.begin_native_mesh_uploads();
+            timing.lap(2);
             for (id, image_delta) in &textures_delta.set {
                 renderer.update_texture(
                     &render_state.device,
@@ -401,13 +405,16 @@ impl Painter {
                 );
             }
 
-            renderer.update_buffers(
+            timing.lap(3);
+            let buffers = renderer.update_buffers(
                 &render_state.device,
                 &render_state.queue,
                 &mut encoder,
                 clipped_primitives,
                 &screen_descriptor,
-            )
+            );
+            timing.lap(4);
+            buffers
         };
 
         let output_frame = {
@@ -419,6 +426,7 @@ impl Painter {
             output_frame
         };
 
+        timing.lap(5);
         let output_frame = match output_frame {
             Ok(frame) => frame,
             Err(err) => match (*self.configuration.on_surface_error)(err) {
@@ -435,6 +443,7 @@ impl Painter {
         let mut capture_buffer = None;
         {
             let renderer = render_state.renderer.read();
+            timing.lap(6);
 
             let target_texture = if capture {
                 let capture_state = self.screen_capture_state.get_or_insert_with(|| {
@@ -506,11 +515,13 @@ impl Painter {
             }
         }
 
+        timing.lap(7);
         let encoded = {
             profiling::scope!("CommandEncoder::finish");
             encoder.finish()
         };
 
+        timing.lap(8);
         // Submit the commands: both the main buffer and user-defined ones.
         {
             profiling::scope!("Queue::submit");
@@ -522,16 +533,19 @@ impl Painter {
             vsync_sec += start.elapsed().as_secs_f32();
         };
 
+        timing.lap(9);
         // Free textures marked for destruction **after** queue submit since they might still be used in the current frame.
         // Calling `wgpu::Texture::destroy` on a texture that is still in use would invalidate the command buffer(s) it is used in.
         // However, once we called `wgpu::Queue::submit`, it is up for wgpu to determine how long the underlying gpu resource has to live.
         {
             let mut renderer = render_state.renderer.write();
+            timing.lap(10);
             for id in &textures_delta.free {
                 renderer.free_texture(id);
             }
         }
 
+        timing.lap(11);
         if let Some(capture_buffer) = capture_buffer {
             if let Some(screen_capture_state) = &mut self.screen_capture_state {
                 screen_capture_state.read_screen_rgba(
@@ -544,6 +558,7 @@ impl Painter {
             }
         }
 
+        timing.lap(12);
         {
             profiling::scope!("present");
             // wgpu doesn't document where vsync can happen. Maybe here?
@@ -552,6 +567,8 @@ impl Painter {
             vsync_sec += start.elapsed().as_secs_f32();
         }
 
+        timing.lap(13);
+        timing.presented();
         vsync_sec
     }
 

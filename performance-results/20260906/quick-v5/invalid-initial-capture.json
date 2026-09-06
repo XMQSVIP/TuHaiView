@@ -1,0 +1,7 @@
+{
+  "metadata": "F:\\tuhai-validation\\quick-v5\\hdd-real50k-new-reproduce-scroll\\invalid-attempts\\20260906-162124-1-run.json",
+  "sha256": "5283E1A417C799E0B1579D7F8C5EBE5A31CE3EA2C298E6E44C26CD8BD4224FB0",
+  "errors": "TUHAI_FINALIZE {\"status\":\"complete\",\"elapsed_ms\":289.2669,\"accepted\":232315,\"dropped\":2582,\"stages_ms\":[[\"log_write\",0.0066],[\"log_flush\",0.07959999999999999],[\"log_sync\",229.71349999999998],[\"certificate_write\",0.2132],[\"certificate_sync\",58.5662],[\"rename\",0.33399999999999996]]}\nError: performance log finalization failed\n",
+  "reason": "2582 samples dropped while collecting real HDD data; preserved, not accepted",
+  "replacement": "F:\\tuhai-validation\\quick-v5\\hdd-real50k-new-reproduce-scroll\\20260906-162227-1-run.json"
+}

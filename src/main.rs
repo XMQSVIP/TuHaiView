@@ -30,6 +30,7 @@ pub(crate) const APP_WINDOW_TITLE: &str = "图海速览 20260905";
 
 fn main() -> Result<()> {
     performance::initialize_clock();
+    performance::install_render_observer();
     tracing_subscriber::fmt().with_env_filter("info").init();
     let _timer_resolution = performance::TimerResolution::diagnostic();
     let mut wgpu_options = eframe::egui_wgpu::WgpuConfiguration::default();
