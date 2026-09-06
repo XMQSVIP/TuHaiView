@@ -1,0 +1,29 @@
+{
+  "executable": "G:\\codex_chat\\\u4e34\u65f6\u6d4b\u8bd5\\rust-image-previewer\\target\\validation\\TuHaiView-20260906-quick-v5-win-x64\\TuHaiView.exe",
+  "sha256": "1DFEC8C229022481A52339CC12B1BFA396FD6E2ECEB79C719440058641FE4832",
+  "source_revision": "cfbbdc5",
+  "launch": "normal process; TUHAI_PERF* variables removed",
+  "observation": {
+    "accessibility": {
+      "focused_element": "0 \u7a97\u53e3 \u56fe\u6d77\u901f\u89c8 20260905 Secondary Actions: Raise",
+      "tree": "Window: \"\u56fe\u6d77\u901f\u89c8 20260905\", App: TuHaiView.exe.\n\t0 \u7a97\u53e3 \u56fe\u6d77\u901f\u89c8 20260905 Secondary Actions: Raise\n\t\t1 \u6807\u9898\u680f\n\t\t\t2 \u83dc\u5355\u680f \u7cfb\u7edf ID: MenuBar\n\t\t\t\t3 \u83dc\u5355\u9879\u76ee \u7cfb\u7edf\n\t\t\t4 \u6309\u94ae \u6700\u5c0f\u5316\n\t\t\t5 \u6309\u94ae \u6700\u5927\u5316\n\t\t\t6 \u6309\u94ae \u5173\u95ed\n\t\t7 \u6309\u94ae \u9009\u62e9\u6587\u4ef6\u5939\n\t\t8 \u6309\u94ae (disabled) \u5237\u65b0 (F5)\n\t\t9 \u6309\u94ae (disabled) \u626b\u63cf\u7a7a\u6587\u4ef6\u5939\n\t\t10 \u6309\u94ae (disabled) \u67e5\u627e\u91cd\u590d\u56fe\u7247\n\t\t11 \u6309\u94ae (disabled) \u91cd\u590d\u526f\u672c\u53ea\u663e\u793a\u4e00\u5f20\n\t\t12 \u6309\u94ae \u6e05\u7406\u7f13\u5b58\u548c\u6570\u636e\u5e93\n\t\t13 \u6309\u94ae \u5173\u4e8e\n\t\t14 \u6587\u672c\n\t\t15 \u6587\u672c \u8bf7\u9009\u62e9\u4e00\u4e2a\u6587\u4ef6\u5939\n\t\t16 \u7ec4\u5408\u6846\n\t\t17 \u6ed1\u5757 \u7f29\u7565\u56fe\n\t\t18 \u6c99\u7f51 \u7f29\u7565\u56fe\n\t\t19 \u6587\u672c \u7f29\u7565\u56fe\n\t\t20 \u7ec4\u5408\u6846\n\t\t21 \u6587\u672c \u56fe\u6d77\u901f\u89c8\n\t\t22 \u6587\u672c \u9012\u5f52\u6d4f\u89c8\u4e0a\u4e07\u5f20\u56fe\u7247\uff0c\u5e76\u5b89\u5168\u6267\u884c\u6279\u91cf\u6587\u4ef6\u64cd\u4f5c\n\t\t23 \u6309\u94ae \u9009\u62e9\u56fe\u7247\u6587\u4ef6\u5939\n\nThe focused UI element is 0 \u7a97\u53e3 \u56fe\u6d77\u901f\u89c8 20260905 Secondary Actions: Raise."
+    },
+    "screenshots": [],
+    "window": {
+      "app": "process:G:\\codex_chat\\\u4e34\u65f6\u6d4b\u8bd5\\rust-image-previewer\\target\\validation\\TuHaiView-20260906-quick-v5-win-x64\\TuHaiView.exe",
+      "id": 7999000,
+      "title": "\u56fe\u6d77\u901f\u89c8 20260905"
+    }
+  },
+  "window_gone_after_alt_f4": true,
+  "process_23920_gone": true,
+  "exit_code": null,
+  "exit_code_limitation": "Normal process disappearance observed; numeric exit code not retained by smoke launcher.",
+  "no_performance_files": true,
+  "no_selected_folder_observed": true,
+  "no_automated_trajectory_observed": true,
+  "stderr_bytes": 0,
+  "stdout": "F:\\tuhai-validation\\quick-v5b\\portable-smoke-output.txt",
+  "local_machine_only": true,
+  "clean_windows_10_11_tested": false
+}

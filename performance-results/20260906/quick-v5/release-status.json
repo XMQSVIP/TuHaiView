@@ -1,0 +1,62 @@
+{
+  "product_source_revision": "cfbbdc5",
+  "sha256": "1DFEC8C229022481A52339CC12B1BFA396FD6E2ECEB79C719440058641FE4832",
+  "status": "validation_only",
+  "quick_round_delivered": true,
+  "quick_measurements_complete": true,
+  "performance_finalization_complete": false,
+  "formal_short_runs": 40,
+  "short_loops": {
+    "ssd": 3,
+    "hdd": 3,
+    "seconds": 180,
+    "budgets_and_reclamation_passed": true
+  },
+  "release_tests": {
+    "passed": 47,
+    "failed": 0,
+    "manual_ignored": 5,
+    "separately_run_gpu_readbacks": 2
+  },
+  "report_tests_passed": 18,
+  "final_candidate_log_finalization": {
+    "formal_runs": 26,
+    "all_complete": true,
+    "dropped": 0,
+    "elapsed_ms_range": [
+      43.9505,
+      131.6122
+    ]
+  },
+  "performance_change": "No new render optimization adopted; native diagnostics and bounded compact sample encoding only",
+  "startup_regression_ms": {
+    "ssd_first_records_median": 38.07,
+    "hdd_first_records_median": 21.28
+  },
+  "release_blockers": [
+    "display P95 about 32ms still fails",
+    "same EXE full duration memory matrix not run",
+    "physical display and true input-to-display not verified",
+    "system cold cache not verified",
+    "isolated actual disk-full not verified",
+    "native notification overflow not verified",
+    "clean Windows 10/11 not verified"
+  ],
+  "delivery": [
+    {
+      "path": "G:\\codex_chat\\\u4e34\u65f6\u6d4b\u8bd5\\rust-image-previewer\\target\\validation\\TuHaiView-20260906-quick-v5-win-x64\\TuHaiView.exe",
+      "sha256": "1DFEC8C229022481A52339CC12B1BFA396FD6E2ECEB79C719440058641FE4832",
+      "bytes": 17510400
+    },
+    {
+      "path": "G:\\codex_chat\\\u4e34\u65f6\u6d4b\u8bd5\\rust-image-previewer\\target\\validation\\TuHaiView-20260906-quick-v5-win-x64.zip",
+      "sha256": "E0EDBDD329BB9E9A90788964D330A97C8B4D7621DEB27170CDD4A94B8B4A31D0",
+      "bytes": 7276704
+    },
+    {
+      "path": "G:\\codex_chat\\\u4e34\u65f6\u6d4b\u8bd5\\rust-image-previewer\\target\\release\\TuHaiView.exe",
+      "sha256": "1DFEC8C229022481A52339CC12B1BFA396FD6E2ECEB79C719440058641FE4832",
+      "bytes": 17510400
+    }
+  ]
+}

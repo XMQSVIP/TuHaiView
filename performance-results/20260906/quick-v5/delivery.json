@@ -1,0 +1,30 @@
+{
+  "product_source_revision": "cfbbdc5",
+  "sha256": "1DFEC8C229022481A52339CC12B1BFA396FD6E2ECEB79C719440058641FE4832",
+  "exe_bytes": 17510400,
+  "files": [
+    {
+      "path": "G:\\codex_chat\\\u4e34\u65f6\u6d4b\u8bd5\\rust-image-previewer\\target\\validation\\TuHaiView-20260906-quick-v5-win-x64\\TuHaiView.exe",
+      "sha256": "1DFEC8C229022481A52339CC12B1BFA396FD6E2ECEB79C719440058641FE4832",
+      "bytes": 17510400
+    },
+    {
+      "path": "G:\\codex_chat\\\u4e34\u65f6\u6d4b\u8bd5\\rust-image-previewer\\target\\validation\\TuHaiView-20260906-quick-v5-win-x64.zip",
+      "sha256": "E0EDBDD329BB9E9A90788964D330A97C8B4D7621DEB27170CDD4A94B8B4A31D0",
+      "bytes": 7276704
+    },
+    {
+      "path": "G:\\codex_chat\\\u4e34\u65f6\u6d4b\u8bd5\\rust-image-previewer\\target\\release\\TuHaiView.exe",
+      "sha256": "1DFEC8C229022481A52339CC12B1BFA396FD6E2ECEB79C719440058641FE4832",
+      "bytes": 17510400
+    }
+  ],
+  "archive_members": [
+    "TuHaiView.exe",
+    "SHA256.txt",
+    "\u9a8c\u8bc1\u8bf4\u660e.txt"
+  ],
+  "archive_crc_passed": true,
+  "archive_exe_hash_passed": true,
+  "includes_images_or_data": false
+}

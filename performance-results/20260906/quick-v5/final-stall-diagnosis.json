@@ -1,0 +1,1864 @@
+{
+  "runs": [
+    {
+      "case": "ssd-synthetic50k",
+      "version": "old",
+      "metadata": "F:\\tuhai-validation\\quick-v5b\\ssd-synthetic50k-old-scroll\\20260906-170100-1-run.json",
+      "sha256": "4507D93F1BD9C484065FA3710E1C89C59B7E7E45A7631ED4526A44597C1225EA",
+      "full_diagnosis": "F:\\tuhai-validation\\quick-v5b\\final-stalls\\ssd-synthetic50k-old-scroll-20260906-170100-1-run-stalls.json",
+      "native_phase_metrics": {},
+      "stalls_by_phase": {
+        "0": 2
+      },
+      "stalls": [
+        {
+          "cpu_start_qpc": 1437116353050,
+          "display_start_qpc": 1437116678268.0,
+          "display_end_qpc": 1437117301481.0,
+          "interval_ms": 62.3213,
+          "scenario": 0,
+          "largest_native_phase": null,
+          "nearby_frame_count": 0
+        },
+        {
+          "cpu_start_qpc": 1437117563053,
+          "display_start_qpc": 1437117301481.0,
+          "display_end_qpc": 1437117937516.0,
+          "interval_ms": 63.6035,
+          "scenario": 0,
+          "largest_native_phase": null,
+          "nearby_frame_count": 0
+        }
+      ]
+    },
+    {
+      "case": "ssd-synthetic50k",
+      "version": "old",
+      "metadata": "F:\\tuhai-validation\\quick-v5b\\ssd-synthetic50k-old-scroll\\20260906-170458-1-run.json",
+      "sha256": "4507D93F1BD9C484065FA3710E1C89C59B7E7E45A7631ED4526A44597C1225EA",
+      "full_diagnosis": "F:\\tuhai-validation\\quick-v5b\\final-stalls\\ssd-synthetic50k-old-scroll-20260906-170458-1-run-stalls.json",
+      "native_phase_metrics": {},
+      "stalls_by_phase": {
+        "0": 1
+      },
+      "stalls": [
+        {
+          "cpu_start_qpc": 1439496582238,
+          "display_start_qpc": 1439497017949.0,
+          "display_end_qpc": 1439497641017.0,
+          "interval_ms": 62.3068,
+          "scenario": 0,
+          "largest_native_phase": null,
+          "nearby_frame_count": 0
+        }
+      ]
+    },
+    {
+      "case": "ssd-synthetic50k",
+      "version": "old",
+      "metadata": "F:\\tuhai-validation\\quick-v5b\\ssd-synthetic50k-old-scroll\\20260906-170647-1-run.json",
+      "sha256": "4507D93F1BD9C484065FA3710E1C89C59B7E7E45A7631ED4526A44597C1225EA",
+      "full_diagnosis": "F:\\tuhai-validation\\quick-v5b\\final-stalls\\ssd-synthetic50k-old-scroll-20260906-170647-1-run-stalls.json",
+      "native_phase_metrics": {},
+      "stalls_by_phase": {
+        "0": 1
+      },
+      "stalls": [
+        {
+          "cpu_start_qpc": 1440588877274,
+          "display_start_qpc": 1440588810259.0,
+          "display_end_qpc": 1440589426002.0,
+          "interval_ms": 61.5743,
+          "scenario": 0,
+          "largest_native_phase": null,
+          "nearby_frame_count": 0
+        }
+      ]
+    },
+    {
+      "case": "ssd-synthetic50k",
+      "version": "old",
+      "metadata": "F:\\tuhai-validation\\quick-v5b\\ssd-synthetic50k-old-scroll\\20260906-171045-1-run.json",
+      "sha256": "4507D93F1BD9C484065FA3710E1C89C59B7E7E45A7631ED4526A44597C1225EA",
+      "full_diagnosis": "F:\\tuhai-validation\\quick-v5b\\final-stalls\\ssd-synthetic50k-old-scroll-20260906-171045-1-run-stalls.json",
+      "native_phase_metrics": {},
+      "stalls_by_phase": {
+        "0": 1
+      },
+      "stalls": [
+        {
+          "cpu_start_qpc": 1442967559770,
+          "display_start_qpc": 1442967993839.0,
+          "display_end_qpc": 1442968794375.0,
+          "interval_ms": 80.0536,
+          "scenario": 0,
+          "largest_native_phase": null,
+          "nearby_frame_count": 0
+        }
+      ]
+    },
+    {
+      "case": "ssd-synthetic50k",
+      "version": "old",
+      "metadata": "F:\\tuhai-validation\\quick-v5b\\ssd-synthetic50k-old-scroll\\20260906-171234-1-run.json",
+      "sha256": "4507D93F1BD9C484065FA3710E1C89C59B7E7E45A7631ED4526A44597C1225EA",
+      "full_diagnosis": "F:\\tuhai-validation\\quick-v5b\\final-stalls\\ssd-synthetic50k-old-scroll-20260906-171234-1-run-stalls.json",
+      "native_phase_metrics": {},
+      "stalls_by_phase": {
+        "0": 2
+      },
+      "stalls": [
+        {
+          "cpu_start_qpc": 1444056738272,
+          "display_start_qpc": 1444057125353.0,
+          "display_end_qpc": 1444057755404.0,
+          "interval_ms": 63.00510000000001,
+          "scenario": 0,
+          "largest_native_phase": null,
+          "nearby_frame_count": 0
+        },
+        {
+          "cpu_start_qpc": 1444057802702,
+          "display_start_qpc": 1444057916892.0,
+          "display_end_qpc": 1444058536197.0,
+          "interval_ms": 61.9305,
+          "scenario": 0,
+          "largest_native_phase": null,
+          "nearby_frame_count": 0
+        }
+      ]
+    },
+    {
+      "case": "ssd-synthetic50k",
+      "version": "new",
+      "metadata": "F:\\tuhai-validation\\quick-v5b\\ssd-synthetic50k-new-scroll\\20260906-170204-1-run.json",
+      "sha256": "1DFEC8C229022481A52339CC12B1BFA396FD6E2ECEB79C719440058641FE4832",
+      "full_diagnosis": "F:\\tuhai-validation\\quick-v5b\\final-stalls\\ssd-synthetic50k-new-scroll-20260906-170204-1-run-stalls.json",
+      "native_phase_metrics": {
+        "encoder_create_ms": {
+          "n": 18984,
+          "median": 0.0022,
+          "p95": 0.007500000000000001,
+          "p99": 0.0108,
+          "maximum": 0.2129,
+          "over_50ms": 0,
+          "over_100ms": 0
+        },
+        "upload_lock_ms": {
+          "n": 18984,
+          "median": 9.999999999999999e-05,
+          "p95": 0.0006,
+          "p99": 0.0009,
+          "maximum": 0.0029000000000000002,
+          "over_50ms": 0,
+          "over_100ms": 0
+        },
+        "mesh_recall_ms": {
+          "n": 18984,
+          "median": 0.0039,
+          "p95": 0.011399999999999999,
+          "p99": 0.015400000000000002,
+          "maximum": 0.0507,
+          "over_50ms": 0,
+          "over_100ms": 0
+        },
+        "egui_texture_upload_ms": {
+          "n": 18984,
+          "median": 9.999999999999999e-05,
+          "p95": 0.0003,
+          "p99": 0.00039999999999999996,
+          "maximum": 2.7801,
+          "over_50ms": 0,
+          "over_100ms": 0
+        },
+        "mesh_upload_ms": {
+          "n": 18984,
+          "median": 0.101,
+          "p95": 0.25270000000000004,
+          "p99": 0.3458,
+          "maximum": 3.8733,
+          "over_50ms": 0,
+          "over_100ms": 0
+        },
+        "surface_acquire_ms": {
+          "n": 18984,
+          "median": 0.061099999999999995,
+          "p95": 5.6657,
+          "p99": 9.0078,
+          "maximum": 19.8799,
+          "over_50ms": 0,
+          "over_100ms": 0
+        },
+        "render_lock_ms": {
+          "n": 18984,
+          "median": 0.00019999999999999998,
+          "p95": 0.0006,
+          "p99": 0.001,
+          "maximum": 0.0255,
+          "over_50ms": 0,
+          "over_100ms": 0
+        },
+        "render_encode_ms": {
+          "n": 18984,
+          "median": 0.19870000000000002,
+          "p95": 0.48919999999999997,
+          "p99": 0.6708000000000001,
+          "maximum": 2.1849,
+          "over_50ms": 0,
+          "over_100ms": 0
+        },
+        "encoder_finish_ms": {
+          "n": 18984,
+          "median": 0.0011,
+          "p95": 0.0027,
+          "p99": 0.0039,
+          "maximum": 0.08009999999999999,
+          "over_50ms": 0,
+          "over_100ms": 0
+        },
+        "queue_submit_ms": {
+          "n": 18984,
+          "median": 0.14305,
+          "p95": 0.29619999999999996,
+          "p99": 0.3884,
+          "maximum": 0.9783999999999999,
+          "over_50ms": 0,
+          "over_100ms": 0
+        },
+        "release_lock_ms": {
+          "n": 18984,
+          "median": 9.999999999999999e-05,
+          "p95": 0.0003,
+          "p99": 0.0006,
+          "maximum": 0.002,
+          "over_50ms": 0,
+          "over_100ms": 0
+        },
+        "egui_texture_free_ms": {
+          "n": 18984,
+          "median": 0.00019999999999999998,
+          "p95": 0.0007,
+          "p99": 0.0011,
+          "maximum": 0.0441,
+          "over_50ms": 0,
+          "over_100ms": 0
+        },
+        "capture_ms": {
+          "n": 18984,
+          "median": 9.999999999999999e-05,
+          "p95": 0.00039999999999999996,
+          "p99": 0.0006,
+          "maximum": 0.011300000000000001,
+          "over_50ms": 0,
+          "over_100ms": 0
+        },
+        "present_ms": {
+          "n": 18984,
+          "median": 0.1017,
+          "p95": 0.20980000000000001,
+          "p99": 0.2858,
+          "maximum": 0.5773,
+          "over_50ms": 0,
+          "over_100ms": 0
+        }
+      },
+      "stalls_by_phase": {
+        "0": 1
+      },
+      "stalls": [
+        {
+          "cpu_start_qpc": 1437754208475,
+          "display_start_qpc": 1437754689041.0,
+          "display_end_qpc": 1437755312064.0,
+          "interval_ms": 62.3023,
+          "scenario": 0,
+          "largest_native_phase": [
+            "surface_acquire_ms",
+            19.8799
+          ],
+          "nearby_frame_count": 15
+        }
+      ]
+    },
+    {
+      "case": "ssd-synthetic50k",
+      "version": "new",
+      "metadata": "F:\\tuhai-validation\\quick-v5b\\ssd-synthetic50k-new-scroll\\20260906-170354-1-run.json",
+      "sha256": "1DFEC8C229022481A52339CC12B1BFA396FD6E2ECEB79C719440058641FE4832",
+      "full_diagnosis": "F:\\tuhai-validation\\quick-v5b\\final-stalls\\ssd-synthetic50k-new-scroll-20260906-170354-1-run-stalls.json",
+      "native_phase_metrics": {
+        "encoder_create_ms": {
+          "n": 19260,
+          "median": 0.002,
+          "p95": 0.0069,
+          "p99": 0.0101,
+          "maximum": 0.1638,
+          "over_50ms": 0,
+          "over_100ms": 0
+        },
+        "upload_lock_ms": {
+          "n": 19260,
+          "median": 0.00019999999999999998,
+          "p95": 0.0006,
+          "p99": 0.0009,
+          "maximum": 0.0122,
+          "over_50ms": 0,
+          "over_100ms": 0
+        },
+        "mesh_recall_ms": {
+          "n": 19260,
+          "median": 0.0035,
+          "p95": 0.0104,
+          "p99": 0.0141,
+          "maximum": 0.0765,
+          "over_50ms": 0,
+          "over_100ms": 0
+        },
+        "egui_texture_upload_ms": {
+          "n": 19260,
+          "median": 9.999999999999999e-05,
+          "p95": 0.00019999999999999998,
+          "p99": 0.00039999999999999996,
+          "maximum": 2.7761,
+          "over_50ms": 0,
+          "over_100ms": 0
+        },
+        "mesh_upload_ms": {
+          "n": 19260,
+          "median": 0.0935,
+          "p95": 0.24409999999999998,
+          "p99": 0.3305,
+          "maximum": 3.9061999999999997,
+          "over_50ms": 0,
+          "over_100ms": 0
+        },
+        "surface_acquire_ms": {
+          "n": 19260,
+          "median": 0.15625,
+          "p95": 5.577,
+          "p99": 8.9899,
+          "maximum": 21.7761,
+          "over_50ms": 0,
+          "over_100ms": 0
+        },
+        "render_lock_ms": {
+          "n": 19260,
+          "median": 0.00019999999999999998,
+          "p95": 0.0006,
+          "p99": 0.0012,
+          "maximum": 0.044199999999999996,
+          "over_50ms": 0,
+          "over_100ms": 0
+        },
+        "render_encode_ms": {
+          "n": 19260,
+          "median": 0.1917,
+          "p95": 0.4845,
+          "p99": 0.6647,
+          "maximum": 2.226,
+          "over_50ms": 0,
+          "over_100ms": 0
+        },
+        "encoder_finish_ms": {
+          "n": 19260,
+          "median": 0.001,
+          "p95": 0.0027,
+          "p99": 0.0039,
+          "maximum": 0.023200000000000002,
+          "over_50ms": 0,
+          "over_100ms": 0
+        },
+        "queue_submit_ms": {
+          "n": 19260,
+          "median": 0.1367,
+          "p95": 0.28430000000000005,
+          "p99": 0.37429999999999997,
+          "maximum": 4.0718000000000005,
+          "over_50ms": 0,
+          "over_100ms": 0
+        },
+        "release_lock_ms": {
+          "n": 19260,
+          "median": 9.999999999999999e-05,
+          "p95": 0.00019999999999999998,
+          "p99": 0.0006,
+          "maximum": 0.0031,
+          "over_50ms": 0,
+          "over_100ms": 0
+        },
+        "egui_texture_free_ms": {
+          "n": 19260,
+          "median": 0.00019999999999999998,
+          "p95": 0.0007,
+          "p99": 0.0011,
+          "maximum": 0.0177,
+          "over_50ms": 0,
+          "over_100ms": 0
+        },
+        "capture_ms": {
+          "n": 19260,
+          "median": 9.999999999999999e-05,
+          "p95": 0.0003,
+          "p99": 0.0006,
+          "maximum": 0.0019,
+          "over_50ms": 0,
+          "over_100ms": 0
+        },
+        "present_ms": {
+          "n": 19260,
+          "median": 0.0971,
+          "p95": 0.2007,
+          "p99": 0.2691,
+          "maximum": 14.5615,
+          "over_50ms": 0,
+          "over_100ms": 0
+        }
+      },
+      "stalls_by_phase": {
+        "0": 1
+      },
+      "stalls": [
+        {
+          "cpu_start_qpc": 1438854266952,
+          "display_start_qpc": 1438853749641.0,
+          "display_end_qpc": 1438854538505.0,
+          "interval_ms": 78.88640000000001,
+          "scenario": 0,
+          "largest_native_phase": [
+            "surface_acquire_ms",
+            21.7761
+          ],
+          "nearby_frame_count": 14
+        }
+      ]
+    },
+    {
+      "case": "ssd-synthetic50k",
+      "version": "new",
+      "metadata": "F:\\tuhai-validation\\quick-v5b\\ssd-synthetic50k-new-scroll\\20260906-170751-1-run.json",
+      "sha256": "1DFEC8C229022481A52339CC12B1BFA396FD6E2ECEB79C719440058641FE4832",
+      "full_diagnosis": "F:\\tuhai-validation\\quick-v5b\\final-stalls\\ssd-synthetic50k-new-scroll-20260906-170751-1-run-stalls.json",
+      "native_phase_metrics": {
+        "encoder_create_ms": {
+          "n": 19223,
+          "median": 0.0021,
+          "p95": 0.0070999999999999995,
+          "p99": 0.0102,
+          "maximum": 0.27999999999999997,
+          "over_50ms": 0,
+          "over_100ms": 0
+        },
+        "upload_lock_ms": {
+          "n": 19223,
+          "median": 0.00019999999999999998,
+          "p95": 0.0006,
+          "p99": 0.0009,
+          "maximum": 0.0276,
+          "over_50ms": 0,
+          "over_100ms": 0
+        },
+        "mesh_recall_ms": {
+          "n": 19223,
+          "median": 0.0036,
+          "p95": 0.0107,
+          "p99": 0.0147,
+          "maximum": 0.06770000000000001,
+          "over_50ms": 0,
+          "over_100ms": 0
+        },
+        "egui_texture_upload_ms": {
+          "n": 19223,
+          "median": 9.999999999999999e-05,
+          "p95": 0.0003,
+          "p99": 0.0005,
+          "maximum": 2.917,
+          "over_50ms": 0,
+          "over_100ms": 0
+        },
+        "mesh_upload_ms": {
+          "n": 19223,
+          "median": 0.09469999999999999,
+          "p95": 0.2415,
+          "p99": 0.3251,
+          "maximum": 1.2282,
+          "over_50ms": 0,
+          "over_100ms": 0
+        },
+        "surface_acquire_ms": {
+          "n": 19223,
+          "median": 0.1918,
+          "p95": 5.5413,
+          "p99": 9.0992,
+          "maximum": 19.0158,
+          "over_50ms": 0,
+          "over_100ms": 0
+        },
+        "render_lock_ms": {
+          "n": 19223,
+          "median": 0.00019999999999999998,
+          "p95": 0.0007,
+          "p99": 0.0013,
+          "maximum": 0.0035,
+          "over_50ms": 0,
+          "over_100ms": 0
+        },
+        "render_encode_ms": {
+          "n": 19223,
+          "median": 0.19249999999999998,
+          "p95": 0.4904,
+          "p99": 0.671,
+          "maximum": 3.1334,
+          "over_50ms": 0,
+          "over_100ms": 0
+        },
+        "encoder_finish_ms": {
+          "n": 19223,
+          "median": 0.001,
+          "p95": 0.0027,
+          "p99": 0.0038,
+          "maximum": 0.0809,
+          "over_50ms": 0,
+          "over_100ms": 0
+        },
+        "queue_submit_ms": {
+          "n": 19223,
+          "median": 0.1381,
+          "p95": 0.2872,
+          "p99": 0.3806,
+          "maximum": 5.3214999999999995,
+          "over_50ms": 0,
+          "over_100ms": 0
+        },
+        "release_lock_ms": {
+          "n": 19223,
+          "median": 9.999999999999999e-05,
+          "p95": 0.0003,
+          "p99": 0.0006,
+          "maximum": 0.0035,
+          "over_50ms": 0,
+          "over_100ms": 0
+        },
+        "egui_texture_free_ms": {
+          "n": 19223,
+          "median": 0.0003,
+          "p95": 0.0007999999999999999,
+          "p99": 0.0011,
+          "maximum": 0.0408,
+          "over_50ms": 0,
+          "over_100ms": 0
+        },
+        "capture_ms": {
+          "n": 19223,
+          "median": 9.999999999999999e-05,
+          "p95": 0.0003,
+          "p99": 0.0006,
+          "maximum": 0.0086,
+          "over_50ms": 0,
+          "over_100ms": 0
+        },
+        "present_ms": {
+          "n": 19223,
+          "median": 0.09670000000000001,
+          "p95": 0.20049999999999998,
+          "p99": 0.2757,
+          "maximum": 0.8661,
+          "over_50ms": 0,
+          "over_100ms": 0
+        }
+      },
+      "stalls_by_phase": {
+        "0": 1
+      },
+      "stalls": [
+        {
+          "cpu_start_qpc": 1441226714553,
+          "display_start_qpc": 1441227258166.0,
+          "display_end_qpc": 1441227876490.0,
+          "interval_ms": 61.8324,
+          "scenario": 0,
+          "largest_native_phase": [
+            "surface_acquire_ms",
+            19.0158
+          ],
+          "nearby_frame_count": 14
+        }
+      ]
+    },
+    {
+      "case": "ssd-synthetic50k",
+      "version": "new",
+      "metadata": "F:\\tuhai-validation\\quick-v5b\\ssd-synthetic50k-new-scroll\\20260906-170941-1-run.json",
+      "sha256": "1DFEC8C229022481A52339CC12B1BFA396FD6E2ECEB79C719440058641FE4832",
+      "full_diagnosis": "F:\\tuhai-validation\\quick-v5b\\final-stalls\\ssd-synthetic50k-new-scroll-20260906-170941-1-run-stalls.json",
+      "native_phase_metrics": {
+        "encoder_create_ms": {
+          "n": 19215,
+          "median": 0.002,
+          "p95": 0.007,
+          "p99": 0.0104,
+          "maximum": 0.0818,
+          "over_50ms": 0,
+          "over_100ms": 0
+        },
+        "upload_lock_ms": {
+          "n": 19215,
+          "median": 9.999999999999999e-05,
+          "p95": 0.0005,
+          "p99": 0.0007999999999999999,
+          "maximum": 0.007500000000000001,
+          "over_50ms": 0,
+          "over_100ms": 0
+        },
+        "mesh_recall_ms": {
+          "n": 19215,
+          "median": 0.0038,
+          "p95": 0.011,
+          "p99": 0.0148,
+          "maximum": 0.1315,
+          "over_50ms": 0,
+          "over_100ms": 0
+        },
+        "egui_texture_upload_ms": {
+          "n": 19215,
+          "median": 9.999999999999999e-05,
+          "p95": 0.00019999999999999998,
+          "p99": 0.00039999999999999996,
+          "maximum": 2.7862,
+          "over_50ms": 0,
+          "over_100ms": 0
+        },
+        "mesh_upload_ms": {
+          "n": 19215,
+          "median": 0.0953,
+          "p95": 0.24429999999999996,
+          "p99": 0.33290000000000003,
+          "maximum": 3.0496999999999996,
+          "over_50ms": 0,
+          "over_100ms": 0
+        },
+        "surface_acquire_ms": {
+          "n": 19215,
+          "median": 0.1353,
+          "p95": 5.5328,
+          "p99": 8.9635,
+          "maximum": 20.9911,
+          "over_50ms": 0,
+          "over_100ms": 0
+        },
+        "render_lock_ms": {
+          "n": 19215,
+          "median": 0.00019999999999999998,
+          "p95": 0.0007,
+          "p99": 0.0012,
+          "maximum": 0.0044,
+          "over_50ms": 0,
+          "over_100ms": 0
+        },
+        "render_encode_ms": {
+          "n": 19215,
+          "median": 0.19269999999999998,
+          "p95": 0.49280000000000007,
+          "p99": 0.6778,
+          "maximum": 2.4202,
+          "over_50ms": 0,
+          "over_100ms": 0
+        },
+        "encoder_finish_ms": {
+          "n": 19215,
+          "median": 0.001,
+          "p95": 0.0027,
+          "p99": 0.0039,
+          "maximum": 0.16119999999999998,
+          "over_50ms": 0,
+          "over_100ms": 0
+        },
+        "queue_submit_ms": {
+          "n": 19215,
+          "median": 0.1393,
+          "p95": 0.2898,
+          "p99": 0.3852,
+          "maximum": 0.9790000000000001,
+          "over_50ms": 0,
+          "over_100ms": 0
+        },
+        "release_lock_ms": {
+          "n": 19215,
+          "median": 9.999999999999999e-05,
+          "p95": 0.0003,
+          "p99": 0.0005,
+          "maximum": 0.0524,
+          "over_50ms": 0,
+          "over_100ms": 0
+        },
+        "egui_texture_free_ms": {
+          "n": 19215,
+          "median": 0.00019999999999999998,
+          "p95": 0.0007999999999999999,
+          "p99": 0.0011,
+          "maximum": 0.1081,
+          "over_50ms": 0,
+          "over_100ms": 0
+        },
+        "capture_ms": {
+          "n": 19215,
+          "median": 9.999999999999999e-05,
+          "p95": 0.00039999999999999996,
+          "p99": 0.0006,
+          "maximum": 0.0019,
+          "over_50ms": 0,
+          "over_100ms": 0
+        },
+        "present_ms": {
+          "n": 19215,
+          "median": 0.0964,
+          "p95": 0.204,
+          "p99": 0.27769999999999995,
+          "maximum": 0.5331999999999999,
+          "over_50ms": 0,
+          "over_100ms": 0
+        }
+      },
+      "stalls_by_phase": {
+        "0": 1
+      },
+      "stalls": [
+        {
+          "cpu_start_qpc": 1442323573073,
+          "display_start_qpc": 1442324165047.0,
+          "display_end_qpc": 1442324795372.0,
+          "interval_ms": 63.03250000000001,
+          "scenario": 0,
+          "largest_native_phase": [
+            "surface_acquire_ms",
+            20.9911
+          ],
+          "nearby_frame_count": 18
+        }
+      ]
+    },
+    {
+      "case": "ssd-synthetic50k",
+      "version": "new",
+      "metadata": "F:\\tuhai-validation\\quick-v5b\\ssd-synthetic50k-new-scroll\\20260906-171338-1-run.json",
+      "sha256": "1DFEC8C229022481A52339CC12B1BFA396FD6E2ECEB79C719440058641FE4832",
+      "full_diagnosis": "F:\\tuhai-validation\\quick-v5b\\final-stalls\\ssd-synthetic50k-new-scroll-20260906-171338-1-run-stalls.json",
+      "native_phase_metrics": {
+        "encoder_create_ms": {
+          "n": 19155,
+          "median": 0.0019,
+          "p95": 0.0066,
+          "p99": 0.0096,
+          "maximum": 0.17650000000000002,
+          "over_50ms": 0,
+          "over_100ms": 0
+        },
+        "upload_lock_ms": {
+          "n": 19155,
+          "median": 0.00019999999999999998,
+          "p95": 0.0007,
+          "p99": 0.0011,
+          "maximum": 0.007500000000000001,
+          "over_50ms": 0,
+          "over_100ms": 0
+        },
+        "mesh_recall_ms": {
+          "n": 19155,
+          "median": 0.0037,
+          "p95": 0.0112,
+          "p99": 0.0152,
+          "maximum": 0.1409,
+          "over_50ms": 0,
+          "over_100ms": 0
+        },
+        "egui_texture_upload_ms": {
+          "n": 19155,
+          "median": 9.999999999999999e-05,
+          "p95": 0.0003,
+          "p99": 0.0005,
+          "maximum": 2.8107,
+          "over_50ms": 0,
+          "over_100ms": 0
+        },
+        "mesh_upload_ms": {
+          "n": 19155,
+          "median": 0.0945,
+          "p95": 0.2419,
+          "p99": 0.32989999999999997,
+          "maximum": 1.9082999999999999,
+          "over_50ms": 0,
+          "over_100ms": 0
+        },
+        "surface_acquire_ms": {
+          "n": 19155,
+          "median": 0.13329999999999997,
+          "p95": 5.64,
+          "p99": 8.9832,
+          "maximum": 26.1085,
+          "over_50ms": 0,
+          "over_100ms": 0
+        },
+        "render_lock_ms": {
+          "n": 19155,
+          "median": 0.00019999999999999998,
+          "p95": 0.0007,
+          "p99": 0.0013,
+          "maximum": 0.0051,
+          "over_50ms": 0,
+          "over_100ms": 0
+        },
+        "render_encode_ms": {
+          "n": 19155,
+          "median": 0.1928,
+          "p95": 0.4875,
+          "p99": 0.6615,
+          "maximum": 3.1395,
+          "over_50ms": 0,
+          "over_100ms": 0
+        },
+        "encoder_finish_ms": {
+          "n": 19155,
+          "median": 0.001,
+          "p95": 0.0027,
+          "p99": 0.0038,
+          "maximum": 0.0941,
+          "over_50ms": 0,
+          "over_100ms": 0
+        },
+        "queue_submit_ms": {
+          "n": 19155,
+          "median": 0.1372,
+          "p95": 0.28659999999999997,
+          "p99": 0.3747,
+          "maximum": 4.3967,
+          "over_50ms": 0,
+          "over_100ms": 0
+        },
+        "release_lock_ms": {
+          "n": 19155,
+          "median": 9.999999999999999e-05,
+          "p95": 0.00019999999999999998,
+          "p99": 0.0005,
+          "maximum": 0.051,
+          "over_50ms": 0,
+          "over_100ms": 0
+        },
+        "egui_texture_free_ms": {
+          "n": 19155,
+          "median": 0.0003,
+          "p95": 0.0007999999999999999,
+          "p99": 0.0012,
+          "maximum": 0.0392,
+          "over_50ms": 0,
+          "over_100ms": 0
+        },
+        "capture_ms": {
+          "n": 19155,
+          "median": 9.999999999999999e-05,
+          "p95": 0.0003,
+          "p99": 0.0006,
+          "maximum": 0.0268,
+          "over_50ms": 0,
+          "over_100ms": 0
+        },
+        "present_ms": {
+          "n": 19155,
+          "median": 0.0968,
+          "p95": 0.2053,
+          "p99": 0.2736,
+          "maximum": 0.5837,
+          "over_50ms": 0,
+          "over_100ms": 0
+        }
+      },
+      "stalls_by_phase": {
+        "0": 2
+      },
+      "stalls": [
+        {
+          "cpu_start_qpc": 1444695231332,
+          "display_start_qpc": 1444695590033.0,
+          "display_end_qpc": 1444696677372.0,
+          "interval_ms": 108.7339,
+          "scenario": 0,
+          "largest_native_phase": [
+            "surface_acquire_ms",
+            26.1085
+          ],
+          "nearby_frame_count": 12
+        },
+        {
+          "cpu_start_qpc": 1444696953761,
+          "display_start_qpc": 1444697472608.0,
+          "display_end_qpc": 1444698083805.0,
+          "interval_ms": 61.1197,
+          "scenario": 0,
+          "largest_native_phase": [
+            "surface_acquire_ms",
+            26.1085
+          ],
+          "nearby_frame_count": 29
+        }
+      ]
+    },
+    {
+      "case": "hdd-real50k",
+      "version": "old",
+      "metadata": "F:\\tuhai-validation\\quick-v5b\\hdd-real50k-old-scroll\\20260906-171545-1-run.json",
+      "sha256": "4507D93F1BD9C484065FA3710E1C89C59B7E7E45A7631ED4526A44597C1225EA",
+      "full_diagnosis": "F:\\tuhai-validation\\quick-v5b\\final-stalls\\hdd-real50k-old-scroll-20260906-171545-1-run-stalls.json",
+      "native_phase_metrics": {},
+      "stalls_by_phase": {
+        "0": 1
+      },
+      "stalls": [
+        {
+          "cpu_start_qpc": 1445961360821,
+          "display_start_qpc": 1445961813527.0,
+          "display_end_qpc": 1445962594447.0,
+          "interval_ms": 78.092,
+          "scenario": 0,
+          "largest_native_phase": null,
+          "nearby_frame_count": 0
+        }
+      ]
+    },
+    {
+      "case": "hdd-real50k",
+      "version": "old",
+      "metadata": "F:\\tuhai-validation\\quick-v5b\\hdd-real50k-old-scroll\\20260906-171943-1-run.json",
+      "sha256": "4507D93F1BD9C484065FA3710E1C89C59B7E7E45A7631ED4526A44597C1225EA",
+      "full_diagnosis": "F:\\tuhai-validation\\quick-v5b\\final-stalls\\hdd-real50k-old-scroll-20260906-171943-1-run-stalls.json",
+      "native_phase_metrics": {},
+      "stalls_by_phase": {
+        "0": 1
+      },
+      "stalls": [
+        {
+          "cpu_start_qpc": 1448338655709,
+          "display_start_qpc": 1448339064436.0,
+          "display_end_qpc": 1448339704653.0,
+          "interval_ms": 64.02170000000001,
+          "scenario": 0,
+          "largest_native_phase": null,
+          "nearby_frame_count": 0
+        }
+      ]
+    },
+    {
+      "case": "hdd-real50k",
+      "version": "old",
+      "metadata": "F:\\tuhai-validation\\quick-v5b\\hdd-real50k-old-scroll\\20260906-172132-1-run.json",
+      "sha256": "4507D93F1BD9C484065FA3710E1C89C59B7E7E45A7631ED4526A44597C1225EA",
+      "full_diagnosis": "F:\\tuhai-validation\\quick-v5b\\final-stalls\\hdd-real50k-old-scroll-20260906-172132-1-run-stalls.json",
+      "native_phase_metrics": {},
+      "stalls_by_phase": {
+        "0": 1
+      },
+      "stalls": [
+        {
+          "cpu_start_qpc": 1449433491651,
+          "display_start_qpc": 1449433625359.0,
+          "display_end_qpc": 1449434250862.0,
+          "interval_ms": 62.5503,
+          "scenario": 0,
+          "largest_native_phase": null,
+          "nearby_frame_count": 0
+        }
+      ]
+    },
+    {
+      "case": "hdd-real50k",
+      "version": "old",
+      "metadata": "F:\\tuhai-validation\\quick-v5b\\hdd-real50k-old-scroll\\20260906-172530-1-run.json",
+      "sha256": "4507D93F1BD9C484065FA3710E1C89C59B7E7E45A7631ED4526A44597C1225EA",
+      "full_diagnosis": "F:\\tuhai-validation\\quick-v5b\\final-stalls\\hdd-real50k-old-scroll-20260906-172530-1-run-stalls.json",
+      "native_phase_metrics": {},
+      "stalls_by_phase": {
+        "0": 3,
+        "1": 1
+      },
+      "stalls": [
+        {
+          "cpu_start_qpc": 1451809257626,
+          "display_start_qpc": 1451809796721.0,
+          "display_end_qpc": 1451810406805.0,
+          "interval_ms": 61.0084,
+          "scenario": 0,
+          "largest_native_phase": null,
+          "nearby_frame_count": 0
+        },
+        {
+          "cpu_start_qpc": 1451810368406,
+          "display_start_qpc": 1451810406805.0,
+          "display_end_qpc": 1451811043488.0,
+          "interval_ms": 63.6683,
+          "scenario": 0,
+          "largest_native_phase": null,
+          "nearby_frame_count": 0
+        },
+        {
+          "cpu_start_qpc": 1452002472072,
+          "display_start_qpc": 1452002221266.0,
+          "display_end_qpc": 1452002850889.0,
+          "interval_ms": 62.96230000000001,
+          "scenario": 0,
+          "largest_native_phase": null,
+          "nearby_frame_count": 0
+        },
+        {
+          "cpu_start_qpc": 1452114448447,
+          "display_start_qpc": 1452114208322.0,
+          "display_end_qpc": 1452114832763.0,
+          "interval_ms": 62.44410000000001,
+          "scenario": 1,
+          "largest_native_phase": null,
+          "nearby_frame_count": 0
+        }
+      ]
+    },
+    {
+      "case": "hdd-real50k",
+      "version": "old",
+      "metadata": "F:\\tuhai-validation\\quick-v5b\\hdd-real50k-old-scroll\\20260906-172719-1-run.json",
+      "sha256": "4507D93F1BD9C484065FA3710E1C89C59B7E7E45A7631ED4526A44597C1225EA",
+      "full_diagnosis": "F:\\tuhai-validation\\quick-v5b\\final-stalls\\hdd-real50k-old-scroll-20260906-172719-1-run-stalls.json",
+      "native_phase_metrics": {},
+      "stalls_by_phase": {
+        "0": 1
+      },
+      "stalls": [
+        {
+          "cpu_start_qpc": 1452902034496,
+          "display_start_qpc": 1452902372949.0,
+          "display_end_qpc": 1452902995107.0,
+          "interval_ms": 62.2158,
+          "scenario": 0,
+          "largest_native_phase": null,
+          "nearby_frame_count": 0
+        }
+      ]
+    },
+    {
+      "case": "hdd-real50k",
+      "version": "new",
+      "metadata": "F:\\tuhai-validation\\quick-v5b\\hdd-real50k-new-scroll\\20260906-171649-1-run.json",
+      "sha256": "1DFEC8C229022481A52339CC12B1BFA396FD6E2ECEB79C719440058641FE4832",
+      "full_diagnosis": "F:\\tuhai-validation\\quick-v5b\\final-stalls\\hdd-real50k-new-scroll-20260906-171649-1-run-stalls.json",
+      "native_phase_metrics": {
+        "encoder_create_ms": {
+          "n": 17359,
+          "median": 0.0024,
+          "p95": 0.0073,
+          "p99": 0.0108,
+          "maximum": 0.0836,
+          "over_50ms": 0,
+          "over_100ms": 0
+        },
+        "upload_lock_ms": {
+          "n": 17359,
+          "median": 0.00019999999999999998,
+          "p95": 0.0007,
+          "p99": 0.0011,
+          "maximum": 0.0406,
+          "over_50ms": 0,
+          "over_100ms": 0
+        },
+        "mesh_recall_ms": {
+          "n": 17359,
+          "median": 0.0043,
+          "p95": 0.011399999999999999,
+          "p99": 0.0157,
+          "maximum": 0.08349999999999999,
+          "over_50ms": 0,
+          "over_100ms": 0
+        },
+        "egui_texture_upload_ms": {
+          "n": 17359,
+          "median": 9.999999999999999e-05,
+          "p95": 0.0003,
+          "p99": 0.0005,
+          "maximum": 2.8009,
+          "over_50ms": 0,
+          "over_100ms": 0
+        },
+        "mesh_upload_ms": {
+          "n": 17359,
+          "median": 0.1099,
+          "p95": 0.2565,
+          "p99": 0.3435,
+          "maximum": 0.9439,
+          "over_50ms": 0,
+          "over_100ms": 0
+        },
+        "surface_acquire_ms": {
+          "n": 17359,
+          "median": 0.2742,
+          "p95": 6.5282,
+          "p99": 9.6041,
+          "maximum": 28.6643,
+          "over_50ms": 0,
+          "over_100ms": 0
+        },
+        "render_lock_ms": {
+          "n": 17359,
+          "median": 0.00019999999999999998,
+          "p95": 0.0007,
+          "p99": 0.0014,
+          "maximum": 0.0191,
+          "over_50ms": 0,
+          "over_100ms": 0
+        },
+        "render_encode_ms": {
+          "n": 17359,
+          "median": 0.2088,
+          "p95": 0.48899999999999993,
+          "p99": 0.6774,
+          "maximum": 4.7348,
+          "over_50ms": 0,
+          "over_100ms": 0
+        },
+        "encoder_finish_ms": {
+          "n": 17359,
+          "median": 0.0012,
+          "p95": 0.0028,
+          "p99": 0.0039,
+          "maximum": 0.1103,
+          "over_50ms": 0,
+          "over_100ms": 0
+        },
+        "queue_submit_ms": {
+          "n": 17359,
+          "median": 0.15430000000000002,
+          "p95": 0.296,
+          "p99": 0.39130000000000004,
+          "maximum": 1.4621,
+          "over_50ms": 0,
+          "over_100ms": 0
+        },
+        "release_lock_ms": {
+          "n": 17359,
+          "median": 9.999999999999999e-05,
+          "p95": 0.00019999999999999998,
+          "p99": 0.0005,
+          "maximum": 0.0044,
+          "over_50ms": 0,
+          "over_100ms": 0
+        },
+        "egui_texture_free_ms": {
+          "n": 17359,
+          "median": 9.999999999999999e-05,
+          "p95": 0.0006,
+          "p99": 0.0009,
+          "maximum": 0.0315,
+          "over_50ms": 0,
+          "over_100ms": 0
+        },
+        "capture_ms": {
+          "n": 17359,
+          "median": 9.999999999999999e-05,
+          "p95": 0.0003,
+          "p99": 0.0005,
+          "maximum": 0.0027,
+          "over_50ms": 0,
+          "over_100ms": 0
+        },
+        "present_ms": {
+          "n": 17359,
+          "median": 0.107,
+          "p95": 0.2101,
+          "p99": 0.2845,
+          "maximum": 0.9520000000000001,
+          "over_50ms": 0,
+          "over_100ms": 0
+        }
+      },
+      "stalls_by_phase": {
+        "0": 1
+      },
+      "stalls": [
+        {
+          "cpu_start_qpc": 1446599359982,
+          "display_start_qpc": 1446599788825.0,
+          "display_end_qpc": 1446600408848.0,
+          "interval_ms": 62.00230000000001,
+          "scenario": 0,
+          "largest_native_phase": [
+            "surface_acquire_ms",
+            26.0517
+          ],
+          "nearby_frame_count": 12
+        }
+      ]
+    },
+    {
+      "case": "hdd-real50k",
+      "version": "new",
+      "metadata": "F:\\tuhai-validation\\quick-v5b\\hdd-real50k-new-scroll\\20260906-171838-1-run.json",
+      "sha256": "1DFEC8C229022481A52339CC12B1BFA396FD6E2ECEB79C719440058641FE4832",
+      "full_diagnosis": "F:\\tuhai-validation\\quick-v5b\\final-stalls\\hdd-real50k-new-scroll-20260906-171838-1-run-stalls.json",
+      "native_phase_metrics": {
+        "encoder_create_ms": {
+          "n": 17350,
+          "median": 0.0025,
+          "p95": 0.0074,
+          "p99": 0.0107,
+          "maximum": 0.1199,
+          "over_50ms": 0,
+          "over_100ms": 0
+        },
+        "upload_lock_ms": {
+          "n": 17350,
+          "median": 0.00019999999999999998,
+          "p95": 0.0007,
+          "p99": 0.0011,
+          "maximum": 0.0217,
+          "over_50ms": 0,
+          "over_100ms": 0
+        },
+        "mesh_recall_ms": {
+          "n": 17350,
+          "median": 0.0042,
+          "p95": 0.0109,
+          "p99": 0.015000000000000001,
+          "maximum": 0.12999999999999998,
+          "over_50ms": 0,
+          "over_100ms": 0
+        },
+        "egui_texture_upload_ms": {
+          "n": 17350,
+          "median": 9.999999999999999e-05,
+          "p95": 0.00019999999999999998,
+          "p99": 0.00039999999999999996,
+          "maximum": 2.6613,
+          "over_50ms": 0,
+          "over_100ms": 0
+        },
+        "mesh_upload_ms": {
+          "n": 17350,
+          "median": 0.1104,
+          "p95": 0.25379999999999997,
+          "p99": 0.33990000000000004,
+          "maximum": 2.3581000000000003,
+          "over_50ms": 0,
+          "over_100ms": 0
+        },
+        "surface_acquire_ms": {
+          "n": 17350,
+          "median": 0.196,
+          "p95": 6.5217,
+          "p99": 9.4844,
+          "maximum": 30.7227,
+          "over_50ms": 0,
+          "over_100ms": 0
+        },
+        "render_lock_ms": {
+          "n": 17350,
+          "median": 0.00019999999999999998,
+          "p95": 0.0007,
+          "p99": 0.0014,
+          "maximum": 0.0156,
+          "over_50ms": 0,
+          "over_100ms": 0
+        },
+        "render_encode_ms": {
+          "n": 17350,
+          "median": 0.2078,
+          "p95": 0.4836,
+          "p99": 0.6767,
+          "maximum": 4.761900000000001,
+          "over_50ms": 0,
+          "over_100ms": 0
+        },
+        "encoder_finish_ms": {
+          "n": 17350,
+          "median": 0.0011,
+          "p95": 0.0028,
+          "p99": 0.004,
+          "maximum": 0.12469999999999999,
+          "over_50ms": 0,
+          "over_100ms": 0
+        },
+        "queue_submit_ms": {
+          "n": 17350,
+          "median": 0.15755000000000002,
+          "p95": 0.30200000000000005,
+          "p99": 0.391,
+          "maximum": 1.1782,
+          "over_50ms": 0,
+          "over_100ms": 0
+        },
+        "release_lock_ms": {
+          "n": 17350,
+          "median": 9.999999999999999e-05,
+          "p95": 0.00019999999999999998,
+          "p99": 0.0005,
+          "maximum": 0.003,
+          "over_50ms": 0,
+          "over_100ms": 0
+        },
+        "egui_texture_free_ms": {
+          "n": 17350,
+          "median": 9.999999999999999e-05,
+          "p95": 0.0006,
+          "p99": 0.0009,
+          "maximum": 0.0507,
+          "over_50ms": 0,
+          "over_100ms": 0
+        },
+        "capture_ms": {
+          "n": 17350,
+          "median": 9.999999999999999e-05,
+          "p95": 0.0003,
+          "p99": 0.0005,
+          "maximum": 0.0012,
+          "over_50ms": 0,
+          "over_100ms": 0
+        },
+        "present_ms": {
+          "n": 17350,
+          "median": 0.1082,
+          "p95": 0.2122,
+          "p99": 0.2868,
+          "maximum": 0.7267,
+          "over_50ms": 0,
+          "over_100ms": 0
+        }
+      },
+      "stalls_by_phase": {
+        "0": 1
+      },
+      "stalls": [
+        {
+          "cpu_start_qpc": 1447697078645,
+          "display_start_qpc": 1447696803799.0,
+          "display_end_qpc": 1447697438631.0,
+          "interval_ms": 63.4832,
+          "scenario": 0,
+          "largest_native_phase": [
+            "surface_acquire_ms",
+            17.0382
+          ],
+          "nearby_frame_count": 20
+        }
+      ]
+    },
+    {
+      "case": "hdd-real50k",
+      "version": "new",
+      "metadata": "F:\\tuhai-validation\\quick-v5b\\hdd-real50k-new-scroll\\20260906-172236-1-run.json",
+      "sha256": "1DFEC8C229022481A52339CC12B1BFA396FD6E2ECEB79C719440058641FE4832",
+      "full_diagnosis": "F:\\tuhai-validation\\quick-v5b\\final-stalls\\hdd-real50k-new-scroll-20260906-172236-1-run-stalls.json",
+      "native_phase_metrics": {
+        "encoder_create_ms": {
+          "n": 14468,
+          "median": 0.0027,
+          "p95": 0.0079,
+          "p99": 0.011,
+          "maximum": 0.1007,
+          "over_50ms": 0,
+          "over_100ms": 0
+        },
+        "upload_lock_ms": {
+          "n": 14468,
+          "median": 0.00019999999999999998,
+          "p95": 0.0007,
+          "p99": 0.0012,
+          "maximum": 0.1227,
+          "over_50ms": 0,
+          "over_100ms": 0
+        },
+        "mesh_recall_ms": {
+          "n": 14468,
+          "median": 0.0046,
+          "p95": 0.0117,
+          "p99": 0.016,
+          "maximum": 0.2039,
+          "over_50ms": 0,
+          "over_100ms": 0
+        },
+        "egui_texture_upload_ms": {
+          "n": 14468,
+          "median": 9.999999999999999e-05,
+          "p95": 0.0003,
+          "p99": 0.0005,
+          "maximum": 2.7643,
+          "over_50ms": 0,
+          "over_100ms": 0
+        },
+        "mesh_upload_ms": {
+          "n": 14468,
+          "median": 0.1187,
+          "p95": 0.27559999999999996,
+          "p99": 0.36000000000000004,
+          "maximum": 2.0532,
+          "over_50ms": 0,
+          "over_100ms": 0
+        },
+        "surface_acquire_ms": {
+          "n": 14468,
+          "median": 0.1094,
+          "p95": 11.3811,
+          "p99": 13.1114,
+          "maximum": 25.926299999999998,
+          "over_50ms": 0,
+          "over_100ms": 0
+        },
+        "render_lock_ms": {
+          "n": 14468,
+          "median": 0.00019999999999999998,
+          "p95": 0.0007,
+          "p99": 0.0013,
+          "maximum": 0.0029000000000000002,
+          "over_50ms": 0,
+          "over_100ms": 0
+        },
+        "render_encode_ms": {
+          "n": 14468,
+          "median": 0.2255,
+          "p95": 0.5146000000000001,
+          "p99": 0.7328,
+          "maximum": 2.1893,
+          "over_50ms": 0,
+          "over_100ms": 0
+        },
+        "encoder_finish_ms": {
+          "n": 14468,
+          "median": 0.0013,
+          "p95": 0.003,
+          "p99": 0.0047,
+          "maximum": 0.1933,
+          "over_50ms": 0,
+          "over_100ms": 0
+        },
+        "queue_submit_ms": {
+          "n": 14468,
+          "median": 0.16715,
+          "p95": 0.3236,
+          "p99": 0.4258,
+          "maximum": 1.4005,
+          "over_50ms": 0,
+          "over_100ms": 0
+        },
+        "release_lock_ms": {
+          "n": 14468,
+          "median": 9.999999999999999e-05,
+          "p95": 0.00019999999999999998,
+          "p99": 0.0005,
+          "maximum": 0.02,
+          "over_50ms": 0,
+          "over_100ms": 0
+        },
+        "egui_texture_free_ms": {
+          "n": 14468,
+          "median": 0.00019999999999999998,
+          "p95": 0.0006,
+          "p99": 0.0009,
+          "maximum": 0.020999999999999998,
+          "over_50ms": 0,
+          "over_100ms": 0
+        },
+        "capture_ms": {
+          "n": 14468,
+          "median": 9.999999999999999e-05,
+          "p95": 0.0003,
+          "p99": 0.0005,
+          "maximum": 0.0149,
+          "over_50ms": 0,
+          "over_100ms": 0
+        },
+        "present_ms": {
+          "n": 14468,
+          "median": 0.11270000000000001,
+          "p95": 0.2288,
+          "p99": 0.3161,
+          "maximum": 1.1946999999999999,
+          "over_50ms": 0,
+          "over_100ms": 0
+        }
+      },
+      "stalls_by_phase": {
+        "0": 2
+      },
+      "stalls": [
+        {
+          "cpu_start_qpc": 1450071183821,
+          "display_start_qpc": 1450071422265.0,
+          "display_end_qpc": 1450072528427.0,
+          "interval_ms": 110.6162,
+          "scenario": 0,
+          "largest_native_phase": [
+            "surface_acquire_ms",
+            18.9412
+          ],
+          "nearby_frame_count": 14
+        },
+        {
+          "cpu_start_qpc": 1450072265198,
+          "display_start_qpc": 1450072528427.0,
+          "display_end_qpc": 1450073142147.0,
+          "interval_ms": 61.372,
+          "scenario": 0,
+          "largest_native_phase": [
+            "surface_acquire_ms",
+            19.6536
+          ],
+          "nearby_frame_count": 24
+        }
+      ]
+    },
+    {
+      "case": "hdd-real50k",
+      "version": "new",
+      "metadata": "F:\\tuhai-validation\\quick-v5b\\hdd-real50k-new-scroll\\20260906-172425-1-run.json",
+      "sha256": "1DFEC8C229022481A52339CC12B1BFA396FD6E2ECEB79C719440058641FE4832",
+      "full_diagnosis": "F:\\tuhai-validation\\quick-v5b\\final-stalls\\hdd-real50k-new-scroll-20260906-172425-1-run-stalls.json",
+      "native_phase_metrics": {
+        "encoder_create_ms": {
+          "n": 14928,
+          "median": 0.0026,
+          "p95": 0.0076,
+          "p99": 0.0106,
+          "maximum": 0.1853,
+          "over_50ms": 0,
+          "over_100ms": 0
+        },
+        "upload_lock_ms": {
+          "n": 14928,
+          "median": 0.00019999999999999998,
+          "p95": 0.0006,
+          "p99": 0.001,
+          "maximum": 0.0044,
+          "over_50ms": 0,
+          "over_100ms": 0
+        },
+        "mesh_recall_ms": {
+          "n": 14928,
+          "median": 0.0044,
+          "p95": 0.011300000000000001,
+          "p99": 0.0152,
+          "maximum": 0.0942,
+          "over_50ms": 0,
+          "over_100ms": 0
+        },
+        "egui_texture_upload_ms": {
+          "n": 14928,
+          "median": 9.999999999999999e-05,
+          "p95": 0.0003,
+          "p99": 0.0005,
+          "maximum": 2.6846,
+          "over_50ms": 0,
+          "over_100ms": 0
+        },
+        "mesh_upload_ms": {
+          "n": 14928,
+          "median": 0.1176,
+          "p95": 0.2672,
+          "p99": 0.3454,
+          "maximum": 1.4739,
+          "over_50ms": 0,
+          "over_100ms": 0
+        },
+        "surface_acquire_ms": {
+          "n": 14928,
+          "median": 0.09275,
+          "p95": 11.0148,
+          "p99": 12.575,
+          "maximum": 26.2229,
+          "over_50ms": 0,
+          "over_100ms": 0
+        },
+        "render_lock_ms": {
+          "n": 14928,
+          "median": 0.00019999999999999998,
+          "p95": 0.0007,
+          "p99": 0.0012,
+          "maximum": 0.016399999999999998,
+          "over_50ms": 0,
+          "over_100ms": 0
+        },
+        "render_encode_ms": {
+          "n": 14928,
+          "median": 0.225,
+          "p95": 0.5035999999999999,
+          "p99": 0.6855,
+          "maximum": 4.8967,
+          "over_50ms": 0,
+          "over_100ms": 0
+        },
+        "encoder_finish_ms": {
+          "n": 14928,
+          "median": 0.0013,
+          "p95": 0.0028,
+          "p99": 0.0040999999999999995,
+          "maximum": 0.1936,
+          "over_50ms": 0,
+          "over_100ms": 0
+        },
+        "queue_submit_ms": {
+          "n": 14928,
+          "median": 0.16625,
+          "p95": 0.31129999999999997,
+          "p99": 0.4084,
+          "maximum": 2.3587000000000002,
+          "over_50ms": 0,
+          "over_100ms": 0
+        },
+        "release_lock_ms": {
+          "n": 14928,
+          "median": 9.999999999999999e-05,
+          "p95": 0.00019999999999999998,
+          "p99": 0.0005,
+          "maximum": 0.0024,
+          "over_50ms": 0,
+          "over_100ms": 0
+        },
+        "egui_texture_free_ms": {
+          "n": 14928,
+          "median": 0.00019999999999999998,
+          "p95": 0.0007,
+          "p99": 0.001,
+          "maximum": 0.0488,
+          "over_50ms": 0,
+          "over_100ms": 0
+        },
+        "capture_ms": {
+          "n": 14928,
+          "median": 9.999999999999999e-05,
+          "p95": 0.0003,
+          "p99": 0.0005,
+          "maximum": 0.0073,
+          "over_50ms": 0,
+          "over_100ms": 0
+        },
+        "present_ms": {
+          "n": 14928,
+          "median": 0.1139,
+          "p95": 0.2236,
+          "p99": 0.30160000000000003,
+          "maximum": 0.5651,
+          "over_50ms": 0,
+          "over_100ms": 0
+        }
+      },
+      "stalls_by_phase": {
+        "0": 2
+      },
+      "stalls": [
+        {
+          "cpu_start_qpc": 1451167404111,
+          "display_start_qpc": 1451167885413.0,
+          "display_end_qpc": 1451168673705.0,
+          "interval_ms": 78.8292,
+          "scenario": 0,
+          "largest_native_phase": [
+            "surface_acquire_ms",
+            19.2613
+          ],
+          "nearby_frame_count": 15
+        },
+        {
+          "cpu_start_qpc": 1451168403464,
+          "display_start_qpc": 1451168673705.0,
+          "display_end_qpc": 1451169299068.0,
+          "interval_ms": 62.5363,
+          "scenario": 0,
+          "largest_native_phase": [
+            "surface_acquire_ms",
+            19.2613
+          ],
+          "nearby_frame_count": 23
+        }
+      ]
+    },
+    {
+      "case": "hdd-real50k",
+      "version": "new",
+      "metadata": "F:\\tuhai-validation\\quick-v5b\\hdd-real50k-new-scroll\\20260906-172823-1-run.json",
+      "sha256": "1DFEC8C229022481A52339CC12B1BFA396FD6E2ECEB79C719440058641FE4832",
+      "full_diagnosis": "F:\\tuhai-validation\\quick-v5b\\final-stalls\\hdd-real50k-new-scroll-20260906-172823-1-run-stalls.json",
+      "native_phase_metrics": {
+        "encoder_create_ms": {
+          "n": 14240,
+          "median": 0.0027,
+          "p95": 0.0084,
+          "p99": 0.0124,
+          "maximum": 0.2858,
+          "over_50ms": 0,
+          "over_100ms": 0
+        },
+        "upload_lock_ms": {
+          "n": 14240,
+          "median": 0.00019999999999999998,
+          "p95": 0.0007999999999999999,
+          "p99": 0.0013,
+          "maximum": 0.0063999999999999994,
+          "over_50ms": 0,
+          "over_100ms": 0
+        },
+        "mesh_recall_ms": {
+          "n": 14240,
+          "median": 0.0048,
+          "p95": 0.0129,
+          "p99": 0.0176,
+          "maximum": 0.0851,
+          "over_50ms": 0,
+          "over_100ms": 0
+        },
+        "egui_texture_upload_ms": {
+          "n": 14240,
+          "median": 9.999999999999999e-05,
+          "p95": 0.0003,
+          "p99": 0.0005,
+          "maximum": 4.400399999999999,
+          "over_50ms": 0,
+          "over_100ms": 0
+        },
+        "mesh_upload_ms": {
+          "n": 14240,
+          "median": 0.12329999999999999,
+          "p95": 0.2993,
+          "p99": 0.41859999999999997,
+          "maximum": 2.7001999999999997,
+          "over_50ms": 0,
+          "over_100ms": 0
+        },
+        "surface_acquire_ms": {
+          "n": 14240,
+          "median": 0.0714,
+          "p95": 11.0015,
+          "p99": 12.840300000000001,
+          "maximum": 33.029700000000005,
+          "over_50ms": 0,
+          "over_100ms": 0
+        },
+        "render_lock_ms": {
+          "n": 14240,
+          "median": 0.00019999999999999998,
+          "p95": 0.0007999999999999999,
+          "p99": 0.0015,
+          "maximum": 0.0564,
+          "over_50ms": 0,
+          "over_100ms": 0
+        },
+        "render_encode_ms": {
+          "n": 14240,
+          "median": 0.2328,
+          "p95": 0.5398000000000001,
+          "p99": 0.7741,
+          "maximum": 10.1149,
+          "over_50ms": 0,
+          "over_100ms": 0
+        },
+        "encoder_finish_ms": {
+          "n": 14240,
+          "median": 0.0013,
+          "p95": 0.0031,
+          "p99": 0.0048,
+          "maximum": 0.027100000000000003,
+          "over_50ms": 0,
+          "over_100ms": 0
+        },
+        "queue_submit_ms": {
+          "n": 14240,
+          "median": 0.1738,
+          "p95": 0.3483,
+          "p99": 0.4753,
+          "maximum": 3.7586999999999997,
+          "over_50ms": 0,
+          "over_100ms": 0
+        },
+        "release_lock_ms": {
+          "n": 14240,
+          "median": 9.999999999999999e-05,
+          "p95": 0.0003,
+          "p99": 0.0007,
+          "maximum": 0.009099999999999999,
+          "over_50ms": 0,
+          "over_100ms": 0
+        },
+        "egui_texture_free_ms": {
+          "n": 14240,
+          "median": 0.00019999999999999998,
+          "p95": 0.0006,
+          "p99": 0.001,
+          "maximum": 0.0027,
+          "over_50ms": 0,
+          "over_100ms": 0
+        },
+        "capture_ms": {
+          "n": 14240,
+          "median": 9.999999999999999e-05,
+          "p95": 0.0003,
+          "p99": 0.0006,
+          "maximum": 0.0177,
+          "over_50ms": 0,
+          "over_100ms": 0
+        },
+        "present_ms": {
+          "n": 14240,
+          "median": 0.11739999999999999,
+          "p95": 0.2484,
+          "p99": 0.3533,
+          "maximum": 2.055,
+          "over_50ms": 0,
+          "over_100ms": 0
+        }
+      },
+      "stalls_by_phase": {
+        "0": 4
+      },
+      "stalls": [
+        {
+          "cpu_start_qpc": 1453541678496,
+          "display_start_qpc": 1453542115330.0,
+          "display_end_qpc": 1453543198446.0,
+          "interval_ms": 108.3116,
+          "scenario": 0,
+          "largest_native_phase": [
+            "surface_acquire_ms",
+            23.519000000000002
+          ],
+          "nearby_frame_count": 6
+        },
+        {
+          "cpu_start_qpc": 1453542707065,
+          "display_start_qpc": 1453543198446.0,
+          "display_end_qpc": 1453544123105.0,
+          "interval_ms": 92.4659,
+          "scenario": 0,
+          "largest_native_phase": [
+            "surface_acquire_ms",
+            33.029700000000005
+          ],
+          "nearby_frame_count": 12
+        },
+        {
+          "cpu_start_qpc": 1453544939411,
+          "display_start_qpc": 1453544894333.0,
+          "display_end_qpc": 1453545507460.0,
+          "interval_ms": 61.3127,
+          "scenario": 0,
+          "largest_native_phase": [
+            "surface_acquire_ms",
+            33.029700000000005
+          ],
+          "nearby_frame_count": 34
+        },
+        {
+          "cpu_start_qpc": 1453549829075,
+          "display_start_qpc": 1453549600234.0,
+          "display_end_qpc": 1453550215523.0,
+          "interval_ms": 61.5289,
+          "scenario": 0,
+          "largest_native_phase": [
+            "surface_acquire_ms",
+            19.6813
+          ],
+          "nearby_frame_count": 60
+        }
+      ]
+    }
+  ],
+  "interpretation": "Time neighborhoods only, not causal proof. Phase 1 is scored scrolling; phase 0 startup/warmup and later idle/exit gaps are separate. Legacy baseline logs lack fixed render context.",
+  "scroll_hotspot_resolved": false
+}

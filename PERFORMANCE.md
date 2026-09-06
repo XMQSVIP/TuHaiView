@@ -1,89 +1,75 @@
-# 性能验收：验证版，尚未完成
+# 快速验证版 v5：本轮交付，完整性能验收未完成
 
-当前产品源码固定为 `a504605`，默认 features。EXE SHA-256：
+产品源码固定为 `cfbbdc5`，默认 features。EXE SHA-256：
 
-`4507D93F1BD9C484065FA3710E1C89C59B7E7E45A7631ED4526A44597C1225EA`
+`1DFEC8C229022481A52339CC12B1BFA396FD6E2ECEB79C719440058641FE4832`
 
-本文只汇总这个候选的证据。历史测量完整保存在 [PERFORMANCE-HISTORY.md](PERFORMANCE-HISTORY.md)；不同 EXE 的通过记录不互相转记。当前仍有显示性能失败和环境缺项，不能标记“性能收尾完成”。
+本轮完成日志收尾修复、帧关联、原生渲染阶段诊断和约定的短期对照。缓存滚动显示 P95 仍约 32 ms，未达到约 60 Hz 下的 17.167 ms 门槛。没有证据支持进一步修改呈现配置或上传架构，因此继续使用 DX12 / Mailbox 和原资源预算，交付状态保持“验证版”。
 
-## 已完成的实现
+旧版 `a504605` 的报告原样保存在 [PERFORMANCE-V4.md](PERFORMANCE-V4.md)，更早记录见 [PERFORMANCE-HISTORY.md](PERFORMANCE-HISTORY.md)。旧版的解码、缓存、数据库和十轮长期内存结果属于历史证据，不自动转记到新 EXE。
 
-- 视口不变时复用调度状态，共享图片记录，同帧新增任务批量提交；后台重绘通知合并。
-- 目录快照与相应排序结果成对发布，按稳定 ID 恢复选择与预览。打开文件夹停在顶部，后台扫描和排序不触发自动滚动。
-- 旧快照、排序表和过期像素在后台释放；纹理分批注销，提交完成回调后归还资源租约。增加使用中、待回收及释放统计。
-- egui 原生顶点／索引上传使用 StagingBelt 复用映射缓冲，32 帧 GPU 逐像素对照包含多网格和放弃提交的情形。普通图片的解码、质量、上传预算和默认 Mailbox 保持原值。
-- 性能采样与自动轨迹分离，普通启动没有自动操作。日志关联运行、场景、帧、请求和单调时钟；正常结束后记录落盘凭据。原生对话框等待与输入处理分别计时。
+## 实现与提交
 
-主要实现提交为 `81dc153`、`c0bf841`、`433cebc`、`79e3515`、`a504605`；测量与样本提交从 `1d0e71c` 开始。目录 schema v3 和缓存兼容保持不变。
+1. `6e361ff`：诊断日志建立接收、停止、排空、同步、完成/失败生命周期，结束信号走独立通道。生产者屏障禁止终止后接收普通样本；关闭 UI 只请求结束，窗口事件循环返回后在总计 5 秒期限内等待。失败返回阶段、耗时和系统错误，诊断退出非零。日志同步、临时凭据同步及重命名缺一不可，禁止事后补签。
+2. `cfbbdc5`：schema v4 显式记录 FrameContext，`eframe_cpu_ms` 关联前一个已完成 paint；无法确认时标未知。egui-wgpu 一帧汇总 14 段 CPU 耗时，释放渲染锁后提交有界队列，普通启动不安装观察器。QPC 将显示长间隔关联到邻近阶段、上传和回收记录。旧 schema v2/v3 仍可读取。
+3. 本交付记录提交：保存同一 EXE 的短矩阵、阶段诊断、回归、便携包及哈希，不再修改产品源码。
 
-## 当前 EXE 的实测状态
+带阶段计时的初始候选在 HDD 真实集丢失 2,582 条样本，已判无效。日志随后改为最多 64 条的无损紧凑元组批次；队列 4,032 加工作批次 64，仍合计 4,096 条上限。保留每条样本的时间、帧、请求、会话及数值。SSD 筛选每样本平均存储量从 209.93 降至 122.33 字节，约减少 42%；最终正式候选的 26 次短测/混合循环均无丢样，收尾耗时 43.95～131.61 ms。前后日志字段数量不同，不用总日志体积宣称同等采样下的产品加速。
 
-| 项目 | 已取得的证据 | 状态与边界 |
-| --- | --- | --- |
-| Release 功能回归 | 40 通过、0 失败；5 项手动测试另行执行 | 本机通过，不代表全部平台／故障矩阵 |
-| 图片 GPU 分片上传、取消 | 读回像素一致，取消后租约回收 | 本机 DX12 通过 |
-| 原生网格上传复用 | 32 帧新旧路径 GPU 逐像素一致，含大多网格与放弃编码器 | 本机 DX12 通过 |
-| 24MP / 48MP JPEG 解码 | 五轮中位数 264.01→59.67 / 555.55→117.51 ms，减少 77.40% / 78.85% | 固定样本达到 ≥50% 目标 |
-| 48MP 单任务进程峰值 | 完整／缩放路径工作集中位数 168.04 / 26.00 MiB | 各五次独立进程，系统缓存未知 |
-| 1,000 张真实 JPEG 缓存 | 240,966,912→15,328,052 字节，减少 93.64% | 达到 ≥80% 目标；透明图另做无损像素回归 |
-| 数据库 50k 写入 | 同一 HDD 路径交替五轮，基线 3.07 s、当前 2.97 s | −3.26%，达到退化 ≤10% 目标 |
-| 原生监控小批变化 | 五轮新增发布 745.62～756.86 ms，每轮只访问 1 个文件 | 后台发布通过；不是到屏幕显示的测量 |
-| 实际临时读取权限失败 | 拒绝访问时保留索引，恢复后更新；测试访问规则恢复 | 独立副本、本机通过 |
-| 原生文件夹对话框取消 | 原始帧 22,750.95 ms，模态等待 22,749.92 ms，处理 1.03 ms；返回后偏移 0 | 计时修正通过；非五轮输入到显示验收 |
-| 呈现设置对照 | Mailbox／8 ms 测试节流／FIFO 各五轮有效，P95 约 32 ms | 15 轮均未达到 60 Hz P95；维持 Mailbox |
-| 最终 EXE 30 分钟矩阵 | SSD/HDD 各五轮全部有效且内存通过；十轮斜率 0.048～0.377 MiB/min，末段增长 −0.012～9.984 MiB，预算及回收全部通过 | 本轮工程内存标准通过；详见 [内存报告](performance-results/20260906/MEMORY-V4.md) |
-| 最终 EXE 完整短矩阵 | 8 个磁盘／数据组合 × 打开／滚动 × 5 次，共 80 次有效测量；全部管理预算通过 | 40 次缓存滚动均未通过显示目标；[逐轮报告](performance-results/20260906/short-v4/SHORT-MATRIX.md) |
-| 单 EXE 静态依赖 | 17,414,656 字节，x64 GUI，只发现已核对系统 DLL | 静态检查通过；干净 Windows 10/11 启动未验证 |
+## 五轮对照结果
 
-逐轮数据：[原生基准](performance-results/20260906/native-v4-summary.json)、[呈现对照](performance-results/20260906/PRESENTATION-V4.md)、[权限回归](performance-results/20260906/permission-v4.json)、[输入验证](performance-results/20260906/INPUT-ATTEMPT.md)、[依赖检查](performance-results/20260906/portable-v4.json)。原始输出在对应 JSON 的本地路径；真实网络图片不进入仓库或发布包。
+旧/新版本交替执行，独立完成索引和相同路线预热。每组五轮，共 40 次有效正式短测；缓存滚动全部确认可见纹理命中。另有 4 次候选筛选、8 次独立预热、6 次候选混合循环，共 58 次有效运行。无效采集保留，未混入汇总。
 
-旧上传候选 `FAE039A3…` 的单次 30 分钟 SSD 内存结果通过（斜率 0.1005 MiB／分钟，末段增长 3.94 MiB），只能作为修复线索，不能计入当前 EXE 的十轮验收。上传问题的独立对照与限制见 [MESH-UPLOAD.md](performance-results/20260906/MESH-UPLOAD.md)。
+| 指标 | 对照 v4 | 候选 v5 | 结论 |
+| --- | ---: | ---: | --- |
+| SSD 合成 50k 打开，首批记录中位 | 425.35 ms | 463.42 ms | 新版慢 38.07 ms；仍小于 1 秒 |
+| SSD 打开，首屏资源中位 | 469.12 ms | 506.38 ms | 小幅退化，不能称整体更快 |
+| HDD 真实 50k 打开，首批记录中位 | 609.24 ms | 630.52 ms | 新版慢 21.28 ms |
+| HDD 打开，首屏资源中位 | 651.94 ms | 664.38 ms | 新版慢 12.44 ms |
+| SSD 缓存滚动，逐轮显示 P95 | 31.886～32.011 ms | 31.919～31.985 ms | 都未达标 |
+| HDD 缓存滚动，逐轮显示 P95 | 31.982～32.029 ms | 31.993～32.030 ms | 都未达标 |
+| SSD 缓存滚动，逐轮显示 P99 | 32.115～32.137 ms | 32.107～32.144 ms | 接近 |
+| HDD 缓存滚动，逐轮显示 P99 | 32.083～32.156 ms | 32.118～32.158 ms | 接近 |
+| 正式滚动 >50 / >100 ms | 1 / 0 | 0 / 0 | 单次差异不足以证明改善 |
 
-SSD 第五次尝试在 1439 秒被 C 盘余量保护中止，无完成凭据，保留为 [无效尝试](performance-results/20260906/v4-memory-ssd-aborted-05.json)。归档本任务旧候选测试目录到 F 盘后，使用同一 EXE、相同窗口／显示／数据参数补跑一个完整轮次；五轮聚合同时验证配置一致和独立运行 ID，没有将中止轮次写成通过。迁移位置见 [归档清单](performance-results/20260906/ssd-test-data-relocation.json)，旧记录的 C 盘目录可按此映射查找。
+以上启动时间从 main 开始，不包含系统加载；首屏资源就绪不等于物理显示。所有正式打开场景滚动偏移保持零。SSD 新版滚动 UI update P95 为 1.110～1.158 ms，HDD 为 1.163～1.371 ms；这是应用墙钟处理时间，真实输入到显示尚未测得，不能声称输入延迟通过。
 
-## 最终短测结果与保留的失败
+[逐轮报告](performance-results/20260906/quick-v5/final-matrix.md) 包含每轮中位数、P95、P99、最大值和停顿计数；[机器可读证据](performance-results/20260906/quick-v5/final-matrix.json) 还包含哈希、配置一致性、收尾阶段、资源预算、回收与进程内存。原始数据位于 `F:\tuhai-validation\quick-v5b`，每个日志对应 run_id 和二进制哈希。
 
-同一 EXE 完成 16 组、80 次有效短测，各组二进制／窗口／DPI／显示配置一致，40 次滚动可见纹理全部命中。SSD 合成 50k 从 `main` 到首批记录中位数 580.45 ms、最大 594.40 ms；首屏资源就绪中位数 688.63 ms、最大 697.86 ms。HDD 真实 50k 首批记录中位数 705.05 ms、最大 798.81 ms；首屏 762.81 / 870.94 ms。40 轮打开都保持顶部。
+## 长帧证据及边界
 
-缓存滚动的显示 P95 为 31.932～32.059 ms，40 轮全部未达到约 17.167 ms 的 60 Hz 门槛。滚动段合计 48 次 >50 ms 停顿、0 次 >100 ms，最长 92.417 ms。此前候选的短矩阵没有这些 >50 ms 停顿，当前证据不能声称尾延迟已改善；不同时间的机器负载未严格隔离，不能据此单独归因到渲染补丁或驱动。
+为全部 20 次正式滚动运行输出了每个 >50 ms 显示间隔的 QPC 邻近数据。新版正式滚动段没有 >50 ms，但启动/预热段仍有 16 次 >50 ms，其中 3 次 >100 ms，最长 110.616 ms。不能只报告滚动段的零停顿而隐藏这些结果。
 
-另有一次 60 秒短测缺少最终完成凭据，临时凭据与日志长度一致但没有完成 rename；保留为 [无效采集](performance-results/20260906/v4-short-incomplete-certificate.json)，不能由外部脚本补签为通过。该轮全部显示样本中出现 252 ms 停顿，也一并保留。现有 500 ms 退出等待与文件同步失败均是可能原因，尚未确定；产品未修改，后续另补完整有效轮次。真实 50k 的一次 30 秒预热未完成后台校验，随后使用 300 秒预热再执行固定时长测量，[短预热记录](performance-results/20260906/v4-real50k-short-warmup.json) 保留。上述失败不混入有效五轮汇总，也没有删除原始证据。
+这些启动/预热间隔附近的最大原生阶段是交换链获取，邻近样本最大 33.03 ms；更早初始诊断曾捕获 63.7 ms。网格上传、提交、锁等待等阶段已有分别记录，但尚未定位可复现、可安全修复的滚动 CPU 热点。阶段墙钟不是 GPU 执行时间；时间相邻不能证明因果，也不能据此断言驱动是根因。候选未采用新的渲染性能调整。
 
-## 测量与环境
+[诊断摘要](performance-results/20260906/quick-v5/final-stall-diagnosis.json) 保留每次间隔、场景和最大邻近阶段；完整逐帧数据在 `F:\tuhai-validation\quick-v5b\final-stalls`。旧版没有新帧上下文和原生阶段数据，不能补造。
 
-机器为 Windows 10 Pro 22H2、i5-10400、16 GiB、Intel UHD 630。C 为 Colorful CN600 NVMe；F/G 属于同一块 WDC WD10EZEX HDD，不能称为两块机械盘。测试期间不重叠构建、原生基准和图形运行，C 盘保留至少 2 GiB。系统文件缓存状态均为未知，进程重启不称为系统冷缓存。
+## 资源与回归
 
-真实集有 50,000 张、23,399,709,977 字节（49,055 JPEG、945 PNG），来自原图库多个顶层分类的有界轮流抽样，达到上限即停止。1 万张为固定子集；跨盘相同真实图共 1,333 张、536,573,718 字节。该样本不代表百万张原库的分布；没有进行原库全扫描、查重或压力测试。格式、尺寸、哈希和来源路径保存在本地清单。特殊集含超大图、渐进／CMYK JPEG、八种 EXIF、透明图、损坏图、16 位 PNG/TIFF。
+- 最终源码 Release 功能测试：47 通过、0 失败、5 项默认忽略的手动测试。另单独执行图片分片上传/取消 GPU 读回，以及原生网格 32 帧新旧路径 GPU 等价回归，均通过。
+- 日志专项覆盖队列饱和、并发生产者与重复结束、超过旧 500 ms 的慢同步、超过新期限、写入/同步/重命名失败和初始化失败。成功验证凭据，超时或失败不得补签。报告解析测试 18 项通过，格式检查通过。
+- SSD/HDD 各三轮 180 秒混合循环全部有效，预算和结束空闲回收通过。它们仅是短期回归，不替代各五轮 30 分钟最终 EXE 验收。
+- Private bytes 单独记录：SSD 三轮峰值约 595～649 MiB，结束空闲约 520～521 MiB；HDD 峰值约 909～926 MiB，结束空闲约 780～783 MiB。管理中旧会话资源回收不等于进程全部内存释放，不能据此证明无泄漏，也不将差额直接归因于驱动。
+- 保留解码估算 512 MiB（预览保留 128）、待上传像素 96 MiB、缓存写队列 32 MiB、图片纹理 256 MiB，以及每帧 4 MiB / 2 ms / 最多 8 张普通缩略图的限制。这些不是进程总内存硬上限。
 
-PresentMon 固定为 2.5.1，按运行 PID 和 QPC 关联场景；每轮保存工具／二进制／清单哈希、磁盘、窗口、DPI、刷新率、呈现参数、缓存状态及完成凭据。首批记录、首批缩略图、首屏资源就绪、预览首次显示和目标分辨率分别统计；启动计时从 `main` 开始，不包含进入 `main` 前的系统加载。资源就绪不等于物理显示。
+测试原始输出：[Release 回归](performance-results/20260906/quick-v5/final-release-tests.txt)、[图片 GPU](performance-results/20260906/quick-v5/final-gpu-images.txt)、[网格 GPU](performance-results/20260906/quick-v5/final-gpu-mesh.txt)、[解析回归](performance-results/20260906/quick-v5/final-report-tests.txt)。文件操作、缓存故障、排序/版本与取消仍由现有功能测试覆盖；真实输入/故障环境的完整矩阵尚未重做。
 
-活动显示目标报告约 60 Hz，Windows 同时报告 `friendlyNameForced=1`、没有检测到连接显示器且 EDID 无效。独立 DXGI 垂直空白等待也约 31～32 ms；这不能证明某个驱动是根因，或证明真实屏幕刷新率。继续按 P95 ≤ T＋0.5 ms、P99 ≤ 2T＋0.5 ms 判定，不放宽目标。[显示路径证据](performance-results/20260906/DISPLAY-PATH.md) 保存详细边界。
+保留两类无效采集：初始渲染候选丢样见 [记录](performance-results/20260906/quick-v5/invalid-initial-capture.json)；最终候选首次 HDD 筛选未在 60 秒内完成后台校验、缺少足够滚动显示样本，保存在原始目录 invalid-attempts，另取独立有效替代轮次。正式五轮对照没有需要替补的无效运行。
 
-## 资源规则与回归范围
+## 环境与未完成项
 
-资源预算维持解码估算 512 MiB（预览保留 128）、待上传像素 96 MiB、缓存写队列 32 MiB、图片纹理 256 MiB；普通上传每帧最多 8 张，全部上传共享 4 MiB／2 ms 限制。它们只约束应用管理的对应资源，不是进程或驱动内存硬上限。快照字节为结构估算；StagingBelt 的 256 KiB 是单块大小，不是整个池的容量上限。进程 private bytes 和资源计数需另外验收。
+本机 Windows 10 Pro 22H2、i5-10400、16 GiB、Intel UHD 630。C 为 NVMe SSD；F/G 属于同一块机械硬盘。只使用已有固定测试副本，原百万张图库未扫描、修改或压力测试。构建、图形测试串行，C 盘始终保留至少 2 GiB。系统文件缓存未知，普通进程重启不算系统冷缓存。
 
-现有自动回归覆盖过期版本／排序、记录共享、任务去重／晋升、取消与结果饱和、后台最终析构、缓存损坏／旧格式迁移／清理 epoch／失败写入、局部新增／修改／删除／重命名／目录移动、逻辑通知溢出及 2 秒最长等待、EXIF／透明度、查重及文件操作校验。自动断言与实际环境故障分开记录，未把模拟不可写目录称为磁盘写满，未把逻辑队列溢出称为原生通知丢失压力测试。
+PresentMon 2.5.1，固定 QPC、窗口/DPI/显示与 EXE/清单哈希。活动显示路径报告约 60 Hz，但仍有 forced monitor、无有效 EDID 等环境边界，详见 [显示路径](performance-results/20260906/DISPLAY-PATH.md)。继续按真实刷新周期门槛验收，不把 32 ms 当作新合格线。
 
-仍缺：物理显示器和有效真实输入到显示测量、系统冷缓存重启窗口、隔离小容量卷实际写满、原生通知溢出压力测试、干净 Windows 10/11 单 EXE 启动。最终 EXE 的内存和短矩阵已完成；显示性能失败与这些环境／回归缺项仍阻止完整验收。
+仍须完成：约 32 ms 显示周期问题；本 EXE 的 SSD/HDD 各五轮 30 分钟内存验收；物理显示和真实输入到显示；系统冷缓存；隔离卷实际写满；原生通知溢出；干净 Windows 10/11 单 EXE 启动。全部通过前不得标记“性能收尾完成”。
 
-## 本地交付
+## 本地交付与复现
 
-`target/release/TuHaiView.exe` 已更新为本文哈希。独立验证 ZIP 位于 `target/validation/TuHaiView-20260906-validation-win-x64.zip`，包含单 EXE、验证说明和 SHA256 文本；不含图片、索引、缓存或测试工具。ZIP SHA-256 为 `9DB613FDD1CA819F8F56B03DF7F4CD80D6EDC037797CF654889A065BEB3867EE`。
+`target/release/TuHaiView.exe` 已更新为本文哈希。独立交付目录 `target/validation/TuHaiView-20260906-quick-v5-win-x64`；ZIP 只含单 EXE、验证说明及 SHA256 文本，已检查 CRC 和内部 EXE 哈希，未包含 data、缓存、图片或测试工具。
 
-在本机以无性能环境变量的正常方式启动独立包，窗口显示“请选择一个文件夹”，扫描／刷新／查重禁用，没有自动测试或性能日志；随后正常关闭。ZIP CRC 和内部 EXE 哈希已验证，记录见 [便携冒烟检查](performance-results/20260906/portable-smoke-v4.json)。这是本机测试，不能替代干净 Windows 10/11。
+ZIP SHA-256：`E0EDBDD329BB9E9A90788964D330A97C8B4D7621DEB27170CDD4A94B8B4A31D0`。文件列表与哈希见 [交付凭据](performance-results/20260906/quick-v5/delivery.json)。产品版本标题仍为 20260905；本次验证构建通过 v5 包名、源码提交和哈希区分，没有在冻结后修改二进制版本字段。
 
-## 复现
+正常启动已观察到“请选择一个文件夹”，未选择目录、未运行自动轨迹、未创建性能日志；随后正常关闭。静态 PE 检查通过，本机冒烟不替代干净系统验证：[依赖检查](performance-results/20260906/quick-v5/portable.json)、[启动记录](performance-results/20260906/quick-v5/portable-smoke.json)。
 
-```powershell
-$env:CARGO_TARGET_DIR='G:\tuhai-perf-build'
-cargo build --release --locked
-cargo test --release --locked --all-targets -- --test-threads=1
-python scripts/test_perf_summary.py
-
-./scripts/run_acceptance_matrix.ps1 -Group presentation -HddExecutable F:\qa\TuHaiView.exe -SsdExecutable C:\qa\TuHaiView.exe -OutputDirectory F:\qa-results\presentation
-./scripts/run_acceptance_matrix.ps1 -Group memory-full -HddExecutable F:\qa\TuHaiView.exe -SsdExecutable C:\qa\TuHaiView.exe -OutputDirectory F:\qa-results\memory
-./scripts/run_acceptance_matrix.ps1 -Group short -HddExecutable F:\qa\TuHaiView.exe -SsdExecutable C:\qa\TuHaiView.exe -OutputDirectory F:\qa-results\short
-```
-
-矩阵脚本使用已固定的本机测试集；其他机器须先准备清单匹配的数据。各命令串行运行。设置 `TUHAI_PERF=1` 才启用详细日志，自动轨迹还须明确指定根目录、场景和时长。详细用法见 [DEVELOPMENT.md](DEVELOPMENT.md)。
+复现入口为 `scripts/run_quick_validation.ps1` 的 warmup、reproduce、compare、memory 阶段，串行执行。新旧 EXE 路径与固定数据根按脚本参数指定；缺少同哈希预热或有效完成凭据即失败。分析用 `scripts/summarize_quick_validation.py`，长帧定位用 `scripts/diagnose_stalls.py`。构建和测试命令见 [DEVELOPMENT.md](DEVELOPMENT.md)。
