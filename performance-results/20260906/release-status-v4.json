@@ -1,0 +1,60 @@
+{
+  "product_source_revision": "a504605",
+  "sha256": "4507D93F1BD9C484065FA3710E1C89C59B7E7E45A7631ED4526A44597C1225EA",
+  "status": "validation_only",
+  "performance_finalization_complete": false,
+  "memory": {
+    "valid_runs": 10,
+    "seconds_per_run": 1800,
+    "all_passed": true,
+    "ssd_runs": 5,
+    "hdd_runs": 5
+  },
+  "short_matrix": {
+    "valid_groups": 16,
+    "valid_runs": 80,
+    "scroll_runs": 40,
+    "scroll_passed_runs": 0,
+    "p95_range_ms": [
+      31.9318,
+      32.0587
+    ],
+    "scroll_over_50ms": 48,
+    "scroll_over_100ms": 0,
+    "scroll_maximum_ms": 92.417,
+    "managed_budgets_all_passed": true
+  },
+  "release_blockers": [
+    "display interval target failed",
+    "physical monitor / true input-to-display unverified",
+    "system cold-cache reboot unverified",
+    "isolated actual disk-full unverified",
+    "native event-loss overflow stress unverified",
+    "clean Windows 10 and Windows 11 startup unverified"
+  ],
+  "invalid_attempts": [
+    "SSD soak stopped for disk headroom at 1439 seconds; replaced by a separate valid run",
+    "60-second scroll had no final flush certificate; separate valid replacement; 252 ms display stall retained",
+    "30-second real 50k warmup did not finish scan; reran warmup for 300 seconds"
+  ],
+  "log_finalization_limitation": "A temporary completion certificate remained after normal process exit; exit-wait timeout or sync failure not yet distinguished. No retrospective certification.",
+  "delivery": [
+    {
+      "Path": "G:\\codex_chat\\临时测试\\rust-image-previewer\\target\\validation\\TuHaiView-20260906-validation-win-x64.zip",
+      "Hash": "9DB613FDD1CA819F8F56B03DF7F4CD80D6EDC037797CF654889A065BEB3867EE"
+    },
+    {
+      "Path": "G:\\codex_chat\\临时测试\\rust-image-previewer\\target\\validation\\TuHaiView-20260906-validation-win-x64\\TuHaiView.exe",
+      "Hash": "4507D93F1BD9C484065FA3710E1C89C59B7E7E45A7631ED4526A44597C1225EA"
+    },
+    {
+      "Path": "G:\\codex_chat\\临时测试\\rust-image-previewer\\target\\release\\TuHaiView.exe",
+      "Hash": "4507D93F1BD9C484065FA3710E1C89C59B7E7E45A7631ED4526A44597C1225EA"
+    }
+  ],
+  "render_qa": {
+    "exit_code": 0,
+    "sha256": "4507D93F1BD9C484065FA3710E1C89C59B7E7E45A7631ED4526A44597C1225EA",
+    "type": "app-owned render output; correctness only; no PresentMon acceptance"
+  }
+}

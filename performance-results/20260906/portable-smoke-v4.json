@@ -1,0 +1,14 @@
+{
+  "zip_sha256": "9DB613FDD1CA819F8F56B03DF7F4CD80D6EDC037797CF654889A065BEB3867EE",
+  "exe_sha256": "4507D93F1BD9C484065FA3710E1C89C59B7E7E45A7631ED4526A44597C1225EA",
+  "zip_members": [
+    "TuHaiView.exe",
+    "验证说明.txt",
+    "SHA256.txt"
+  ],
+  "zip_crc_check": true,
+  "normal_startup": "Observed native window with no selected root; Refresh/scan/duplicate actions disabled; closed with Alt+F4",
+  "performance_environment_removed": true,
+  "normal_startup_created_performance_logs": false,
+  "clean_windows_10_11_tested": false
+}

@@ -15,6 +15,8 @@ def inspect(directory):
     active = sorted(directory.glob('*/performance-*.jsonl'), key=lambda p: p.stat().st_mtime)
     report = {'completed_process_runs': len(metadata), 'c_free_gib': round(shutil.disk_usage('C:/').free / 1024**3, 3)}
     report['validated_runs'] = len(validated)
+    report['validated_non_warmup_runs'] = sum('warmup' not in p.parent.name for p in validated)
+    report['aggregated_groups'] = len(list(directory.glob('*/aggregate.json')))
     if validated:
         result = json.loads(validated[-1].read_text(encoding='utf-8-sig'))
         report['latest_validated'] = dict(path=str(validated[-1]),

@@ -1,0 +1,14 @@
+[
+  {
+    "Path": "G:\\codex_chat\\临时测试\\rust-image-previewer\\target\\validation\\TuHaiView-20260906-validation-win-x64.zip",
+    "Hash": "9DB613FDD1CA819F8F56B03DF7F4CD80D6EDC037797CF654889A065BEB3867EE"
+  },
+  {
+    "Path": "G:\\codex_chat\\临时测试\\rust-image-previewer\\target\\validation\\TuHaiView-20260906-validation-win-x64\\TuHaiView.exe",
+    "Hash": "4507D93F1BD9C484065FA3710E1C89C59B7E7E45A7631ED4526A44597C1225EA"
+  },
+  {
+    "Path": "G:\\codex_chat\\临时测试\\rust-image-previewer\\target\\release\\TuHaiView.exe",
+    "Hash": "4507D93F1BD9C484065FA3710E1C89C59B7E7E45A7631ED4526A44597C1225EA"
+  }
+]
