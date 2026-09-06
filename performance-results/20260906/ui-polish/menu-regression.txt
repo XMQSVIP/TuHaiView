@@ -1,0 +1,11 @@
+
+running 1 test
+test app::ui_qa::layout_interaction_and_search_50k ... menu switching: About -> sort/cache/clear, clear -> About, disabled entry, late scan completion passed
+ui_apply_50k many: n=20 p50=189.64 p95=208.98 max=209.37 ms (16ms test frame pump; no native presentation)
+ui_apply_50k few: n=20 p50=169.46 p95=171.25 max=171.79 ms (16ms test frame pump; no native presentation)
+ui_apply_50k none: n=20 p50=169.42 p95=170.29 max=170.71 ms (16ms test frame pump; no native presentation)
+ui_scroll_50k: n=200 update+texture_delta p50=0.34 p95=0.63 max=0.71 ms (no native presentation)
+DX12 captures: G:\tuhai-ui-qa-menu-1c399bde0a44438ca3c61a0d712815e7\captures
+ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 61 filtered out; finished in 14.43s

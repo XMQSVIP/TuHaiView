@@ -1,0 +1,12 @@
+
+running 1 test
+test app::ui_qa::layout_interaction_and_search_50k ... menu switching: About -> sort/cache/clear, clear -> About, disabled entry, late scan completion passed
+checkbox layout: select/unselect preserves visible filename positions
+ui_apply_50k many: n=20 p50=187.52 p95=188.57 max=189.48 ms (16ms test frame pump; no native presentation)
+ui_apply_50k few: n=20 p50=170.49 p95=207.54 max=210.19 ms (16ms test frame pump; no native presentation)
+ui_apply_50k none: n=20 p50=195.47 p95=206.18 max=206.58 ms (16ms test frame pump; no native presentation)
+ui_scroll_50k: n=200 update+texture_delta p50=0.57 p95=0.77 max=1.35 ms (no native presentation)
+DX12 captures: G:\tuhai-ui-qa-selection-e6e58b25243d4e9b805e3254796c0a53\captures
+ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 61 filtered out; finished in 17.20s

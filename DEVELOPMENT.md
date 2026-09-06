@@ -8,7 +8,7 @@
 
 - 应用名称：图海速览
 - 可执行文件：`TuHaiView.exe`
-- 当前应用版本：`20260905`
+- 当前应用版本：`20260906`
 - 支持格式：JPG/JPEG、PNG、WebP、GIF、BMP、TIFF、ICO
 - 暂不支持：HEIC、AVIF、RAW；GIF 和 TIFF 仅显示首帧
 
@@ -59,6 +59,7 @@ JPEG 适配层固定 `turbojpeg = 1.5.1`，通过 `turbojpeg-sys` 从源码静�
 | `src/file_ops.rs` | Windows STA 文件操作线程：复制、移动、回收站删除及永久删除。 |
 | `src/empty_folders.rs` | 后台扫描、复核和删除空文件夹。 |
 | `src/sorting.rs` | 只保留最新请求的后台索引排序，避免大记录集排序阻塞界面。 |
+| `src/search.rs` | 文件名搜索的输入、防抖、中文组词、搜索版本与文本快捷键隔离。 |
 | `src/storage.rs` | 解析 exe 同目录的数据目录与缓存目录。 |
 | `src/models.rs` | 图片记录、扫描事件和服务间传输模型。 |
 | `src/icon_pixels.rs`、`build.rs` | 应用图标及 Windows PE 版本资源。 |
@@ -67,6 +68,7 @@ JPEG 适配层固定 `turbojpeg = 1.5.1`，通过 `turbojpeg-sys` 从源码静�
 
 - `catalog_runtime.rs` 的单一后台所有者负责扫描、监控、SQL、元数据合并与共享快照。扫描分片可取消，UI 不等待 join；快照通常最多每 100 ms 发布一次。
 - `CatalogSnapshot` 共享 `Arc<ImageRecord>`，提供路径、ID 查找表；排序返回下标顺序与反向位置表，并校验请求序号和数据版本。旧快照与大型排序表在后台释放。
+- 扫描分批更新沿用已发布的 ID→显示位置表，后台保留仍可见图片的相对顺序，新图片按所选排序追加到末尾；完成事件统一重排。搜索版本改变、用户切换排序时立即执行完整排序，下一批再沿用已生效结果。共享位置表不引用旧快照下标，不新增 UI 每帧全图库遍历；新增、删除、重命名仍使用最新快照完成筛选。
 - 当前预览使用专用工作线程；普通解码 SSD 4 / HDD 2 个，受核心数限制，无法识别时按 HDD。可见项优先于预取，按文件版本、用途与尺寸去重。
 - 中间缓冲估算 512 MiB（预览保留 128 MiB），待上传像素 96 MiB，缓存写队列 32 MiB，纹理像素 256 MiB。RAII 租约随缓冲生命周期释放；原生解码器内部只能协作取消。
 - JPEG 使用独立 `turbojpeg` 适配层进行缩放解码；不启用旧 image 集成。其他格式一次完整解码，再用面积采样缩小。资源不足有独立状态，不标记为损坏。
@@ -89,7 +91,38 @@ cargo build --release --locked
 
 Windows 10/11 的系统 DLL 仍是运行前提，无需附带 JPEG 或 VC 运行库 DLL。
 
+## 文件名搜索实现与验证
+
+搜索复用 `SortService`，后台先排除隐藏重复副本，再进行文件名包含匹配。首次显示、新查询及主动切换排序按所选模式完整排序；扫描期间同一已生效查询的后续批次保留已有可见图片的相对顺序，新匹配项按所选模式追加到末尾，扫描结束后统一完整排序。英文使用 ASCII 大小写折叠，中文和其他字符按原文匹配；不创建额外名称缓存，不修改 SQLite schema。`SortResult` 携带搜索关键词、搜索版本和独立的隐藏副本数量，避免将搜索排除项误计为重复副本。
+
+`SearchState` 分离输入草稿、已提交查询和已显示查询，确认输入后防抖 150 ms。即使关键词退回原值，也使用新版本；结果发布同时检查搜索版本、请求序号、目录代次、数据版本和排序模式。扫描快照携带最新已提交查询，编辑期间的旧查询结果不能解锁图片操作。搜索结果首次应用时回到顶部，后续目录更新保持滚动位置。预览以图片 ID 恢复，不再可见时关闭并清理预览任务。
+
+egui 输入事件回归覆盖 `Ctrl+F`、文本全选/删除、回车、Esc、中文 preedit/commit/cancel 和焦点丢失；排序回归覆盖四种排序、去重、不同目录同名、快速查询及快照替换。执行常规 `cargo test --all-targets -- --test-threads=1`。另有独立的 5 万条记录 Release 基准：
+
+```powershell
+$env:CARGO_TARGET_DIR='G:\tuhai-perf-build'
+cargo test --release --locked sorting::tests::search_50k_latency -- --ignored --exact --nocapture --test-threads=1
+```
+
+基准每类 20 次，覆盖大量匹配、少量匹配及零匹配，断言含 150 ms 防抖的后台结果接收 P95 ≤ 300 ms。它不包含实际 UI 调度或屏幕呈现，不能替代整窗体验验收。开启 `TUHAI_PERF=1` 后，`search_apply_ms` 记录从最后一次确认输入到 UI 应用结果的墙钟耗时（包括防抖）；不记录关键词，也不代表物理输入到屏幕呈现延迟。
+
+扫描批次通过 `request_catalog_sort` 判断是否可沿用已发布位置：仍在扫描、查询已生效且所选排序与已显示排序一致时，共享 `display_positions` 给后台。主动操作走 `request_sort`；扫描完成或错误中止后也走完整排序。后台以图片 ID 查找旧位置，再输出最新快照下标，不能直接沿用旧快照下标。相关回归为 `sorting::tests::scan_batches_preserve_published_ids_then_finish_in_requested_order` 和 `sorting::tests::stable_scan_order_still_filters_deleted_renamed_and_hidden_records`；测试证据和构建哈希见 [扫描顺序修复报告](performance-results/20260906/SCAN-ORDER.md)。
+
 ## 本地数据布局
+
+### 清理本地数据的状态管理
+
+清理操作先取消旧排序，重置待发布快照、当前快照、显示索引、选择、滚动与纹理状态。数据库清理返回新的目录代次，使无目录时也能接收后台完成事件；没有打开目录时不提交排序，打开目录时重新扫描并保留搜索条件。刷新时取消旧排序与待发布快照，由新代次的快照重新生成显示顺序。
+
+回归 `app::tests::clear_storage_reaches_idle_without_root_and_rebuilds_open_catalog` 需要 DX12，并会清理测试 EXE 同目录的数据，因此默认忽略。先执行 `cargo test --locked --bin TuHaiView --no-run --message-format=json` 获取测试 EXE，再将其复制到**新建的** `tuhai-clear-regression-<唯一标识>` 目录，用 `--ignored --exact --nocapture --test-threads=1` 单独运行该测试。测试覆盖无目录反复清理、空目录、未完成旧排序、清理后重新打开/扫描以及保留文件名搜索；禁止在产品 EXE 的数据目录运行此清理测试。
+
+UI 保守打磨保持工具栏入口及顺序、卡片行高和交互不变。路径限宽 240 逻辑像素；状态及扫描进度使用完整文本自然换行，不再限宽截断；搜索控件整体换行；文件名 14 逻辑像素；选中底色为面板底色混合 12% 主题选中色；卡片布局边框恒为 1 像素，选中时另在内部绘制 2 像素强调边框，避免布局随选中状态变化。主网格保持滚动条可见，避免批量栏出现时滚动条显隐造成横向变化。空状态先测量换行后的文字再整体居中。
+
+预览画布使用中性浅灰 `#E8E8E8`，工具栏继承主界面主题并允许自然换行；错误文字使用主题错误色。
+
+欢迎页在内容区居中的基础上整体上移 28 逻辑像素，并限制不越过内容区顶部；其他空状态保持居中。`auxiliary_target` 记录用户当前请求的辅助界面（包括等待空目录扫描的状态），工具栏切换会清除旧请求和未确认对话框。后台查重/空目录结果仅在请求仍有效且没有待确认对话框时显示，自动重查不强制抢回界面。UI 验收工具包含真实控件点击的“关于→排序/缓存/清理”“清理→关于”、禁用入口和迟到空目录事件回归。
+
+`app::ui_qa::layout_interaction_and_search_50k` 是默认忽略的 Release/DX12 验收工具。将 Release 测试 EXE 复制到新建的 `tuhai-ui-qa-<唯一标识>` 目录，清除 `TUHAI_PERF_ROOT` 环境变量，使用 `--ignored --exact --nocapture --test-threads=1` 执行。它只在隔离目录创建临时图片和缓存，输出三种逻辑窗口大小、三种像素密度的应用渲染截图，并验证筛选选择、预览翻页及 50k 搜索应用耗时。扫描回归以 12→24→36 条合成快照验证已有 ID 顺序和文件名矩形不变，并检查最终排序后的预览、选择及扫描期间搜索；它模拟确定性分批时序，不是对真实图库扫描的录屏。截图来自真实 App::update 和 DX12 离屏渲染，不包含 Windows 窗框、真实 DPI 切换或输入法候选窗；16 ms 测试帧泵的耗时也不是原生窗口呈现延迟。
 
 程序会将可变数据保存在 exe 所在目录的 `data` 文件夹，而不是固定写入 C 盘：
 
@@ -134,11 +167,11 @@ data/
 2. 将 `target\release\TuHaiView.exe` 打包为 zip，例如：
 
    ```powershell
-   Compress-Archive -Path target\release\TuHaiView.exe -DestinationPath TuHaiView-20260905-win-x64.zip
-   Get-FileHash TuHaiView-20260905-win-x64.zip -Algorithm SHA256
+   Compress-Archive -Path target\release\TuHaiView.exe -DestinationPath TuHaiView-20260906-win-x64.zip
+   Get-FileHash TuHaiView-20260906-win-x64.zip -Algorithm SHA256
    ```
 
-3. 在 GitHub Releases 创建标签，例如 `v20260905`，上传 zip 和 SHA-256 值，并说明支持的平台、版本内容和已知限制。
+3. 在 GitHub Releases 创建标签，例如 `v20260906`，上传 zip 和 SHA-256 值，并说明支持的平台、版本内容和已知限制。
 
 4. 将源码、`Cargo.lock`、README 和开发文档提交并推送。不要提交构建输出、运行数据或缓存。
 

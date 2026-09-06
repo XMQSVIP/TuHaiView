@@ -19,6 +19,9 @@ use std::{
     time::{Duration, Instant},
 };
 
+#[cfg(test)]
+mod ui_qa;
+
 const WECHAT_DONATION_CODE: &[u8] = include_bytes!("../assets/wechat-donation-code.jpg");
 
 enum PendingDialog {
@@ -103,8 +106,11 @@ pub struct PreviewerApp {
     selection_anchor: Option<usize>,
     sort: SortMode,
     previous_sort: SortMode,
+    displayed_sort: SortMode,
     data_revision: u64,
     sorting: bool,
+    search: crate::search::SearchState,
+    displayed_hidden_duplicates: usize,
     thumb_size: u32,
     status: String,
     scanning: bool,
@@ -131,6 +137,7 @@ pub struct PreviewerApp {
     zoom: f32,
     rotation_quarters: u8,
     fit_preview: bool,
+    auxiliary_target: Option<AuxiliaryWindow>,
     show_about: bool,
     donation_texture: Option<TextureHandle>,
     show_empty: bool,
@@ -149,6 +156,10 @@ pub struct PreviewerApp {
 }
 
 impl PreviewerApp {
+    fn has_open_dialog(&self) -> bool {
+        self.pending.is_some() || self.show_duplicates || self.show_about || self.show_empty
+    }
+
     pub fn new(cc: &eframe::CreationContext<'_>) -> anyhow::Result<Self> {
         configure_chinese_font(&cc.egui_ctx);
         let repaint_context = cc.egui_ctx.clone();
@@ -202,8 +213,11 @@ impl PreviewerApp {
             selection_anchor: None,
             sort: SortMode::ModifiedDesc,
             previous_sort: SortMode::ModifiedDesc,
+            displayed_sort: SortMode::ModifiedDesc,
             data_revision: 0,
             sorting: false,
+            search: crate::search::SearchState::default(),
+            displayed_hidden_duplicates: 0,
             thumb_size: 160,
             status: "请选择一个文件夹".into(),
             scanning: false,
@@ -230,6 +244,7 @@ impl PreviewerApp {
             zoom: 1.0,
             rotation_quarters: 0,
             fit_preview: true,
+            auxiliary_target: None,
             show_about: false,
             donation_texture: None,
             show_empty: false,
@@ -278,18 +293,28 @@ impl PreviewerApp {
 
     /// 顶部菜单对应的辅助窗口互斥显示，避免多个结果窗口叠在一起。
     fn open_auxiliary_window(&mut self, window: AuxiliaryWindow) {
+        self.close_auxiliary_windows();
+        self.auxiliary_target = Some(window);
         self.show_about = window == AuxiliaryWindow::About;
         self.show_empty = window == AuxiliaryWindow::EmptyFolders;
         self.show_duplicates = window == AuxiliaryWindow::Duplicates;
     }
 
     fn close_auxiliary_windows(&mut self) {
+        self.auxiliary_target = None;
+        self.pending = None;
         self.show_about = false;
         self.show_empty = false;
         self.show_duplicates = false;
     }
 
+    fn auxiliary_requested(&self, window: AuxiliaryWindow) -> bool {
+        self.auxiliary_target == Some(window) && self.pending.is_none()
+    }
+
     fn open_root(&mut self, path: PathBuf) {
+        self.search = crate::search::SearchState::default();
+        self.displayed_hidden_duplicates = 0;
         self.input_started = Some(Instant::now());
         // 切换根目录时重置仅属于旧目录的 UI 状态；后台服务用 generation 过滤迟到事件。
         self.close_auxiliary_windows();
@@ -348,8 +373,13 @@ impl PreviewerApp {
         self.input_started = Some(Instant::now());
         if let Some(root) = self.root.clone() {
             let reopen_duplicates = self.duplicate_rescan_after_catalog;
-            self.invalidate_duplicates();
-            if reopen_duplicates && !self.show_about && !self.show_empty {
+            self.reset_duplicate_state();
+            self.sort_service.cancel();
+            self.sorting = false;
+            if let Some(old) = self.pending_snapshot.take() {
+                self.catalog.retire(old);
+            }
+            if reopen_duplicates && self.auxiliary_requested(AuxiliaryWindow::Duplicates) {
                 self.open_auxiliary_window(AuxiliaryWindow::Duplicates);
             }
             self.scanning = true;
@@ -361,6 +391,12 @@ impl PreviewerApp {
 
     fn invalidate_duplicates(&mut self) {
         let preview_ids = self.preview_record_ids();
+        self.reset_duplicate_state();
+        self.rebuild_display_indices();
+        self.restore_preview_by_ids(preview_ids);
+    }
+
+    fn reset_duplicate_state(&mut self) {
         self.duplicate_task_id = self.duplicate_service.cancel();
         self.duplicate_scanning = false;
         if let Some(old) = self.duplicate_view.take() {
@@ -369,11 +405,9 @@ impl PreviewerApp {
         self.deduplicated_view = false;
         self.show_duplicates = false;
         self.duplicate_stats = DuplicateStats::default();
-        self.rebuild_display_indices();
-        self.restore_preview_by_ids(preview_ids);
     }
 
-    fn start_duplicate_scan(&mut self) {
+    fn start_duplicate_scan(&mut self, foreground: bool) {
         if self.scanning || self.file_operation_running || self.records.len() < 2 {
             return;
         }
@@ -384,7 +418,9 @@ impl PreviewerApp {
         if let Some(old) = self.duplicate_view.take() {
             self.catalog.retire_value(old);
         }
-        self.open_auxiliary_window(AuxiliaryWindow::Duplicates);
+        if foreground || self.auxiliary_requested(AuxiliaryWindow::Duplicates) {
+            self.open_auxiliary_window(AuxiliaryWindow::Duplicates);
+        }
         self.duplicate_stats = DuplicateStats::default();
         self.duplicate_task_id = self
             .duplicate_service
@@ -417,7 +453,7 @@ impl PreviewerApp {
                 self.catalog.retire(old);
             }
             if !same_membership {
-                self.request_sort();
+                self.request_catalog_sort();
             }
         }
     }
@@ -480,7 +516,7 @@ impl PreviewerApp {
                     self.request_sort();
                     if self.duplicate_rescan_after_catalog {
                         self.duplicate_rescan_after_catalog = false;
-                        self.start_duplicate_scan();
+                        self.start_duplicate_scan(false);
                     }
                 }
                 CatalogEvent::Error {
@@ -489,6 +525,7 @@ impl PreviewerApp {
                 } if generation == self.generation => {
                     self.scanning = false;
                     self.status = format!("扫描失败：{message}");
+                    self.request_sort();
                 }
                 CatalogEvent::Changed { generation } if generation == self.generation => {
                     self.invalidate_duplicates();
@@ -496,7 +533,11 @@ impl PreviewerApp {
                     self.scanning = true;
                 }
                 CatalogEvent::Cleared { generation } if generation == self.generation => {
-                    self.status = "索引已清理，正在重新扫描…".into();
+                    self.status = if self.root.is_some() {
+                        "索引已清理，正在重新扫描…".into()
+                    } else {
+                        "索引已清理，请选择图片文件夹。".into()
+                    };
                 }
                 _ => {}
             }
@@ -552,7 +593,7 @@ impl PreviewerApp {
                         errors,
                         page: 0,
                     });
-                    if !self.show_about && !self.show_empty {
+                    if self.auxiliary_requested(AuxiliaryWindow::Duplicates) {
                         self.open_auxiliary_window(AuxiliaryWindow::Duplicates);
                     }
                 }
@@ -606,7 +647,7 @@ impl PreviewerApp {
                     self.empty_folder_found = folders.len();
                     self.empty_folder_errors = errors;
                     self.empty_folders = folders;
-                    if !self.show_about && !self.show_duplicates {
+                    if self.auxiliary_requested(AuxiliaryWindow::EmptyFolders) {
                         self.open_auxiliary_window(AuxiliaryWindow::EmptyFolders);
                     }
                     self.status = format!(
@@ -674,13 +715,13 @@ impl PreviewerApp {
                 if let Some(old) = self.duplicate_view.take() {
                     self.catalog.retire_value(old);
                 }
-                if !self.show_about && !self.show_empty {
+                if self.auxiliary_requested(AuxiliaryWindow::Duplicates) {
                     self.open_auxiliary_window(AuxiliaryWindow::Duplicates);
                 }
                 self.duplicate_rescan_after_catalog = true;
                 if report.affected_paths.is_empty() {
                     self.duplicate_rescan_after_catalog = false;
-                    self.start_duplicate_scan();
+                    self.start_duplicate_scan(false);
                 }
             }
             if let Some(root) = self.root.clone().filter(|_| !report.succeeded.is_empty()) {
@@ -703,6 +744,7 @@ impl PreviewerApp {
                         .as_ref()
                         .map_or(self.data_revision, |s| s.revision)
                 && result.mode == self.sort
+                && self.search.accepts(&result.search)
             {
                 let preview_ids = self.preview_record_ids();
                 if let Some(snapshot) = self.pending_snapshot.take() {
@@ -722,11 +764,17 @@ impl PreviewerApp {
                 let old_positions =
                     std::mem::replace(&mut self.display_positions, result.positions);
                 crate::sorting::retire_order(old_order, old_positions);
-                if self.deduplicated_view {
-                    self.selected
-                        .retain(|id| self.display_positions.contains_key(id));
-                }
+                self.displayed_hidden_duplicates = result.hidden_duplicates;
+                self.displayed_sort = result.mode;
+                self.selected
+                    .retain(|id| self.display_positions.contains_key(id));
                 self.restore_preview_by_ids(preview_ids);
+                if self.search.applied(result.search) {
+                    self.pending_sort_anchor = None;
+                    self.pending_grid_focus = None;
+                    self.pending_grid_scroll_offset = Some(0.0);
+                    self.grid_anchor = None;
+                }
                 // 仅恢复用户主动排序的锚点；扫描批次排序不能带动滚动位置。
                 if let Some(id) = self.pending_sort_anchor.take() {
                     if self.preview.is_none() {
@@ -784,16 +832,9 @@ impl PreviewerApp {
         self.rebuild_display_indices();
         self.restore_preview_by_ids(preview_ids);
         self.status = if enabled {
-            format!(
-                "已开启去重显示：显示 {} / 共 {} 张，隐藏 {} 张重复副本",
-                self.display_indices.len(),
-                self.records.len(),
-                self.records
-                    .len()
-                    .saturating_sub(self.display_indices.len()),
-            )
+            "已开启去重显示，正在更新列表…".into()
         } else {
-            format!("已关闭去重显示：显示全部 {} 张图片", self.records.len())
+            "已关闭去重显示，正在更新列表…".into()
         };
     }
 
@@ -846,7 +887,15 @@ impl PreviewerApp {
     }
 
     fn restore_preview_by_ids(&mut self, (current, origin): (Option<i64>, Option<i64>)) {
-        self.preview = current.and_then(|id| self.display_positions.get(&id).copied());
+        let restored = current.and_then(|id| self.display_positions.get(&id).copied());
+        if self.preview.is_some() && restored.is_none() {
+            self.close_preview();
+            // The former display index belongs to the old list, so cannot be
+            // used as a scroll target in the replacement list.
+            self.pending_grid_focus = None;
+            self.pending_grid_scroll_offset = Some(self.grid_scroll_offset);
+        }
+        self.preview = restored;
         self.preview_origin = origin.and_then(|id| self.display_positions.get(&id).copied());
         if self.preview.is_none() {
             self.preview_origin = None;
@@ -854,6 +903,24 @@ impl PreviewerApp {
     }
 
     fn request_sort(&mut self) {
+        self.submit_sort(false);
+    }
+
+    fn request_catalog_sort(&mut self) {
+        // Appending scan batches must not repeatedly displace visible pictures.
+        // A new search or user-selected order still takes effect immediately.
+        let stable = self.scanning && !self.search.pending() && self.sort == self.displayed_sort;
+        self.submit_sort(stable);
+    }
+
+    fn submit_sort(&mut self, stable: bool) {
+        // Clearing storage before choosing a root must stay idle. Empty catalogs
+        // with an open root still submit results to acknowledge search changes.
+        if self.root.is_none() {
+            self.sort_service.cancel();
+            self.sorting = false;
+            return;
+        }
         let hidden = if self.deduplicated_view {
             self.duplicate_view
                 .as_ref()
@@ -864,7 +931,7 @@ impl PreviewerApp {
         } else {
             Vec::new()
         };
-        self.sort_service.submit(
+        self.sort_service.submit_with_stable_positions(
             self.generation,
             self.pending_snapshot
                 .as_ref()
@@ -874,6 +941,8 @@ impl PreviewerApp {
                 .as_ref()
                 .map_or_else(|| self.records.clone(), |s| s.records.clone()),
             hidden,
+            self.search.submitted.clone(),
+            stable.then(|| self.display_positions.clone()),
         );
         self.previous_sort = self.sort;
         self.sorting = true;
@@ -1034,6 +1103,83 @@ impl PreviewerApp {
         }
     }
 
+    fn reset_catalog_view(&mut self) {
+        self.sort_service.cancel();
+        self.sorting = false;
+        if self.preview.is_some() {
+            self.close_preview();
+        }
+        if let Some(old) = self.pending_snapshot.take() {
+            self.catalog.retire(old);
+        }
+        let snapshot = Arc::new(CatalogSnapshot {
+            generation: self.generation,
+            ..Default::default()
+        });
+        self.records = snapshot.records.clone();
+        self.record_positions = snapshot.by_path.clone();
+        self.data_revision = snapshot.revision;
+        let old = std::mem::replace(&mut self.snapshot, snapshot);
+        self.catalog.retire(old);
+        let old_order = std::mem::replace(&mut self.display_indices, Arc::from([]));
+        let old_positions = std::mem::take(&mut self.display_positions);
+        crate::sorting::retire_order(old_order, old_positions);
+        self.displayed_hidden_duplicates = 0;
+        self.selected.clear();
+        self.selection_anchor = None;
+        self.viewport_signature = None;
+        self.grid_scroll_offset = 0.0;
+        self.grid_anchor = None;
+        self.pending_sort_anchor = None;
+        self.pending_grid_focus = None;
+        self.pending_grid_scroll_offset = Some(0.0);
+        self.prefetch_rows = None;
+        self.uploads.clear(&self.thumbnails);
+        self.texture_lru.clear();
+        self.pinned_textures.clear();
+        for (_, texture) in self.textures.drain() {
+            self.uploads.retire(texture);
+        }
+        if let Some(result) = self.deferred_image.take() {
+            self.thumbnails.discard(result);
+        }
+        self.texture_bytes = 0;
+        self.failed_images.clear();
+        self.image_errors.clear();
+    }
+
+    fn clear_local_storage(&mut self) {
+        // Reset duplicate state without launching a sort on the old catalog.
+        self.reset_duplicate_state();
+        self.duplicate_rescan_after_catalog = false;
+        let database = self.catalog.clear_database();
+        let thumbnails = self.thumbnails.clear_disk_cache();
+        if let Ok(generation) = database.as_ref() {
+            self.generation = *generation;
+            self.thumbnails.set_generation(self.generation);
+            self.reset_catalog_view();
+            self.scanning = false;
+            if self.root.is_some() {
+                self.refresh();
+            }
+        } else {
+            self.request_sort();
+        }
+        self.status = match (database, thumbnails) {
+            (Ok(_), Ok(())) => "已提交缓存和数据库清理，正在等待后台完成…".into(),
+            (database, thumbnails) => {
+                let mut errors = Vec::new();
+                if let Err(error) = database {
+                    errors.push(format!("数据库：{error}"));
+                }
+                if let Err(error) = thumbnails {
+                    errors.push(format!("缓存：{error}"));
+                }
+                format!("清理失败：{}", errors.join("；"))
+            }
+        };
+    }
+
     fn toolbar(&mut self, ui: &mut egui::Ui) {
         let duplicate_groups = self
             .duplicate_view
@@ -1073,6 +1219,7 @@ impl PreviewerApp {
             {
                 self.close_auxiliary_windows();
                 if let Some(root) = self.root.clone() {
+                    self.auxiliary_target = Some(AuxiliaryWindow::EmptyFolders);
                     self.empty_folder_generation = self.empty_folder_service.scan(root);
                     self.empty_folder_scanning = true;
                     self.empty_folder_visited = 0;
@@ -1101,10 +1248,11 @@ impl PreviewerApp {
                     self.open_auxiliary_window(AuxiliaryWindow::Duplicates);
                 } else {
                     self.duplicate_operation_errors.clear();
-                    self.start_duplicate_scan();
+                    self.start_duplicate_scan(true);
                 }
             }
             if self.duplicate_scanning && ui.button("取消查重").clicked() {
+                self.close_auxiliary_windows();
                 self.duplicate_task_id = self.duplicate_service.cancel();
                 self.duplicate_scanning = false;
                 self.show_duplicates = false;
@@ -1128,19 +1276,11 @@ impl PreviewerApp {
                 .on_hover_text("仅影响主界面显示，不会删除文件。")
                 .on_disabled_hover_text("请先完成查重，并确认存在重复图片。");
             if filter_response.clicked() {
+                self.close_auxiliary_windows();
                 self.set_deduplicated_view(!self.deduplicated_view);
             }
-            if self.deduplicated_view {
-                ui.label(format!(
-                    "显示 {} / 共 {} 张，隐藏 {} 张重复副本",
-                    self.display_indices.len(),
-                    self.records.len(),
-                    self.records
-                        .len()
-                        .saturating_sub(self.display_indices.len()),
-                ));
-            }
             if self.empty_folder_scanning && ui.button("停止空目录扫描").clicked() {
+                self.close_auxiliary_windows();
                 self.empty_folder_generation = self.empty_folder_service.cancel();
                 self.empty_folder_scanning = false;
                 self.status = format!(
@@ -1162,61 +1302,122 @@ impl PreviewerApp {
                 self.open_auxiliary_window(AuxiliaryWindow::About);
             }
             ui.separator();
-            ui.label(
-                self.root
-                    .as_ref()
-                    .map(|path| path.display().to_string())
-                    .unwrap_or_default(),
-            );
+            let path = self
+                .root
+                .as_ref()
+                .map(|path| path.display().to_string())
+                .unwrap_or_default();
+            bounded_toolbar_text(ui, &path, 240.0);
             ui.separator();
-            ui.label(&self.status);
+            ui.add(egui::Label::new(&self.status).wrap());
             if self.empty_folder_scanning {
                 ui.spinner();
-                ui.label(format!(
-                    "空目录：已遍历 {}，找到 {}，错误 {}",
-                    self.empty_folder_visited, self.empty_folder_found, self.empty_folder_errors
-                ));
+                ui.add(
+                    egui::Label::new(format!(
+                        "空目录：已遍历 {}，找到 {}，错误 {}",
+                        self.empty_folder_visited,
+                        self.empty_folder_found,
+                        self.empty_folder_errors
+                    ))
+                    .wrap(),
+                );
             }
             if self.duplicate_scanning {
                 ui.spinner();
-                ui.label(format!(
-                    "查重：检查 {}/{}，读取 {}，重复组 {}，错误 {}，耗时 {:.1}s",
-                    self.duplicate_stats.checked_files,
-                    self.duplicate_stats.candidate_files,
-                    format_bytes(self.duplicate_stats.bytes_read),
-                    self.duplicate_stats.duplicate_groups,
-                    self.duplicate_stats.errors,
-                    self.duplicate_stats.elapsed_ms as f64 / 1000.0,
-                ));
+                ui.add(
+                    egui::Label::new(format!(
+                        "查重：检查 {}/{}，读取 {}，重复组 {}，错误 {}，耗时 {:.1}s",
+                        self.duplicate_stats.checked_files,
+                        self.duplicate_stats.candidate_files,
+                        format_bytes(self.duplicate_stats.bytes_read),
+                        self.duplicate_stats.duplicate_groups,
+                        self.duplicate_stats.errors,
+                        self.duplicate_stats.elapsed_ms as f64 / 1000.0,
+                    ))
+                    .wrap(),
+                );
             }
             if self.scanning {
                 ui.spinner();
             }
-            if self.sorting {
+            if self.sorting && !self.search.pending() {
                 ui.spinner();
                 ui.label("正在排序…");
             }
             ui.separator();
-            egui::ComboBox::from_id_salt("sort")
-                .selected_text(sort_label(self.sort))
-                .show_ui(ui, |ui| {
-                    ui.selectable_value(&mut self.sort, SortMode::ModifiedDesc, "修改时间↓");
-                    ui.selectable_value(&mut self.sort, SortMode::NameNatural, "文件名自然排序");
-                    ui.selectable_value(&mut self.sort, SortMode::SizeDesc, "文件大小↓");
-                    ui.selectable_value(&mut self.sort, SortMode::Path, "文件夹路径");
-                });
-            ui.add(egui::Slider::new(&mut self.thumb_size, 96..=240).text("缩略图"));
+            ui.allocate_ui_with_layout(
+                egui::vec2(120.0, ui.spacing().interact_size.y),
+                egui::Layout::left_to_right(egui::Align::Center),
+                |ui| {
+                    let menu = egui::ComboBox::from_id_salt("sort")
+                        .selected_text(sort_label(self.sort))
+                        .show_ui(ui, |ui| {
+                            ui.selectable_value(
+                                &mut self.sort,
+                                SortMode::ModifiedDesc,
+                                "修改时间↓",
+                            );
+                            ui.selectable_value(
+                                &mut self.sort,
+                                SortMode::NameNatural,
+                                "文件名自然排序",
+                            );
+                            ui.selectable_value(&mut self.sort, SortMode::SizeDesc, "文件大小↓");
+                            ui.selectable_value(&mut self.sort, SortMode::Path, "文件夹路径");
+                        });
+                    if menu.response.clicked() || self.sort != self.previous_sort {
+                        self.close_auxiliary_windows();
+                    }
+                },
+            );
+            ui.allocate_ui_with_layout(
+                egui::vec2(210.0, ui.spacing().interact_size.y),
+                egui::Layout::left_to_right(egui::Align::Center),
+                |ui| {
+                    let response =
+                        ui.add(egui::Slider::new(&mut self.thumb_size, 96..=240).text("缩略图"));
+                    if response.clicked() || response.drag_started() || response.changed() {
+                        self.close_auxiliary_windows();
+                    }
+                },
+            );
         });
-        ui.horizontal(|ui| {
+        ui.horizontal_wrapped(|ui| {
+            let enabled = self.root.is_some() && !self.has_open_dialog();
+            if self.search.ui(ui, enabled) {
+                self.request_sort();
+            }
+            ui.label(format!(
+                "显示 {} / 已收录 {} 张",
+                self.display_indices.len(),
+                self.records.len()
+            ));
+            if self.search.pending() {
+                ui.spinner();
+                ui.label("正在筛选…");
+            }
+            if self.scanning {
+                ui.label("扫描中，完成后统一排序");
+            }
+            if self.displayed_hidden_duplicates > 0 {
+                ui.label(format!(
+                    "已隐藏 {} 张重复副本",
+                    self.displayed_hidden_duplicates
+                ));
+            }
+            ui.separator();
             let current = self.thumbnails.cache.settings.lock().disk_cache_gib;
             let mut selected = current;
-            egui::ComboBox::from_id_salt("cache-budget")
+            let menu = egui::ComboBox::from_id_salt("cache-budget")
                 .selected_text(format!("缩略图缓存 {current} GiB"))
                 .show_ui(ui, |ui| {
                     for gib in [1, 2, 4, 8, 16] {
                         ui.selectable_value(&mut selected, gib, format!("{gib} GiB"));
                     }
                 });
+            if menu.response.clicked() || selected != current {
+                self.close_auxiliary_windows();
+            }
             if selected != current {
                 self.thumbnails.cache.set_limit(selected);
             }
@@ -1229,6 +1430,9 @@ impl PreviewerApp {
     }
 
     fn batch_bar(&mut self, ui: &mut egui::Ui) {
+        if self.search.pending() || self.has_open_dialog() {
+            ui.disable();
+        }
         if self.selected.is_empty() {
             return;
         }
@@ -1287,6 +1491,9 @@ impl PreviewerApp {
     }
 
     fn prepare_transfer(&mut self, action: FileAction) {
+        if self.search.pending() {
+            return;
+        }
         let Some(destination) =
             crate::performance::native_dialog(|| rfd::FileDialog::new().pick_folder())
         else {
@@ -1341,6 +1548,9 @@ impl PreviewerApp {
         conflict: ConflictPolicy,
         conflict_overrides: HashMap<PathBuf, ConflictPolicy>,
     ) {
+        if self.search.pending() {
+            return;
+        }
         let sources = self
             .selected_records()
             .into_iter()
@@ -1453,6 +1663,7 @@ impl PreviewerApp {
 
         let mut scroll_area = egui::ScrollArea::vertical()
             .id_salt("image-grid-scroll")
+            .scroll_bar_visibility(egui::scroll_area::ScrollBarVisibility::AlwaysVisible)
             .auto_shrink([false; 2]);
         if let Some(offset) = self.pending_grid_scroll_offset.take() {
             scroll_area = scroll_area.vertical_scroll_offset(offset);
@@ -1548,17 +1759,24 @@ impl PreviewerApp {
                             egui::vec2(cell_width, row_height),
                             egui::Layout::top_down(egui::Align::Center),
                             |ui| {
+                                if self.search.pending() || self.has_open_dialog() {
+                                    ui.disable();
+                                }
                                 let selected = self.selected.contains(&record.id);
                                 let border_color = if selected {
                                     ui.visuals().selection.stroke.color
                                 } else {
-                                    ui.visuals().weak_text_color()
+                                    ui.visuals().widgets.noninteractive.bg_stroke.color
                                 };
-                                egui::Frame::new()
-                                    .stroke(egui::Stroke::new(
-                                        if selected { 2.0_f32 } else { 1.0_f32 },
-                                        border_color,
-                                    ))
+                                let background = ui.visuals().panel_fill;
+                                let card = egui::Frame::new()
+                                    .fill(if selected {
+                                        background
+                                            .lerp_to_gamma(ui.visuals().selection.bg_fill, 0.12)
+                                    } else {
+                                        background
+                                    })
+                                    .stroke(egui::Stroke::new(1.0_f32, border_color))
                                     .corner_radius(4.0)
                                     .inner_margin(6.0)
                                     .show(ui, |ui| {
@@ -1670,13 +1888,27 @@ impl PreviewerApp {
                                                 ui.add(
                                                     egui::Label::new(
                                                         egui::RichText::new(&record.file_name)
-                                                            .small(),
+                                                            .size(14.0),
                                                     )
                                                     .truncate(),
-                                                );
+                                                )
+                                                .on_hover_text(format!(
+                                                    "{}\n{}",
+                                                    record.file_name,
+                                                    record.path.display()
+                                                ));
                                             },
                                         );
                                     });
+                                if selected {
+                                    // Selection changes paint only, never the frame's layout margins.
+                                    ui.painter().rect_stroke(
+                                        card.response.rect,
+                                        4.0,
+                                        egui::Stroke::new(2.0_f32, border_color),
+                                        egui::StrokeKind::Inside,
+                                    );
+                                }
                             },
                         );
                     }
@@ -1730,6 +1962,9 @@ impl PreviewerApp {
     }
 
     fn open_preview(&mut self, index: usize) {
+        if self.search.pending() {
+            return;
+        }
         self.preview_first_display = false;
         self.input_started = Some(Instant::now());
         if self.preview.is_none() {
@@ -1830,57 +2065,66 @@ impl PreviewerApp {
         self.touch_texture(&key);
 
         egui::CentralPanel::default()
-            .frame(egui::Frame::NONE.fill(egui::Color32::from_rgb(18, 18, 20)))
+            .frame(egui::Frame::NONE.fill(egui::Color32::from_gray(232)))
             .show(ctx, |ui| {
-                *ui.visuals_mut() = egui::Visuals::dark();
-                ui.horizontal(|ui| {
-                    if ui.button("← 上一张").clicked() && index > 0 {
-                        self.open_preview(index - 1);
-                    }
-                    if ui.button("下一张 →").clicked() && index + 1 < self.display_indices.len()
-                    {
-                        self.open_preview(index + 1);
-                    }
-                    if let (Some(w), Some(h)) = (record.width, record.height) {
-                        ui.label(format!("原图 {w}×{h}"));
-                    }
-                    if let Some(texture) = self.textures.get(&key) {
-                        ui.label(format!("预览 {}×{}", texture.size()[0], texture.size()[1]));
-                    } else if let Some(texture) = self.textures.get(&thumbnail_key) {
-                        ui.label(format!(
-                            "缩略图 {}×{} · 正在加载预览",
-                            texture.size()[0],
-                            texture.size()[1]
-                        ));
-                    }
-                    ui.separator();
-                    ui.label(format!(
-                        "{} / {}  {}",
-                        index + 1,
-                        self.display_indices.len(),
-                        record.file_name
-                    ));
-                    if ui.button("适应窗口").clicked() {
-                        self.fit_preview = true;
-                        self.zoom = 1.0;
-                    }
-                    if ui.button("预览 100%").clicked() {
-                        self.fit_preview = false;
-                        self.zoom = 1.0;
-                    }
-                    if ui.button("旋转 90°").clicked() {
-                        self.rotation_quarters = (self.rotation_quarters + 1) % 4;
-                    }
-                    if ui.button("在文件夹中显示").clicked() {
-                        let _ = file_ops::reveal_in_explorer(&record.path);
-                    }
-                    if ui.button("关闭 (Esc)").clicked() {
-                        self.close_preview();
-                    }
-                });
+                egui::Frame::NONE
+                    .fill(ui.visuals().panel_fill)
+                    .inner_margin(egui::Margin::symmetric(4, 2))
+                    .show(ui, |ui| {
+                        ui.horizontal_wrapped(|ui| {
+                            if ui.button("← 上一张").clicked() && index > 0 {
+                                self.open_preview(index - 1);
+                            }
+                            if ui.button("下一张 →").clicked()
+                                && index + 1 < self.display_indices.len()
+                            {
+                                self.open_preview(index + 1);
+                            }
+                            if let (Some(w), Some(h)) = (record.width, record.height) {
+                                ui.label(format!("原图 {w}×{h}"));
+                            }
+                            if let Some(texture) = self.textures.get(&key) {
+                                ui.label(format!(
+                                    "预览 {}×{}",
+                                    texture.size()[0],
+                                    texture.size()[1]
+                                ));
+                            } else if let Some(texture) = self.textures.get(&thumbnail_key) {
+                                ui.label(format!(
+                                    "缩略图 {}×{} · 正在加载预览",
+                                    texture.size()[0],
+                                    texture.size()[1]
+                                ));
+                            }
+                            ui.separator();
+                            ui.label(format!(
+                                "{} / {}  {}",
+                                index + 1,
+                                self.display_indices.len(),
+                                record.file_name
+                            ));
+                            if ui.button("适应窗口").clicked() {
+                                self.fit_preview = true;
+                                self.zoom = 1.0;
+                            }
+                            if ui.button("预览 100%").clicked() {
+                                self.fit_preview = false;
+                                self.zoom = 1.0;
+                            }
+                            if ui.button("旋转 90°").clicked() {
+                                self.rotation_quarters = (self.rotation_quarters + 1) % 4;
+                            }
+                            if ui.button("在文件夹中显示").clicked() {
+                                let _ = file_ops::reveal_in_explorer(&record.path);
+                            }
+                            if ui.button("关闭 (Esc)").clicked() {
+                                self.close_preview();
+                            }
+                        });
+                    });
                 ui.separator();
                 if let Some(error) = self.image_errors.get(&key) {
-                    ui.colored_label(egui::Color32::LIGHT_RED, error);
+                    ui.colored_label(ui.visuals().error_fg_color, error);
                 }
                 egui::ScrollArea::both()
                     .drag_to_scroll(true)
@@ -1942,15 +2186,22 @@ impl PreviewerApp {
     }
 
     fn handle_shortcuts(&mut self, ctx: &egui::Context) {
-        if ctx.input(|input| input.key_pressed(egui::Key::F5))
-            && !self.file_operation_running
+        // Other text fields live in dialogs. Do not block shortcuts merely
+        // because a grid checkbox has keyboard focus.
+        if self.search.keyboard_used || self.pending.is_some() || self.show_about || self.show_empty
+        {
+            return;
+        }
+        if !self.file_operation_running
             && !self.duplicate_scanning
+            && ctx.input_mut(|input| input.consume_key(egui::Modifiers::NONE, egui::Key::F5))
         {
             self.refresh();
         }
-        if ctx.input(|input| input.modifiers.ctrl && input.key_pressed(egui::Key::A))
-            && self.preview.is_none()
+        if self.preview.is_none()
             && !self.show_duplicates
+            && !self.search.pending()
+            && ctx.input_mut(|input| input.consume_key(egui::Modifiers::CTRL, egui::Key::A))
         {
             self.selected = self
                 .display_indices
@@ -1966,21 +2217,29 @@ impl PreviewerApp {
                     self.duplicate_scanning = false;
                     self.status = "已取消重复图片扫描".into();
                 }
-                self.show_duplicates = false;
+                self.close_auxiliary_windows();
             } else if self.preview.is_some() {
                 self.close_preview();
             } else {
                 self.selected.clear();
             }
         }
-        if ctx.input(|input| input.key_pressed(egui::Key::Delete))
-            && !self.selected.is_empty()
+        if !self.selected.is_empty()
             && self.pending.is_none()
             && !self.show_duplicates
             && !self.file_operation_running
+            && !self.search.pending()
         {
-            let permanent = ctx.input(|input| input.modifiers.shift);
-            self.pending = Some(PendingDialog::Delete { permanent });
+            // Read modifiers from the key event, not the end-of-frame keyboard
+            // state: a quick chord can be released within this same frame.
+            let permanent =
+                ctx.input_mut(|input| input.consume_key(egui::Modifiers::SHIFT, egui::Key::Delete));
+            if permanent
+                || ctx
+                    .input_mut(|input| input.consume_key(egui::Modifiers::NONE, egui::Key::Delete))
+            {
+                self.pending = Some(PendingDialog::Delete { permanent });
+            }
         }
         if self.preview.is_some() {
             if ctx.input(|input| input.key_pressed(egui::Key::ArrowLeft)) {
@@ -2320,7 +2579,7 @@ impl PreviewerApp {
             self.status = "已取消重复图片扫描".into();
         }
         if !open {
-            self.show_duplicates = false;
+            self.close_auxiliary_windows();
         }
         if keeper_changed && self.deduplicated_view {
             self.refresh_deduplicated_view();
@@ -2330,7 +2589,7 @@ impl PreviewerApp {
         }
         if request_rescan {
             self.duplicate_operation_errors.clear();
-            self.start_duplicate_scan();
+            self.start_duplicate_scan(true);
         }
         if let Some(mode) = requested_mode {
             self.pending = Some(PendingDialog::DuplicateDelete(DuplicateDeleteDialog {
@@ -2390,6 +2649,9 @@ impl PreviewerApp {
                     });
                 });
             self.show_about = open && !close_clicked;
+            if !self.show_about {
+                self.auxiliary_target = None;
+            }
         }
 
         if self.show_empty {
@@ -2431,6 +2693,9 @@ impl PreviewerApp {
                     });
                 });
             self.show_empty = open;
+            if !open {
+                self.auxiliary_target = None;
+            }
         }
 
         let Some(dialog) = self.pending.take() else {
@@ -2793,42 +3058,7 @@ impl PreviewerApp {
                         });
                     });
                 if confirmed {
-                    self.invalidate_duplicates();
-                    let database = self.catalog.clear_database();
-                    let thumbnails = self.thumbnails.clear_disk_cache();
-                    match (database, thumbnails) {
-                        (Ok(()), Ok(())) => {
-                            self.records = Arc::from([]);
-                            self.record_positions = Arc::default();
-                            self.data_revision = self.data_revision.wrapping_add(1);
-                            self.selected.clear();
-                            self.selection_anchor = None;
-                            self.uploads.clear(&self.thumbnails);
-                            self.texture_lru.clear();
-                            self.pinned_textures.clear();
-                            for (_, texture) in self.textures.drain() {
-                                self.uploads.retire(texture);
-                            }
-                            if let Some(result) = self.deferred_image.take() {
-                                self.thumbnails.discard(result);
-                            }
-                            self.texture_bytes = 0;
-                            self.failed_images.clear();
-                            self.image_errors.clear();
-                            self.refresh();
-                            self.status = "已提交缓存和数据库清理，正在等待后台完成…".into();
-                        }
-                        (database, thumbnails) => {
-                            let mut errors = Vec::new();
-                            if let Err(error) = database {
-                                errors.push(format!("数据库：{error}"));
-                            }
-                            if let Err(error) = thumbnails {
-                                errors.push(format!("缓存：{error}"));
-                            }
-                            self.status = format!("清理失败：{}", errors.join("；"));
-                        }
-                    }
+                    self.clear_local_storage();
                 }
                 if keep {
                     self.pending = Some(PendingDialog::ClearStorage);
@@ -2849,6 +3079,8 @@ impl eframe::App for PreviewerApp {
                 matches!(
                     e,
                     egui::Event::Key { .. }
+                        | egui::Event::Text(_)
+                        | egui::Event::Ime(_)
                         | egui::Event::PointerButton { .. }
                         | egui::Event::MouseWheel { .. }
                 )
@@ -2965,28 +3197,38 @@ impl eframe::App for PreviewerApp {
             }
             self.perf_run = Some(run);
         }
-        self.handle_shortcuts(ctx);
-
         if self.preview.is_some() {
+            self.search.keyboard_used = false;
+            self.handle_shortcuts(ctx);
             self.preview_ui(ctx);
         } else {
             egui::TopBottomPanel::top("toolbar").show(ctx, |ui| self.toolbar(ui));
+            self.handle_shortcuts(ctx);
             egui::TopBottomPanel::bottom("batch").show(ctx, |ui| self.batch_bar(ui));
             egui::CentralPanel::default().show(ctx, |ui| {
                 if self.root.is_none() {
-                    ui.centered_and_justified(|ui| {
-                        ui.vertical_centered(|ui| {
-                            ui.heading("图海速览");
-                            ui.label("递归浏览上万张图片，并安全执行批量文件操作");
-                            if ui.button("选择图片文件夹").clicked() {
-                                self.choose_root();
-                            }
-                        });
-                    });
+                    if welcome_panel(ui).clicked() {
+                        self.choose_root();
+                    }
                 } else if self.records.is_empty() && !self.scanning {
-                    ui.centered_and_justified(|ui| {
-                        ui.label("此文件夹及子文件夹中没有支持的图片。")
-                    });
+                    empty_state_panel(ui, "此文件夹及子文件夹中没有支持的图片。", &[], None);
+                } else if self.display_indices.is_empty()
+                    && !self.search.pending()
+                    && !self.sorting
+                    && !self.search.displayed.text.is_empty()
+                {
+                    let mut descriptions = Vec::new();
+                    if self.scanning {
+                        descriptions.push("扫描中，结果持续更新");
+                    }
+                    if self.displayed_hidden_duplicates > 0 {
+                        descriptions.push("部分副本已隐藏，可关闭去重后重试");
+                    }
+                    if empty_state_panel(ui, "没有匹配的图片", &descriptions, Some("清空搜索"))
+                    {
+                        self.search.clear();
+                        self.request_sort();
+                    }
                 } else {
                     self.grid(ui);
                 }
@@ -3117,6 +3359,150 @@ fn sort_label(sort: SortMode) -> &'static str {
     }
 }
 
+/// Center the measured content group, rather than a full-height vertical layout
+/// whose children stay at the top. Text wrapping is included in its height.
+fn welcome_panel(ui: &mut egui::Ui) -> egui::Response {
+    let available = ui.available_rect_before_wrap();
+    let width = (available.width() - 48.0).clamp(1.0, 440.0);
+    let title = ui.painter().layout(
+        "图海速览".into(),
+        egui::FontId::proportional(30.0),
+        ui.visuals().text_color(),
+        width,
+    );
+    let description = ui.painter().layout(
+        "递归浏览上万张图片，并安全执行批量文件操作".into(),
+        egui::FontId::proportional(16.0),
+        ui.visuals().weak_text_color(),
+        width,
+    );
+    let height = title.size().y + 12.0 + description.size().y + 24.0 + 52.0;
+    let rect = egui::Rect::from_min_size(
+        egui::pos2(
+            available.center().x - width / 2.0,
+            (available.center().y - height / 2.0 - 28.0).max(available.top()),
+        ),
+        egui::vec2(width, height),
+    );
+    ui.scope_builder(
+        egui::UiBuilder::new()
+            .max_rect(rect)
+            .layout(egui::Layout::top_down(egui::Align::Center)),
+        |ui| {
+            ui.spacing_mut().item_spacing.y = 0.0;
+            ui.label(title);
+            ui.add_space(12.0);
+            ui.label(description);
+            ui.add_space(24.0);
+            ui.add(
+                egui::Button::new(egui::RichText::new("选择图片文件夹").size(18.0).strong())
+                    .min_size(egui::vec2(240.0_f32.min(width), 52.0))
+                    .corner_radius(8.0),
+            )
+        },
+    )
+    .inner
+}
+
+/// Keep long paths on one bounded row, with the full path available on hover.
+fn bounded_toolbar_text(ui: &mut egui::Ui, text: &str, max_width: f32) -> egui::Response {
+    let font = egui::TextStyle::Body.resolve(ui.style());
+    let natural = ui
+        .painter()
+        .layout_no_wrap(text.to_owned(), font, ui.visuals().text_color())
+        .size();
+    let remaining = ui.available_size_before_wrap().x;
+    let available = if remaining < 60.0 {
+        ui.available_width()
+    } else {
+        remaining
+    };
+    let width = natural.x.min(max_width).min(available.max(1.0));
+    ui.allocate_ui_with_layout(
+        egui::vec2(width, ui.spacing().interact_size.y),
+        egui::Layout::left_to_right(egui::Align::Center),
+        |ui| {
+            ui.add(egui::Label::new(text).truncate())
+                .on_hover_text(text)
+        },
+    )
+    .inner
+}
+
+/// Measure wrapped text before centering the whole group in the remaining panel.
+fn empty_state_panel(
+    ui: &mut egui::Ui,
+    title: &str,
+    descriptions: &[&str],
+    action: Option<&str>,
+) -> bool {
+    let available = ui.available_rect_before_wrap();
+    let width = (available.width() - 48.0).clamp(1.0, 440.0);
+    let title = ui.painter().layout(
+        title.to_owned(),
+        egui::FontId::proportional(20.0),
+        ui.visuals().text_color(),
+        width,
+    );
+    let descriptions: Vec<_> = descriptions
+        .iter()
+        .map(|text| {
+            ui.painter().layout(
+                (*text).to_owned(),
+                egui::FontId::proportional(14.0),
+                ui.visuals().text_color(),
+                width,
+            )
+        })
+        .collect();
+    let button_height =
+        ui.spacing().interact_size.y.max(
+            ui.text_style_height(&egui::TextStyle::Button) + ui.spacing().button_padding.y * 2.0,
+        );
+    let height = title.size().y
+        + descriptions
+            .iter()
+            .map(|text| 8.0 + text.size().y)
+            .sum::<f32>()
+        + if action.is_some() {
+            16.0 + button_height
+        } else {
+            0.0
+        };
+    let rect = egui::Rect::from_min_size(
+        egui::pos2(
+            available.center().x - width / 2.0,
+            (available.center().y - height / 2.0).max(available.top()),
+        ),
+        egui::vec2(width, height),
+    );
+    ui.scope_builder(
+        egui::UiBuilder::new()
+            .max_rect(rect)
+            .layout(egui::Layout::top_down(egui::Align::Center)),
+        |ui| {
+            ui.spacing_mut().item_spacing.y = 0.0;
+            ui.label(title);
+            for description in descriptions {
+                ui.add_space(8.0);
+                ui.label(description);
+            }
+            if let Some(action) = action {
+                ui.add_space(16.0);
+                ui.add(
+                    egui::Button::new(action)
+                        .min_size(egui::vec2(0.0, button_height))
+                        .wrap_mode(egui::TextWrapMode::Extend),
+                )
+                .clicked()
+            } else {
+                false
+            }
+        },
+    )
+    .inner
+}
+
 /// 保持缩略图的最小卡片宽度，并把整行余量平均分给所有列。
 fn grid_layout(available_width: f32, thumbnail_size: f32, spacing: f32) -> (usize, f32) {
     let minimum_cell_width = thumbnail_size + 20.0;
@@ -3208,6 +3594,144 @@ fn format_modified_time(modified_ns: i64) -> String {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    #[ignore = "requires DX12; run a copied test executable in an isolated directory (clears its own data)"]
+    fn clear_storage_reaches_idle_without_root_and_rebuilds_open_catalog() {
+        let exe = std::env::current_exe().unwrap();
+        assert!(
+            exe.parent()
+                .unwrap()
+                .file_name()
+                .unwrap()
+                .to_string_lossy()
+                .starts_with("tuhai-clear-regression-"),
+            "copy this test executable into a new tuhai-clear-regression-* directory first"
+        );
+        let instance = wgpu::Instance::new(&wgpu::InstanceDescriptor {
+            backends: wgpu::Backends::DX12,
+            ..Default::default()
+        });
+        let state = pollster::block_on(eframe::egui_wgpu::RenderState::create(
+            &eframe::egui_wgpu::WgpuConfiguration::default(),
+            &instance,
+            None,
+            None,
+            1,
+            false,
+        ))
+        .unwrap();
+        let ctx = egui::Context::default();
+        let mut cc = eframe::CreationContext::_new_kittest(ctx.clone());
+        cc.wgpu_render_state = Some(state);
+        let mut app = PreviewerApp::new(&cc).unwrap();
+        assert!(app.root.is_none(), "run without TUHAI_PERF_ROOT");
+        let poll = |app: &mut PreviewerApp, ready: &dyn Fn(&PreviewerApp) -> bool| {
+            let deadline = Instant::now() + Duration::from_secs(10);
+            loop {
+                app.process_events(&ctx);
+                if ready(app) {
+                    break;
+                }
+                assert!(
+                    Instant::now() < deadline,
+                    "did not settle: {} (sorting={}, scanning={})",
+                    app.status,
+                    app.sorting,
+                    app.scanning
+                );
+                std::thread::sleep(Duration::from_millis(10));
+            }
+        };
+        for _ in 0..2 {
+            app.clear_local_storage();
+            assert!(!app.sorting && !app.scanning);
+            poll(&mut app, &|a| a.status.contains("已清理"));
+            app.sort = SortMode::NameNatural;
+            app.request_sort();
+            assert!(!app.sorting, "empty home screen must not wait for a sort");
+            assert!(app.display_indices.is_empty() && app.pending_snapshot.is_none());
+        }
+        let root = std::env::temp_dir().join(format!(
+            "tuhai-clear-regression-{}",
+            std::time::SystemTime::now()
+                .duration_since(std::time::UNIX_EPOCH)
+                .unwrap()
+                .as_nanos()
+        ));
+        fs::create_dir_all(&root).unwrap();
+        fs::write(root.join("cat.jpg"), b"synthetic catalog entry").unwrap();
+        fs::write(root.join("dog.png"), b"synthetic catalog entry").unwrap();
+        app.open_root(root.clone());
+        poll(&mut app, &|a| {
+            !a.scanning && !a.sorting && a.records.len() == 2
+        });
+        // Render real search input to retain a nonempty query across the clear.
+        for events in [
+            vec![egui::Event::Key {
+                key: egui::Key::F,
+                physical_key: None,
+                pressed: true,
+                repeat: false,
+                modifiers: egui::Modifiers::CTRL,
+            }],
+            vec![egui::Event::Text("cat".into())],
+            vec![egui::Event::Key {
+                key: egui::Key::Enter,
+                physical_key: None,
+                pressed: true,
+                repeat: false,
+                modifiers: egui::Modifiers::NONE,
+            }],
+        ] {
+            let _ = ctx.run(
+                egui::RawInput {
+                    events,
+                    ..Default::default()
+                },
+                |ctx| {
+                    egui::CentralPanel::default().show(ctx, |ui| {
+                        if app.search.ui(ui, true) {
+                            app.request_sort();
+                        }
+                    });
+                },
+            );
+        }
+        poll(&mut app, &|a| {
+            !a.search.pending() && !a.sorting && a.display_indices.len() == 1
+        });
+        let query = app.search.submitted.clone();
+        assert_eq!(query.text, "cat");
+        for _ in 0..2 {
+            app.request_sort(); // force an old request to race with clearing
+            app.clear_local_storage();
+            assert!(app.records.is_empty() && app.display_indices.is_empty());
+            assert!(app.display_positions.is_empty() && app.pending_snapshot.is_none());
+            assert!(app.snapshot.records.is_empty());
+            poll(&mut app, &|a| {
+                !a.scanning && !a.sorting && a.records.len() == 2
+            });
+            assert_eq!(app.search.submitted, query);
+            assert_eq!(app.display_indices.len(), 1);
+            assert_eq!(app.display_record(0).unwrap().file_name, "cat.jpg");
+            assert_eq!(app.snapshot.generation, app.generation);
+        }
+        fs::create_dir(root.join("empty")).unwrap();
+        app.open_root(root.join("empty"));
+        // Empty roots must also eventually acknowledge the empty order.
+        poll(&mut app, &|a| !a.scanning && !a.sorting);
+        app.clear_local_storage();
+        poll(&mut app, &|a| !a.scanning && !a.sorting);
+        drop(app);
+        for _ in 0..100 {
+            if fs::remove_dir_all(&root).is_ok() {
+                return;
+            }
+            std::thread::sleep(Duration::from_millis(20));
+        }
+        panic!("test watcher did not release its temporary root");
+    }
 
     fn record(id: i64) -> ImageRecord {
         ImageRecord {

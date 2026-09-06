@@ -17,8 +17,11 @@ fn main() {
     resource.set_icon(icon_path.to_string_lossy().as_ref());
     resource.set("ProductName", "图海速览");
     resource.set("FileDescription", "图海速览：大规模图片浏览与整理工具");
-    resource.set("ProductVersion", "20260905");
-    resource.set("FileVersion", "2026.9.5.0");
+    resource.set("ProductVersion", "20260906");
+    resource.set("FileVersion", "2026.9.6.0");
+    let version = (2026_u64 << 48) | (9_u64 << 32) | (6_u64 << 16);
+    resource.set_version_info(winres::VersionInfo::FILEVERSION, version);
+    resource.set_version_info(winres::VersionInfo::PRODUCTVERSION, version);
     resource.set("OriginalFilename", "TuHaiView.exe");
     resource
         .compile()

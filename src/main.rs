@@ -16,6 +16,7 @@ mod models;
 mod perf_tests;
 mod performance;
 mod retirement;
+mod search;
 mod sorting;
 mod storage;
 mod thumbnail_cache;
@@ -25,8 +26,8 @@ use anyhow::Result;
 use eframe::egui;
 
 pub(crate) const APP_NAME: &str = "图海速览";
-pub(crate) const APP_VERSION: &str = "20260905";
-pub(crate) const APP_WINDOW_TITLE: &str = "图海速览 20260905";
+pub(crate) const APP_VERSION: &str = "20260906";
+pub(crate) const APP_WINDOW_TITLE: &str = "图海速览 20260906";
 
 fn main() -> Result<()> {
     performance::initialize_clock();

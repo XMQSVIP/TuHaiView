@@ -258,11 +258,24 @@ impl CatalogService {
         self.pending.lock().changes.add(paths, false);
         let _ = self.notify_tx.try_send(());
     }
-    pub fn clear_database(&mut self) -> Result<()> {
-        self.cancel_scan();
-        self.pending.lock().clear = true;
+    pub fn clear_database(&mut self) -> Result<u64> {
+        let generation = self
+            .generation
+            .fetch_add(1, Ordering::AcqRel)
+            .wrapping_add(1);
+        let mut pending = self.pending.lock();
+        pending.request = None;
+        pending.clear = true;
+        pending.changes = CatalogChangeSet::default();
+        pending.metadata.clear();
+        pending.hashes.clear();
+        pending.progress = None;
+        if let Some(snapshot) = pending.snapshot.take() {
+            pending.retired.push(Box::new(snapshot));
+        }
+        drop(pending);
         let _ = self.notify_tx.try_send(());
-        Ok(())
+        Ok(generation)
     }
     pub fn data_dir(&self) -> Result<PathBuf> {
         storage::data_dir()

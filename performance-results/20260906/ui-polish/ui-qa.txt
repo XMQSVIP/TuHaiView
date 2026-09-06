@@ -1,0 +1,10 @@
+
+running 1 test
+test app::ui_qa::layout_interaction_and_search_50k ... ui_apply_50k many: n=20 p50=190.16 p95=209.70 max=212.79 ms (16ms test frame pump; no native presentation)
+ui_apply_50k few: n=20 p50=169.36 p95=171.47 max=183.62 ms (16ms test frame pump; no native presentation)
+ui_apply_50k none: n=20 p50=169.42 p95=185.75 max=185.97 ms (16ms test frame pump; no native presentation)
+ui_scroll_50k: n=200 update+texture_delta p50=0.34 p95=0.75 max=1.10 ms (no native presentation)
+DX12 captures: G:\tuhai-ui-qa-50fddec305de4ec389b87c7079d911c3\captures
+ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 61 filtered out; finished in 15.88s

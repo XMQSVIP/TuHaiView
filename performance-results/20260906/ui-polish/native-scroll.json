@@ -1,0 +1,284 @@
+{
+  "before": {
+    "log": "G:\\tuhai-ui-polish-20260906\\before\\logs\\performance-1788695276135356100-25024.jsonl",
+    "run_id": "1788695276135356100-25024",
+    "certificate": {
+      "accepted": 164381,
+      "bytes": 19538680,
+      "dropped": 0,
+      "run_id": "1788695276135356100-25024",
+      "stages_ms": [
+        [
+          "log_write",
+          0.007199999999999999
+        ],
+        [
+          "log_flush",
+          0.034499999999999996
+        ],
+        [
+          "log_sync",
+          29.2498
+        ]
+      ],
+      "sync_completed": true,
+      "written": 164381
+    },
+    "scroll": {
+      "ui_update_ms": {
+        "n": 2053,
+        "p50": 0.987,
+        "p95": 1.642,
+        "max": 3.315
+      },
+      "frame_interval_ms": {
+        "n": 2053,
+        "p50": 3.516,
+        "p95": 15.76,
+        "max": 30.318
+      },
+      "render_frame_ms": {
+        "n": 2053,
+        "p50": 0.987,
+        "p95": 13.534,
+        "max": 28.081
+      },
+      "grid_scroll_offset": {
+        "n": 2053,
+        "p50": 3335.732,
+        "p95": 5833.206,
+        "max": 5998.879
+      },
+      "visible_texture_missing": {
+        "n": 2053,
+        "p50": 0.0,
+        "p95": 0.0,
+        "max": 0.0
+      }
+    },
+    "catalog": {
+      "startup_first_records_ms": {
+        "n": 1,
+        "p50": 757.398,
+        "p95": 757.398,
+        "max": 757.398
+      },
+      "route_ready": {
+        "n": 1,
+        "p50": 1.0,
+        "p95": 1.0,
+        "max": 1.0
+      }
+    },
+    "metric_names": [
+      "frame_interval_ms",
+      "ui_events_ms",
+      "gpu_poll_ms",
+      "gpu_reclaim_count",
+      "gpu_reclaim_ms",
+      "gpu_allocated_bytes",
+      "gpu_retired_bytes",
+      "texture_retired_count",
+      "cpu_released_count",
+      "cpu_retired_count",
+      "cpu_retired_estimated_bytes",
+      "cache_queue_bytes",
+      "cache_queue_count",
+      "image_queued_count",
+      "image_inflight_count",
+      "image_ready_count",
+      "decode_budget_bytes",
+      "ready_budget_bytes",
+      "texture_allocation_bytes",
+      "texture_bytes",
+      "upload_bytes",
+      "upload_submit_ms",
+      "trajectory_phase",
+      "snapshot_build_ms",
+      "visible_texture_missing",
+      "action_ui_feedback_ms",
+      "grid_scroll_offset",
+      "pixels_per_point",
+      "egui_data_entries",
+      "egui_text_layouts",
+      "catalog_displayed_records",
+      "catalog_displayed_table_estimated_bytes",
+      "catalog_pending_table_estimated_bytes",
+      "catalog_pending_records",
+      "sort_displayed_entries",
+      "texture_displayed_count",
+      "deferred_pixel_bytes",
+      "window_focused",
+      "window_minimized",
+      "window_width",
+      "window_height",
+      "ui_update_ms",
+      "render_frame_ms",
+      "eframe_cpu_ms",
+      "sort_ms",
+      "first_records_ms",
+      "startup_first_records_ms",
+      "cache_hit",
+      "jpeg_scaled_decode_ms",
+      "decode_admitted_bytes",
+      "image_ready_ms",
+      "texture_create_ms",
+      "cache_encoded_bytes",
+      "cache_write_ms",
+      "texture_write_ms",
+      "texture_register_ms",
+      "first_thumbnail_ms",
+      "startup_first_thumbnail_ms",
+      "generic_decode_ms",
+      "viewport_complete_ms",
+      "first_screen_ms",
+      "startup_first_screen_ms",
+      "texture_unregister_ms",
+      "scan_visited_files",
+      "scan_elapsed_ms",
+      "route_ready",
+      "soak_completed_seconds"
+    ]
+  },
+  "after": {
+    "log": "G:\\tuhai-ui-polish-20260906\\after\\logs\\performance-1788695327487329500-13576.jsonl",
+    "run_id": "1788695327487329500-13576",
+    "certificate": {
+      "accepted": 130689,
+      "bytes": 15404678,
+      "dropped": 0,
+      "run_id": "1788695327487329500-13576",
+      "stages_ms": [
+        [
+          "log_write",
+          0.0076
+        ],
+        [
+          "log_flush",
+          0.027100000000000003
+        ],
+        [
+          "log_sync",
+          33.9896
+        ]
+      ],
+      "sync_completed": true,
+      "written": 130689
+    },
+    "scroll": {
+      "ui_update_ms": {
+        "n": 2006,
+        "p50": 0.999,
+        "p95": 1.656,
+        "max": 3.127
+      },
+      "frame_interval_ms": {
+        "n": 2006,
+        "p50": 3.792,
+        "p95": 18.184,
+        "max": 32.567
+      },
+      "render_frame_ms": {
+        "n": 2006,
+        "p50": 1.205,
+        "p95": 15.47,
+        "max": 28.696
+      },
+      "grid_scroll_offset": {
+        "n": 2006,
+        "p50": 3850.007,
+        "p95": 5821.844,
+        "max": 5999.572
+      },
+      "visible_texture_missing": {
+        "n": 2006,
+        "p50": 0.0,
+        "p95": 0.0,
+        "max": 0.0
+      }
+    },
+    "catalog": {
+      "startup_first_records_ms": {
+        "n": 1,
+        "p50": 1349.699,
+        "p95": 1349.699,
+        "max": 1349.699
+      },
+      "route_ready": {
+        "n": 1,
+        "p50": 1.0,
+        "p95": 1.0,
+        "max": 1.0
+      }
+    },
+    "metric_names": [
+      "frame_interval_ms",
+      "ui_events_ms",
+      "gpu_poll_ms",
+      "gpu_reclaim_count",
+      "gpu_reclaim_ms",
+      "gpu_allocated_bytes",
+      "gpu_retired_bytes",
+      "texture_retired_count",
+      "cpu_released_count",
+      "cpu_retired_count",
+      "cpu_retired_estimated_bytes",
+      "cache_queue_bytes",
+      "cache_queue_count",
+      "image_queued_count",
+      "image_inflight_count",
+      "image_ready_count",
+      "decode_budget_bytes",
+      "ready_budget_bytes",
+      "texture_allocation_bytes",
+      "texture_bytes",
+      "upload_bytes",
+      "upload_submit_ms",
+      "trajectory_phase",
+      "visible_texture_missing",
+      "action_ui_feedback_ms",
+      "grid_scroll_offset",
+      "pixels_per_point",
+      "egui_data_entries",
+      "egui_text_layouts",
+      "catalog_displayed_records",
+      "catalog_displayed_table_estimated_bytes",
+      "catalog_pending_table_estimated_bytes",
+      "catalog_pending_records",
+      "sort_displayed_entries",
+      "texture_displayed_count",
+      "deferred_pixel_bytes",
+      "window_focused",
+      "window_minimized",
+      "window_width",
+      "window_height",
+      "ui_update_ms",
+      "render_frame_ms",
+      "eframe_cpu_ms",
+      "snapshot_build_ms",
+      "sort_ms",
+      "first_records_ms",
+      "startup_first_records_ms",
+      "cache_hit",
+      "jpeg_scaled_decode_ms",
+      "decode_admitted_bytes",
+      "image_ready_ms",
+      "generic_decode_ms",
+      "cache_encoded_bytes",
+      "cache_write_ms",
+      "texture_create_ms",
+      "texture_write_ms",
+      "texture_register_ms",
+      "first_thumbnail_ms",
+      "startup_first_thumbnail_ms",
+      "viewport_complete_ms",
+      "first_screen_ms",
+      "startup_first_screen_ms",
+      "texture_unregister_ms",
+      "scan_visited_files",
+      "scan_elapsed_ms",
+      "route_ready",
+      "soak_completed_seconds"
+    ]
+  }
+}
