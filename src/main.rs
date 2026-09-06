@@ -80,10 +80,18 @@ fn main() -> Result<()> {
         wgpu_options,
         ..Default::default()
     };
-    eframe::run_native(
+    let application = eframe::run_native(
         APP_WINDOW_TITLE,
         options,
         Box::new(|cc| Ok(Box::new(app::PreviewerApp::new(cc)?))),
     )
-    .map_err(|e| anyhow::anyhow!(e.to_string()))
+    .map_err(|e| anyhow::anyhow!(e.to_string()));
+    let finalized = performance::finalize_after_window();
+    if performance::enabled() {
+        eprintln!("TUHAI_FINALIZE {}", serde_json::to_string(&finalized)?);
+    }
+    if !finalized.succeeded() {
+        anyhow::bail!("performance log finalization failed");
+    }
+    application
 }

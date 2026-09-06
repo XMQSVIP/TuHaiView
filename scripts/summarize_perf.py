@@ -8,13 +8,15 @@ def summary(values):
     return dict(n=len(v),median=statistics.median(v),p95=v[math.ceil(len(v)*.95)-1],p99=v[math.ceil(len(v)*.99)-1],maximum=max(v),over_50ms=sum(x>50 for x in v),over_100ms=sum(x>100 for x in v))
 
 def analyze(log, presentmon=None, refresh_hz=60):
-    d=collections.defaultdict(list); phases=collections.defaultdict(list); per_phase=collections.defaultdict(lambda: collections.defaultdict(list)); memory=[]; frames=[]; legacy_phase=None; header=None; malformed=0
+    d=collections.defaultdict(list); phases=collections.defaultdict(list); per_phase=collections.defaultdict(lambda: collections.defaultdict(list)); memory=[]; frames=[]; legacy_phase=None; header=None; malformed=0; terminal=False; after_terminal=False
     with log.open(encoding="utf-8-sig") as source:
         for line in source:
             try: sample=json.loads(line)
             except json.JSONDecodeError: malformed+=1; continue
             if sample.get("kind")=="run_header": header=sample; continue
+            if terminal: after_terminal=True
             name=sample.get("name"); value=sample.get("value")
+            if name=='log_flush': terminal=True
             if name is None or not isinstance(value,(int,float)): continue
             d[name].append(value)
             per_phase[sample.get('scenario',8)][name].append(value)
@@ -35,7 +37,15 @@ def analyze(log, presentmon=None, refresh_hz=60):
             certificate=json.loads(log.with_suffix('.complete.json').read_text(encoding='utf-8-sig'))
             if not certificate.get('sync_completed') or certificate.get('run_id')!=header.get('run_id') or certificate.get('bytes')!=log.stat().st_size:
                 reasons.append('invalid_flush_certificate')
+            if header.get('schema',0)>=4:
+                if certificate.get('accepted')!=certificate.get('written') or certificate.get('dropped')!=0:
+                    reasons.append('invalid_final_sample_counts')
+                if not d['log_accepted'] or certificate.get('accepted')!=d['log_accepted'][-1]:
+                    reasons.append('missing_or_mismatched_accepted_count')
         except (OSError,ValueError): reasons.append('missing_flush_certificate')
+    if header and header.get('schema',0)>=4:
+        if after_terminal: reasons.append('samples_after_terminal_marker')
+        if len(d['log_flush'])!=1 or d['log_flush'][-1:]!=[1]: reasons.append('invalid_terminal_marker')
     if max(d['window_minimized'],default=0)>0: reasons.append('window_was_minimized')
     if d['native_dialog_open'] and header and header.get('scenario_name') in ('open','scroll','soak','trajectory'):
         reasons.append('native_modal_interrupted_automated_run')

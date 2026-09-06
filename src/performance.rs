@@ -10,6 +10,8 @@ use std::{
     },
     time::{Instant, SystemTime, UNIX_EPOCH},
 };
+mod logging;
+pub use logging::FinalizeOutcome;
 
 pub const MIB: usize = 1024 * 1024;
 pub const EVENT_BUDGET_MS: u64 = 2;
@@ -81,11 +83,10 @@ struct Sample {
     generation: u64,
     name: &'static str,
     value: f64,
-    #[serde(skip)]
-    flushed: Option<Sender<()>>,
+    frame_known: bool,
 }
 static ENABLED: OnceLock<bool> = OnceLock::new();
-static SAMPLES: OnceLock<Option<Sender<Sample>>> = OnceLock::new();
+static LOGGER: OnceLock<logging::Logger> = OnceLock::new();
 static START: OnceLock<Instant> = OnceLock::new();
 pub fn initialize_clock() {
     if enabled() {
@@ -109,20 +110,58 @@ pub fn since_start(name: &'static str) {
         }
     }
 }
+static SCENARIO: AtomicU64 = AtomicU64::new(8);
 static FRAME: AtomicU64 = AtomicU64::new(0);
-static SCENARIO: AtomicU64 = AtomicU64::new(0);
-static DROPPED: AtomicU64 = AtomicU64::new(0);
+#[derive(Clone, Copy, Default, Debug, Serialize)]
+pub struct FrameContext {
+    pub frame_id: u64,
+    pub scenario: u64,
+    pub known: bool,
+}
+thread_local! {
+    static FRAME_CONTEXT: Cell<FrameContext> = Cell::new(FrameContext::default());
+    static PREVIOUS_FRAME: Cell<FrameContext> = Cell::new(FrameContext::default());
+}
 thread_local! { static REQUEST: Cell<(u64, u64)> = const { Cell::new((0, 0)) }; }
 
 pub fn begin_frame(scenario: u64) {
-    FRAME.fetch_add(1, Ordering::Relaxed);
-    SCENARIO.store(scenario, Ordering::Relaxed);
+    if enabled() {
+        SCENARIO.store(scenario, Ordering::Relaxed);
+        PREVIOUS_FRAME.set(FRAME_CONTEXT.get());
+        FRAME_CONTEXT.set(FrameContext {
+            frame_id: FRAME.fetch_add(1, Ordering::Relaxed) + 1,
+            scenario,
+            known: true,
+        });
+    }
+}
+pub fn frame_context() -> FrameContext {
+    FRAME_CONTEXT.get()
+}
+pub fn previous_frame_cpu(seconds: f32) {
+    if enabled() {
+        // eframe reports the previous update/render cycle. The first cycle is unknown.
+        logger().push(cpu_event(seconds, PREVIOUS_FRAME.get()));
+    }
+}
+fn cpu_event(seconds: f32, frame: FrameContext) -> Sample {
+    let mut sample = event("eframe_cpu_ms", seconds as f64 * 1000.0);
+    sample.set_frame(frame);
+    sample
+}
+impl Sample {
+    fn set_frame(&mut self, frame: FrameContext) {
+        self.frame_id = frame.frame_id;
+        self.scenario = if frame.known { frame.scenario } else { 8 };
+        self.frame_known = frame.known;
+    }
 }
 pub fn begin_request(generation: u64, request: u64) {
     REQUEST.set((generation, request));
 }
 fn event(name: &'static str, value: f64) -> Sample {
     let (generation, request_id) = REQUEST.get();
+    let frame = frame_context();
     Sample {
         time_ms: SystemTime::now()
             .duration_since(UNIX_EPOCH)
@@ -130,13 +169,17 @@ fn event(name: &'static str, value: f64) -> Sample {
             .as_millis(),
         monotonic_us: START.get_or_init(Instant::now).elapsed().as_micros(),
         qpc: qpc(),
-        frame_id: FRAME.load(Ordering::Relaxed),
-        scenario: SCENARIO.load(Ordering::Relaxed),
+        frame_id: frame.frame_id,
+        scenario: if frame.known {
+            frame.scenario
+        } else {
+            SCENARIO.load(Ordering::Relaxed)
+        },
         request_id,
         generation,
         name,
         value,
-        flushed: None,
+        frame_known: frame.known,
     }
 }
 #[cfg(windows)]
@@ -198,109 +241,49 @@ pub fn gauge(name: &'static str, value: f64) {
     }
 }
 
+fn logger() -> &'static logging::Logger {
+    LOGGER.get_or_init(logging::Logger::start)
+}
 pub fn sample(name: &'static str, value: f64) {
-    if !enabled() {
-        return;
-    }
-    let sender = SAMPLES.get_or_init(|| {
-        if std::env::var_os("TUHAI_PERF").as_deref() != Some(std::ffi::OsStr::new("1")) {
-            return None;
-        }
-        let (tx, rx) = bounded::<Sample>(4096);
-        std::thread::Builder::new()
-            .name("performance-log".into())
-            .spawn(move || {
-                use std::io::Write;
-                // Diagnostic output can live on a spacious test volume; product data stays portable.
-                let directory = std::env::var_os("TUHAI_PERF_LOG_DIR")
-                    .map(std::path::PathBuf::from)
-                    .map_or_else(crate::storage::data_dir, |dir| {
-                        std::fs::create_dir_all(&dir)?;
-                        Ok(dir)
-                    });
-                let Ok(dir) = directory else {
-                    return;
-                };
-                let stamp = SystemTime::now()
-                    .duration_since(UNIX_EPOCH)
-                    .unwrap_or_default()
-                    .as_millis();
-                let path = dir.join(format!("performance-{stamp}.jsonl"));
-                let Ok(file) = std::fs::File::create(&path)
-                else {
-                    return;
-                };
-                let mut file = std::io::BufWriter::new(file);
-                let header = serde_json::json!({"schema": 3, "run_id": stamp, "pid": std::process::id(), "executable": std::env::current_exe().ok(), "scenario_name": std::env::var("TUHAI_PERF_SCENARIO").unwrap_or_else(|_| "trajectory".into()), "system_cache": "unknown", "kind": "run_header"});
-                let _ = serde_json::to_writer(&mut file, &header);
-                let _ = file.write_all(b"\n");
-                let mut last_flush = Instant::now();
-                loop {
-                    match rx.recv_timeout(std::time::Duration::from_secs(1)) {
-                        Ok(event) => {
-                            if serde_json::to_writer(&mut file, &event).is_err() || file.write_all(b"\n").is_err() { return; }
-                            if let Some(tx) = event.flushed {
-                                if file.flush().is_ok() && file.get_ref().sync_data().is_ok() {
-                                    // Publish completion only after the log has reached the filesystem.
-                                    let certify = (|| -> std::io::Result<()> {
-                                        let temporary = path.with_extension("complete.tmp");
-                                        let mut certificate = std::fs::File::create(&temporary)?;
-                                        let data = serde_json::json!({"run_id":stamp,"bytes":file.get_ref().metadata()?.len(),"sync_completed":true});
-                                        certificate.write_all(data.to_string().as_bytes())?;
-                                        certificate.sync_all()?;
-                                        drop(certificate);
-                                        std::fs::rename(temporary, path.with_extension("complete.json"))
-                                    })();
-                                    if certify.is_ok() { let _ = tx.try_send(()); }
-                                }
-                                return;
-                            }
-                        }
-                        Err(crossbeam_channel::RecvTimeoutError::Timeout) => {}
-                        Err(crossbeam_channel::RecvTimeoutError::Disconnected) => break,
-                    }
-                    if last_flush.elapsed().as_secs() >= 1 {
-                        if let Some((private, working)) = process_memory() {
-                            for (name, bytes) in [
-                                ("process_private_bytes", private),
-                                ("process_working_set_bytes", working),
-                            ] {
-                                let event = event(name, bytes as f64);
-                                let _ = serde_json::to_writer(&mut file, &event);
-                                let _ = file.write_all(b"\n");
-                            }
-                        }
-                        let _ = file.flush();
-                        last_flush = Instant::now();
-                    }
-                }
-                let _ = file.flush();
-            })
-            .ok()?;
-        Some(tx)
-    });
-    if let Some(tx) = sender {
-        if tx.try_send(event(name, value)).is_err() {
-            DROPPED.fetch_add(1, Ordering::Relaxed);
-        }
+    if enabled() {
+        logger().push(event(name, value));
     }
 }
-/// Only called at process exit when diagnostics were explicitly enabled.
-pub fn flush_at_exit() {
-    if let Some(Some(tx)) = SAMPLES.get() {
-        let (ack, rx) = bounded(1);
-        let _ = tx.send_timeout(
-            event("log_dropped", DROPPED.load(Ordering::Relaxed) as f64),
-            std::time::Duration::from_millis(200),
+/// UI only closes the producer gate and sends a separate control message.
+pub fn request_finish() {
+    if let Some(logger) = LOGGER.get() {
+        logger.request_finish();
+    }
+}
+/// Called after run_native has returned; never from the UI event loop.
+pub fn finalize_after_window() -> FinalizeOutcome {
+    LOGGER
+        .get()
+        .map_or(FinalizeOutcome::Disabled, logging::Logger::wait)
+}
+
+#[cfg(test)]
+mod frame_tests {
+    use super::*;
+    #[test]
+    fn previous_cpu_preserves_source_frame_and_marks_unknown() {
+        let sample = cpu_event(
+            0.02,
+            FrameContext {
+                frame_id: 41,
+                scenario: 1,
+                known: true,
+            },
         );
-        let mut completed = event("log_flush", 1.0);
-        completed.flushed = Some(ack);
-        if tx
-            .send_timeout(completed, std::time::Duration::from_millis(200))
-            .is_ok()
-        {
-            let _ = rx.recv_timeout(std::time::Duration::from_millis(500));
-        }
+        assert_eq!(
+            (sample.frame_id, sample.scenario, sample.frame_known),
+            (41, 1, true)
+        );
+        let sample = cpu_event(0.02, FrameContext::default());
+        assert_eq!(
+            (sample.frame_id, sample.scenario, sample.frame_known),
+            (0, 8, false)
+        );
     }
 }
 

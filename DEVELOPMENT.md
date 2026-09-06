@@ -171,3 +171,10 @@ git diff --check
 - 新增 `native_dialog_open`／`native_dialog_wait_ms` 标记该模态区间，`input_frame_wall_ms` 保留包含等待的原始时间，随后构建的 `input_frame_processing_ms` 扣除同一帧内等待。旧日志不会自动获得修正值。自动基准出现原生模态区间直接判无效；这些仍是墙钟区间，不是线程 CPU 采样。
 - `display_paths.py` 只读查询当前活动显示路径和目标信号频率；`vblank_probe.py` 在独立进程中测量 DXGI 垂直空白等待，不创建渲染窗口，不改配置。后者必须在正式图形测试之外运行，也不等价于物理输入到光子的仪器测量。
 - `run_permission_regression.ps1` 只在新建 UUID 测试目录操作合成 JPEG 副本，短暂添加仅该目录的读取拒绝规则，并在 `finally` 恢复原 DACL；OS 未实际拒绝访问时不得判通过。先索引、拒绝访问仍保留索引、恢复后更新版本分别由 `verify_permission_stage.py` 验证。它不使用原图片目录进行文件或权限修改。
+
+
+## 快速验证版：日志 schema v4
+
+诊断采样队列保持 4096 条，结束信号通过独立通道发送。关闭窗口只关闭生产者入口并请求排空；窗口事件循环返回后最多等待 5 秒完成日志同步和凭据发布。成功、超时及具体 I/O 阶段错误写入脚本收集的 `TUHAI_FINALIZE` 标准错误记录；诊断失败或丢样返回非零退出码。临时凭据保留，禁止补签。正常启动不启用此流程。
+
+`eframe_cpu_ms` 使用上一更新周期的 FrameContext，未知来源使用 frame_known=false；不再归到当前场景。后台资源计量保留采样时的场景，frame_known=false，不能作为逐帧归因。schema v4 的完成凭据额外验证接收与写入数量，以及终止标记之后没有记录。schema v2/v3 仍可读取。

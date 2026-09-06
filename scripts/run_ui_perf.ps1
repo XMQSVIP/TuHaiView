@@ -1,4 +1,4 @@
-param(
+﻿param(
     [Parameter(Mandatory=$true)][string]$Executable,
     [Parameter(Mandatory=$true)][string]$Root,
     [int]$Runs=5,
@@ -105,9 +105,11 @@ for ($run=1; $run -le $Runs; $run++) {
     foreach ($log in $logs) {
         $saved=Join-Path $OutputDirectory ("$stamp-"+$log.Name)
         Move-Item -LiteralPath $log.FullName -Destination $saved
-        $certificate=[IO.Path]::ChangeExtension($log.FullName,'complete.json')
-        if (Test-Path -LiteralPath $certificate) {
-            Move-Item -LiteralPath $certificate -Destination ([IO.Path]::ChangeExtension($saved,'complete.json'))
+        foreach ($suffix in @('complete.json','complete.tmp')) {
+            $certificate=[IO.Path]::ChangeExtension($log.FullName,$suffix)
+            if (Test-Path -LiteralPath $certificate) {
+                Move-Item -LiteralPath $certificate -Destination ([IO.Path]::ChangeExtension($saved,$suffix))
+            }
         }
         $savedLogs+=$saved
     }
@@ -126,6 +128,8 @@ for ($run=1; $run -le $Runs; $run++) {
     $report['wgpu_environment']=@{discard_hal_labels=$env:WGPU_DISCARD_HAL_LABELS;debug=$env:WGPU_DEBUG;validation=$env:WGPU_VALIDATION}
     $report['display_awake_request']='ES_DISPLAY_REQUIRED | ES_SYSTEM_REQUIRED; periodic, no persistent power-plan change'
     $report['abort_reason']=$abortReason
+    $report['app_errors']=Join-Path $OutputDirectory "$stamp-app-errors.txt"
+    $report['app_output']=Join-Path $OutputDirectory "$stamp-app-output.txt"
     $report | ConvertTo-Json -Depth 8 | Set-Content -LiteralPath (Join-Path $OutputDirectory "$stamp-run.json") -Encoding utf8
     $report | ConvertTo-Json -Compress -Depth 8
     if ($abortReason) { throw $abortReason }

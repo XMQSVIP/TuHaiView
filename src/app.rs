@@ -3062,7 +3062,7 @@ impl eframe::App for PreviewerApp {
         });
         crate::performance::elapsed("ui_update_ms", frame_start);
         if let Some(seconds) = _frame.info().cpu_usage {
-            crate::performance::sample("eframe_cpu_ms", seconds as f64 * 1000.0);
+            crate::performance::previous_frame_cpu(seconds);
         }
     }
 
@@ -3080,7 +3080,7 @@ impl eframe::App for PreviewerApp {
             self.thumbnails.discard(result);
         }
         self.texture_bytes = 0;
-        crate::performance::flush_at_exit();
+        crate::performance::request_finish();
     }
 }
 

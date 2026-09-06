@@ -9,6 +9,24 @@ from summarize_runs import collect
 from validate_ui_run import validate, validate_result
 
 class ReportTests(unittest.TestCase):
+    def test_v4_terminal_barrier_and_sample_counts(self):
+        with tempfile.TemporaryDirectory() as root:
+            path=Path(root)/'samples.jsonl'
+            samples=[dict(kind='run_header',schema=4,run_id='new',scenario_name='open')]
+            for name,value in [('soak_completed_seconds',20),('window_minimized',0),('window_width',1280),('window_height',820),('pixels_per_point',1),('log_accepted',5),('log_dropped',0),('log_flush',1)]:
+                samples.append(dict(name=name,value=value))
+            def save():
+                path.write_text(''.join(json.dumps(s)+'\n' for s in samples))
+                path.with_suffix('.complete.json').write_text(json.dumps(dict(run_id='new',sync_completed=True,bytes=path.stat().st_size,accepted=5,written=5,dropped=0)))
+            save()
+            self.assertTrue(analyze(path)['log_valid'])
+            samples.append(dict(name='late',value=1));save()
+            self.assertIn('samples_after_terminal_marker',analyze(path)['invalid_reasons'])
+            samples.pop();save()
+            cert=json.loads(path.with_suffix('.complete.json').read_text());cert['written']=4
+            path.with_suffix('.complete.json').write_text(json.dumps(cert))
+            self.assertIn('invalid_final_sample_counts',analyze(path)['invalid_reasons'])
+
     def test_native_modal_disqualifies_an_automated_performance_run(self):
         with tempfile.TemporaryDirectory() as root:
             path=Path(root)/'samples.jsonl'
