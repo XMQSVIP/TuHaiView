@@ -67,3 +67,7 @@ cargo run --release --locked
 缩略图磁盘缓存默认 1 GiB，可选 1 / 2 / 4 / 8 / 16 GiB。JPEG 来源使用质量 85 的 JPEG，其他图片使用无损 WebP。旧 RGBA 缓存命中后后台迁移。数据仍保存在 EXE 同目录的 `data` 中。
 
 实现说明、实测结果及尚未通过的验收项目见 [PERFORMANCE.md](PERFORMANCE.md)。预算约束应用管理的缓冲区，不能视为进程总内存硬上限。
+
+## 开源协议
+
+本项目采用 [MIT License](LICENSE)，版权署名为 `Copyright (c) 2026 XMQSVIP`。第三方依赖和 vendored 代码保留各自的许可证与版权声明。
